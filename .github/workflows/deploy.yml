@@ -1,0 +1,86 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main] # Triggers deployment on push to main
+  pull_request:
+    branches: [main] # Triggers tests/build checks on PRs
+
+jobs:
+  client-ci-cd:
+    name: Client (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint and Typecheck
+        run: |
+          bun run lint
+          bun x tsc --noEmit
+
+      # Optional: Add your test script here if you have one
+      # - name: Run Tests
+        # run: bun test
+
+      - name: Build Next.js App
+        run: bun run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      # Deployment Step (Example: Vercel CLI)
+      # Only runs on push to main branch
+      - name: Deploy to Vercel
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bun x vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
+
+  # --------------------------------------------------------
+  # SERVER JOB: Hono + Drizzle + Cloudflare Workers + Bun
+  # --------------------------------------------------------
+  server-ci-cd:
+    name: Server (Hono + Cloudflare)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check Drizzle Schema & Typecheck
+        run: |
+          bun x drizzle-kit check
+          bun x tsc --noEmit
+
+      # Only deploy on push to main branch
+      - name: Deploy to Cloudflare Workers
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: ./server
+          # If your Wrangler command needs specific production secrets:
+          # vars: |
+          #   ENVIRONMENT="production"
