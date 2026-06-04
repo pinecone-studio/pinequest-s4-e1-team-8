@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
+import { AppShell } from "@/components/app-shell";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -26,7 +27,9 @@ export default function RootLayout({
       className={`${montserrat.variable} min-h-full font-sans antialiased`}
     >
       <body className="min-h-full font-sans">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );

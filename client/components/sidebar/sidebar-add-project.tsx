@@ -1,19 +1,40 @@
+"use client";
+
+import { useSidebar } from "@/components/sidebar/sidebar-context";
 import { Plus } from "lucide-react";
 
 export function SidebarAddProject() {
-  return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-white/3 p-4 text-center">
+  const { collapsed } = useSidebar();
+
+  if (collapsed) {
+    return (
       <button
         type="button"
         aria-label="Add new project"
-        className="mx-auto mb-2 flex size-8 items-center justify-center rounded-full bg-violet-600 text-white transition-colors hover:bg-violet-500"
+        title="Add new project"
+        className="mx-auto flex size-10 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-[0_4px_20px_-4px_rgba(124,58,237,0.6)] transition-colors hover:bg-[#6d28d9]"
       >
-        <Plus className="size-4" />
+        <Plus className="size-[18px] stroke-[2]" />
       </button>
-      <p className="text-[12.5px] font-medium text-slate-300">Add New Project</p>
-      <p className="mt-0.5 text-[11px] text-slate-500">
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-dashed border-white/[0.12] bg-transparent px-4 py-5 text-center">
+      <button
+        type="button"
+        aria-label="Add new project"
+        className="mx-auto mb-2.5 flex size-9 items-center justify-center rounded-full bg-[#7c3aed] text-white shadow-[0_4px_20px_-4px_rgba(124,58,237,0.6)] transition-colors hover:bg-[#6d28d9]"
+      >
+        <Plus className="size-[18px] stroke-[2]" />
+      </button>
+      <p className="text-[13px] font-semibold text-white">Add New Project</p>
+      <p className="mt-1 text-[11px] text-[#6b6b73]">
         Or use{" "}
-        <a href="#" className="text-violet-400 underline underline-offset-2 hover:text-violet-300">
+        <a
+          href="#"
+          className="font-medium text-[#a78bfa] underline underline-offset-2 hover:text-[#c4b5fd]"
+        >
           invite link
         </a>
       </p>
