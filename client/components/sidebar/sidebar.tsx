@@ -4,7 +4,7 @@ import { SidebarAddProject } from "@/components/sidebar/sidebar-add-project";
 import { SidebarCollapseTrigger } from "@/components/sidebar/sidebar-collapse-trigger";
 import { SidebarProvider, useSidebar } from "@/components/sidebar/sidebar-context";
 import { SidebarNav } from "@/components/sidebar/sidebar-nav";
-import { SidebarProfile } from "@/components/sidebar/sidebar-profile";
+import { SidebarAuth } from "@/components/sidebar/sidebar-auth";
 import { SidebarSearch } from "@/components/sidebar/sidebar-search";
 import { SidebarThemeToggle } from "@/components/sidebar/sidebar-theme-toggle";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,7 @@ function DashboardSidebarInner() {
         )}
       >
         <div className={cn(!collapsed && "min-w-0 flex-1")}>
-          <SidebarProfile />
+          <SidebarAuth />
         </div>
         <SidebarCollapseTrigger className="shrink-0" />
       </div>
