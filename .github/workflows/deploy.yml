@@ -80,7 +80,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: ./server
-          # If your Wrangler command needs specific production secrets:
-          # vars: |
-          #   ENVIRONMENT="production"
+          workingDirectory: server
+          command: deploy --minify
