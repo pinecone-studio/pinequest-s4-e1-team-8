@@ -1,9 +1,15 @@
 export const sidebarNavItems = [
-  { label: "Dashboard",     href: "/dashboard", dot: true },
-  { label: "Project Board", href: "#"                     },
-  { label: "Schedule",      href: "#", subtitle: "June, 28, 2023", badge: 2 },
-  { label: "Activities",    href: "#", badge: "New" },
-  { label: "Inbox",         href: "#", count: 24 },
+  { label: "Dashboard", href: "/dashboard", dot: true },
+  { label: "Project Board", href: "#", expandable: true },
+  {
+    label: "Schedule",
+    href: "#",
+    subtitle: "June, 28, 2023",
+    badge: 2,
+    emphasized: true,
+  },
+  { label: "Activities", href: "#", badge: "New" },
+  { label: "Inbox", href: "#", count: 24 },
 ] as const;
 
 export const projectTree = [

@@ -2,29 +2,34 @@
 
 import { SidebarNavItem } from "@/components/sidebar/sidebar-nav-item";
 import { SidebarTree } from "@/components/sidebar/sidebar-tree";
+import { useSidebar } from "@/components/sidebar/sidebar-context";
 import { sidebarNavItems } from "@/lib/dashboard/data";
-import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export function SidebarNav() {
-  const pathname = usePathname();
+  const { collapsed } = useSidebar();
 
   return (
-    <nav className="flex-1 overflow-y-auto px-3 py-2">
-      <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-        Overview
-      </p>
+    <nav
+      className={cn(
+        "flex-1 overflow-y-auto py-3 transition-[padding] duration-300",
+        collapsed ? "px-2" : "px-3",
+      )}
+    >
+      {!collapsed && (
+        <p className="mb-2.5 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b73]">
+          Overview
+        </p>
+      )}
       <ul className="space-y-0.5">
-        {sidebarNavItems.map((item) => {
-          const isProjectBoard = item.label === "Project Board";
-          const isActive = item.href !== "#" && pathname === item.href;
-
-          return (
-            <li key={item.label}>
-              <SidebarNavItem item={item} />
-              {isProjectBoard && (isActive || item.href === "#") && <SidebarTree />}
-            </li>
-          );
-        })}
+        {sidebarNavItems.map((item) => (
+          <li key={item.label}>
+            <SidebarNavItem item={item} />
+            {!collapsed && "expandable" in item && item.expandable && (
+              <SidebarTree />
+            )}
+          </li>
+        ))}
       </ul>
     </nav>
   );
