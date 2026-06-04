@@ -4,12 +4,14 @@ import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-tr
 import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";
 import type { Bindings } from "./lib/common/types";
 import userRoutes from "./routes/users/user.routes";
+import taskRoutes from "./routes/tasks/task.routes";
 
 const app = new Hono<{ Bindings: Bindings }>();
-// test case for users route:
-app.route("/users", userRoutes);
 
-// meeting transcription routes:
+app.route("/users", userRoutes);
+app.route("/tasks", taskRoutes);
+
+
 app.route("/api/meeting-transcription", meetingTranscriptionRouter);
 
 app.route("/api/meeting-room", meetingRoomRouter);
