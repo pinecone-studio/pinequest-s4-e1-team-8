@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 export default function HomePage() {
-  redirect("/onboarding");
+  return <DashboardShell />;
 }

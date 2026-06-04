@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
-import { users } from "../../schema/schema";
+import { usersTable } from "../../schema/schema";
 
 export const createUser = async (c: Context<{ Bindings: Bindings }>) => {
   const db = useDB(c);
@@ -13,20 +13,23 @@ export const createUser = async (c: Context<{ Bindings: Bindings }>) => {
   }
 
   const [newUser] = await db
-    .insert(users)
+    .insert(usersTable)
     .values({
       id: body.id,
-      clerkId: body.clerkId,
+      role: body.role,
       name: body.name,
       email: body.email,
-      avatarUrl: body.avatarUrl,
+      password: body.password,
+      age: body.age,
+      tel: body.tel,
     })
     .returning({
-      id: users.id,
-      clerkId: users.clerkId,
-      name: users.name,
-      email: users.email,
-      avatarUrl: users.avatarUrl,
+      id: usersTable.id,
+      name: usersTable.name,
+      email: usersTable.email,
+      role: usersTable.role,
+      age: usersTable.age,
+      tel: usersTable.tel,
     });
 
   return c.json({ new_user: newUser }, 201);
