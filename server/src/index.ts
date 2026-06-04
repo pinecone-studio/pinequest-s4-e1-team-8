@@ -1,8 +1,9 @@
 import { Hono } from "hono";
-import userRoutes from "./routes/test/user.routes";
+
 import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-transcription.routes";
 import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";
 import type { Bindings } from "./lib/common/types";
+import userRoutes from "./routes/users/user.routes";
 
 const app = new Hono<{ Bindings: Bindings }>();
 // test case for users route:
