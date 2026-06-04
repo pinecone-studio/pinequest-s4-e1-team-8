@@ -1,12 +1,17 @@
 "use client";
 
-import { mockTasks, sourceLabels, taskSources } from "@/components/tasks/mock-tasks";
+import { clientApi } from "@/app/lib/client-api";
+import { sourceLabels, taskSources } from "@/components/tasks/mock-tasks";
 import { TaskRow, type TaskListItem, type TaskSource } from "@/components/tasks/task-row";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ListTodo, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+type TasksResponse = {
+  tasks: TaskListItem[];
+};
 
 function TaskListSkeleton() {
   return (
@@ -44,7 +49,7 @@ function EmptyTasks() {
       <div className="space-y-1">
         <h2 className="text-base font-semibold">No tasks yet</h2>
         <p className="max-w-md text-sm text-muted-foreground">
-          This source does not have mock tasks yet.
+          No tasks for this source yet.
         </p>
       </div>
     </div>
@@ -56,23 +61,24 @@ export function TaskList() {
   const [activeSource, setActiveSource] = useState<TaskSource>("github");
   const [isLoading, setIsLoading] = useState(true);
 
-  const visibleTasks = useMemo(
-    () => tasks.filter((task) => task.source === activeSource),
-    [activeSource, tasks]
-  );
-
-  const loadMockTasks = useCallback(() => {
+  const loadTasks = useCallback(async () => {
     setIsLoading(true);
 
-    window.setTimeout(() => {
-      setTasks(mockTasks);
+    try {
+      const { data } = await clientApi.get<TasksResponse>("/tasks", {
+        params: { source: activeSource },
+      });
+      setTasks(Array.isArray(data?.tasks) ? data.tasks : []);
+    } catch {
+      setTasks([]);
+    } finally {
       setIsLoading(false);
-    }, 300);
-  }, []);
+    }
+  }, [activeSource]);
 
   useEffect(() => {
-    loadMockTasks();
-  }, [loadMockTasks]);
+    loadTasks();
+  }, [loadTasks]);
 
   return (
     <Card className="rounded-lg border border-border/60 bg-[#16171b] shadow-none">
@@ -87,7 +93,7 @@ export function TaskList() {
             variant="outline"
             className="rounded-lg"
             disabled={isLoading}
-            onClick={loadMockTasks}
+            onClick={loadTasks}
           >
             <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
             Refresh
@@ -116,11 +122,11 @@ export function TaskList() {
 
         {isLoading ? (
           <TaskListSkeleton />
-        ) : visibleTasks.length === 0 ? (
+        ) : (tasks ?? []).length === 0 ? (
           <EmptyTasks />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {visibleTasks.map((task, index) => (
+            {(tasks ?? []).map((task, index) => (
               <TaskRow key={task.id} task={task} active={index === 0} />
             ))}
           </div>
