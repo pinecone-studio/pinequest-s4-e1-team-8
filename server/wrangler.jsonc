@@ -12,6 +12,11 @@
       "migrations_dir": "drizzle",
     },
   ],
+  "vars": {
+    "LIVEKIT_URL": "wss://your-project.livekit.cloud",
+    "LIVEKIT_API_KEY": "APIKPm9Sr87RShW",
+    "LIVEKIT_API_SECRET": "your_secret_here",
+  },
   "env": {
     "production": {
       "d1_databases": [
@@ -22,6 +27,11 @@
           "migrations_dir": "drizzle",
         },
       ],
+      "vars": {
+        "LIVEKIT_URL": "wss://your-project.livekit.cloud",
+        "LIVEKIT_API_KEY": "APIKPm9Sr87RShW",
+        "LIVEKIT_API_SECRET": "your_secret_here",
+      },
     },
   },
 }

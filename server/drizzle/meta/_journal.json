@@ -15,6 +15,20 @@
       "when": 1780558394251,
       "tag": "0001_abandoned_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780570857140,
+      "tag": "0002_uneven_victor_mancha",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1780571255464,
+      "tag": "0003_silly_iron_man",
+      "breakpoints": true
     }
   ]
 }

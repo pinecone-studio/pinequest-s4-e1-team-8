@@ -15,7 +15,9 @@
   "dependencies": {
     "dotenv": "^17.4.1",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.12.12"
+    "hono": "^4.12.12",
+    "livekit-server-sdk": "^2.15.4",
+    "nanoid": "^5.1.11"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260411.1",
