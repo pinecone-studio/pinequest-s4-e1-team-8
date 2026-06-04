@@ -1,33 +1,6 @@
 {
   "version": "6",
   "dialect": "sqlite",
-<<<<<<< HEAD
-  "id": "c123b4ec-5981-42ae-beae-f2b47a73fca5",
-  "prevId": "d9e996bb-4a6f-471f-aa72-953fe90f77fe",
-  "tables": {
-    "users_table": {
-      "name": "users_table",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "role": {
-          "name": "role",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-=======
   "id": "7194e935-028b-4147-b045-a71ea95dc7ec",
   "prevId": "d9e996bb-4a6f-471f-aa72-953fe90f77fe",
   "tables": {
@@ -46,20 +19,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
           "autoincrement": false
         },
         "email": {
           "name": "email",
           "type": "text",
           "primaryKey": false,
-<<<<<<< HEAD
-          "notNull": false,
-          "autoincrement": false
-        },
-        "password": {
-          "name": "password",
-=======
           "notNull": true,
           "autoincrement": false
         },
@@ -72,26 +37,11 @@
         },
         "avatar_url": {
           "name": "avatar_url",
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-<<<<<<< HEAD
-        "age": {
-          "name": "age",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "tel": {
-          "name": "tel",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-=======
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -104,15 +54,10 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
           "autoincrement": false
         }
       },
       "indexes": {
-<<<<<<< HEAD
-        "users_table_email_unique": {
-          "name": "users_table_email_unique",
-=======
         "users_clerk_id_unique": {
           "name": "users_clerk_id_unique",
           "columns": [
@@ -122,7 +67,6 @@
         },
         "users_email_unique": {
           "name": "users_email_unique",
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
           "columns": [
             "email"
           ],
@@ -134,13 +78,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-<<<<<<< HEAD
-    "meeting_transcriptions": {
-      "name": "meeting_transcriptions",
-=======
     "workspaces": {
       "name": "workspaces",
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
       "columns": {
         "id": {
           "name": "id",
@@ -149,34 +88,20 @@
           "notNull": true,
           "autoincrement": false
         },
-<<<<<<< HEAD
-        "meeting_id": {
-          "name": "meeting_id",
-=======
         "name": {
           "name": "name",
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-<<<<<<< HEAD
-        "audio_url": {
-          "name": "audio_url",
-=======
         "slug": {
           "name": "slug",
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-<<<<<<< HEAD
-        "transcript": {
-          "name": "transcript",
-=======
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -530,7 +455,6 @@
         },
         "description": {
           "name": "description",
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -542,9 +466,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-<<<<<<< HEAD
-          "default": "'pending'"
-=======
           "default": "'BACKLOG'"
         },
         "priority": {
@@ -554,15 +475,11 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'MEDIUM'"
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
         },
         "created_at": {
           "name": "created_at",
           "type": "integer",
           "primaryKey": false,
-<<<<<<< HEAD
-          "notNull": false,
-=======
           "notNull": true,
           "autoincrement": false
         },
@@ -571,14 +488,10 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
           "autoincrement": false
         }
       },
       "indexes": {},
-<<<<<<< HEAD
-      "foreignKeys": {},
-=======
       "foreignKeys": {
         "tasks_workspace_id_workspaces_id_fk": {
           "name": "tasks_workspace_id_workspaces_id_fk",
@@ -771,7 +684,6 @@
           "onUpdate": "no action"
         }
       },
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -781,13 +693,9 @@
   "enums": {},
   "_meta": {
     "schemas": {},
-<<<<<<< HEAD
-    "tables": {},
-=======
     "tables": {
       "\"users_table\"": "\"users\""
     },
->>>>>>> 22ce4d8c2cd5a187750437690329fab8a495e665
     "columns": {}
   },
   "internal": {
