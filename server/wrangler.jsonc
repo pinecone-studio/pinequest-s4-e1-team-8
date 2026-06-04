@@ -3,11 +3,12 @@
   "name": "server-preset",
   "main": "src/index.ts",
   "compatibility_date": "2026-04-16",
+  "account_id": "a60e9697809a342d3482149cd0ac135e",
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "server-preset-db",
-      "database_id": "980808dc-1187-4994-833b-e653de7c6a50",
+      "database_id": "8ba899c2-abcc-4392-a298-518b3c3dcce6",
       "migrations_dir": "drizzle",
     },
   ],
@@ -17,7 +18,7 @@
         {
           "binding": "DB",
           "database_name": "brisk",
-          "database_id": "980808dc-1187-4994-833b-e653de7c6a50",
+          "database_id": "8ba899c2-abcc-4392-a298-518b3c3dcce6",
           "migrations_dir": "drizzle",
         },
       ],

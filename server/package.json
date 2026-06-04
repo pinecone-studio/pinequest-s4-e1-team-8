@@ -8,7 +8,9 @@
     "generate": "drizzle-kit generate",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply server-preset-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply server-preset-db --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply server-preset-db --remote",
+    "db:seed:local": "wrangler d1 execute server-preset-db --local --file=./drizzle/seed.sql",
+    "db:setup:local": "bun run db:migrate:local && bun run db:seed:local"
   },
   "dependencies": {
     "dotenv": "^17.4.1",

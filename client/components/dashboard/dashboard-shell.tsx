@@ -1,6 +1,6 @@
 import { CalendarSection } from "@/components/dashboard/calendar/calendar-section";
 import { DashboardHeader } from "@/components/dashboard/header/dashboard-header";
-import { DashboardSidebar } from "@/components/dashboard/sidebar/sidebar";
+import { DashboardSidebar } from "@/components/sidebar/sidebar";
 import { TaskToolbar } from "@/components/dashboard/toolbar/task-toolbar";
 import { LastProjectsWidget } from "@/components/dashboard/widgets/last-projects-widget";
 import { TeamInsightsWidget } from "@/components/dashboard/widgets/team-insights-widget";

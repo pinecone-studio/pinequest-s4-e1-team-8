@@ -1,19 +1,19 @@
 export const sidebarNavItems = [
-  { label: "Dashboard", href: "#", dot: true },
-  { label: "Project Board", href: "#", active: true },
-  { label: "Schedule", href: "#", subtitle: "June, 28, 2023" },
-  { label: "Activities", href: "#", badge: "New" },
-  { label: "Inbox", href: "#", count: 24 },
+  { label: "Dashboard",     href: "/dashboard", dot: true },
+  { label: "Project Board", href: "#"                     },
+  { label: "Schedule",      href: "#", subtitle: "June, 28, 2023", badge: 2 },
+  { label: "Activities",    href: "#", badge: "New" },
+  { label: "Inbox",         href: "#", count: 24 },
 ] as const;
 
 export const projectTree = [
-  { label: "Edu Design Landing", level: 0 },
-  { label: "Team Project", level: 0, expanded: true },
-  { label: "Website", level: 1 },
-  { label: "Apps", level: 1, active: true },
-  { label: "Dribbble Shot", level: 2 },
-  { label: "Tripple Website", level: 0 },
-  { label: "Social App", level: 0 },
+  { label: "Edu Design Landing", level: 0, icon: "square",   badge: 4  },
+  { label: "Team Project",       level: 0, icon: "circle",   expanded: true },
+  { label: "Website",            level: 1, icon: "dot" },
+  { label: "Apps",               level: 1, icon: "dot",      active: true },
+  { label: "Dribbble Shot",      level: 2, icon: "dot" },
+  { label: "Tripple Website",    level: 0, icon: "triangle" },
+  { label: "Social App",         level: 0, icon: "circle",   badge: 3  },
 ] as const;
 
 export const calendarDays = [
