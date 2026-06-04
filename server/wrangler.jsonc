@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "server-preset",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-16",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "server-preset-db",
+      "database_id": "980808dc-1187-4994-833b-e653de7c6a50",
+      "migrations_dir": "drizzle",
+    },
+  ],
+  "env": {
+    "production": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "brisk",
+          "database_id": "980808dc-1187-4994-833b-e653de7c6a50",
+          "migrations_dir": "drizzle",
+        },
+      ],
+    },
+  },
+}
