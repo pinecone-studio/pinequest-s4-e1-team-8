@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8788";
+const clientRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: path.resolve(__dirname),
+    root: clientRoot,
   },
 };
 

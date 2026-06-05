@@ -7,6 +7,8 @@ export interface TeamMember {
 }
 
 export interface OnboardingData {
+  projectId: string;
+  workspaceId: string;
   projectName: string;
   description: string;
   timezone: string;

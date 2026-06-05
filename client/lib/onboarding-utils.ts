@@ -29,3 +29,8 @@ export function parseProjectGoals(goals: string) {
     .map((part) => part.trim())
     .filter((part) => part.length > 0);
 }
+
+export function createProjectId() {
+  const suffix = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  return `proj_${suffix}`;
+}

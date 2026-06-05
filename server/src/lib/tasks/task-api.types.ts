@@ -5,7 +5,10 @@ import type { TaskMember } from "./task-mapper";
 export type TaskListItemDto = {
   id: string;
   source: TaskSource;
+  projectId: string;
+  parentId: string | null;
   title: string;
+  description: string | null;
   tool: string;
   status: string;
   priority: string;
