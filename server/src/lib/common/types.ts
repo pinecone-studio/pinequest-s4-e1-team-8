@@ -19,4 +19,5 @@ export interface Bindings {
   R2_SECRET_ACCESS_KEY: string;
   R2_BUCKET_NAME: string;
   FRONTEND_URL?: string;
+  GEMINI_API_KEY?: string;
 }
