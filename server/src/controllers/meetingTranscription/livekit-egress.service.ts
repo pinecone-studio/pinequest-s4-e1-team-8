@@ -30,6 +30,14 @@ const getR2Upload = (env: Bindings) => {
   });
 };
 
+const getEgressClient = (env: Bindings) => {
+  return new EgressClient(
+    getLiveKitApiUrl(env),
+    env.LIVEKIT_API_KEY,
+    env.LIVEKIT_API_SECRET,
+  );
+};
+
 export const startRoomEgress = async ({
   env,
   roomName,
@@ -43,11 +51,7 @@ export const startRoomEgress = async ({
   transcriptionId: string;
   filepath?: string;
 }) => {
-  const egressClient = new EgressClient(
-    getLiveKitApiUrl(env),
-    env.LIVEKIT_API_KEY,
-    env.LIVEKIT_API_SECRET,
-  );
+  const egressClient = getEgressClient(env);
 
   const fileOutput = new EncodedFileOutput({
     fileType: EncodedFileType.MP4,
@@ -64,4 +68,14 @@ export const startRoomEgress = async ({
     { file: fileOutput },
     { audioOnly: true },
   );
+};
+
+export const stopRoomEgress = async ({
+  env,
+  egressId,
+}: {
+  env: Bindings;
+  egressId: string;
+}) => {
+  return getEgressClient(env).stopEgress(egressId);
 };
