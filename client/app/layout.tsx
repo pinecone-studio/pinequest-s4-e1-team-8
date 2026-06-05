@@ -26,15 +26,8 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${montserrat.variable} min-h-full font-sans antialiased`}
+      className={`${montserrat.variable} dark min-h-full font-sans antialiased`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme')||'dark';document.documentElement.classList.toggle('dark',t==='dark')}catch(e){document.documentElement.classList.add('dark')}})();`,
-          }}
-        />
-      </head>
       <body className="min-h-full font-sans">
         <ClerkProvider appearance={{ theme: shadcn }}>
           <ThemeProvider>

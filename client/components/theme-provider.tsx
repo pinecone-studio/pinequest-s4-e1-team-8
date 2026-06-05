@@ -3,7 +3,7 @@
 import {
   createContext,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -38,7 +38,7 @@ function readStoredTheme(): Theme {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const stored = readStoredTheme();
     setThemeState(stored);
     applyTheme(stored);
