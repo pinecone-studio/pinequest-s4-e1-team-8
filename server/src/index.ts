@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import type { Bindings } from "./lib/common/types";
+import githubRoutes from "./routes/integrations/github.routes";
 import userRoutes from "./routes/users/user.routes";
 import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-transcription.routes";
 import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";

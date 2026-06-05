@@ -14,7 +14,11 @@ export function LastProjectsWidget() {
           <CardTitle className="text-base">Last Projects</CardTitle>
           <Badge variant="secondary">2</Badge>
         </div>
-        <Button variant="link" size="sm" className="h-auto gap-1 px-0 text-violet-500">
+        <Button
+          variant="link"
+          size="sm"
+          className="h-auto gap-1 px-0 text-violet-500"
+        >
           View on Figma
           <ExternalLink className="size-3" />
         </Button>

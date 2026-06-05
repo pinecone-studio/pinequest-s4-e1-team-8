@@ -10,6 +10,7 @@ import {
   Inbox,
   LayoutDashboard,
   LayoutGrid,
+  ListTodo,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 
@@ -17,6 +18,7 @@ type NavItem = (typeof sidebarNavItems)[number];
 
 const navIcons = {
   Dashboard: LayoutDashboard,
+  Tasks: ListTodo,
   "Project Board": LayoutGrid,
   Schedule: CalendarDays,
   Activities: Activity,
