@@ -10,9 +10,11 @@ export type ChartBarItem = {
 export function AnalyticsBarChart({
   title,
   items,
+  columns = 3,
 }: {
   title: string;
   items: ChartBarItem[];
+  columns?: number;
 }) {
   const max = Math.max(...items.map((item) => item.value), 1);
 
@@ -20,7 +22,10 @@ export function AnalyticsBarChart({
     <div className="rounded-lg border border-border/60 bg-[#1c1d22] p-3">
       <p className="text-xs font-medium text-muted-foreground">{title}</p>
 
-      <div className="mt-3 grid grid-cols-3 gap-1">
+      <div
+        className="mt-3 grid gap-1"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
         {items.map((item) => {
           const ratio = item.value / max;
           const barHeight =

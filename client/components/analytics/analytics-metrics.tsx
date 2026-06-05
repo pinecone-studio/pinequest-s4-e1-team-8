@@ -1,123 +1,135 @@
 "use client";
 
 import { AnalyticsBarChart, type ChartBarItem } from "@/components/analytics/analytics-bar-chart";
-import { readStoredTasks } from "@/components/tasks/task-storage";
-import type { TaskListItem, TaskSource } from "@/components/tasks/task-types";
+import { AnalyticsSectionHeader } from "@/components/analytics/analytics-section-header";
+import { clientApi } from "@/app/lib/client-api";
+import type { AnalyticsSummary } from "@/lib/analytics/types";
 import { cn } from "@/lib/utils";
 import { BarChart3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-function computeMetrics(tasks: TaskListItem[]) {
-  const total = tasks.length;
-  const done = tasks.filter((task) => task.status === "done").length;
-  const blocked = tasks.filter((task) => task.blocked).length;
-  const progress =
-    total > 0
-      ? Math.round(tasks.reduce((sum, task) => sum + task.progress, 0) / total)
-      : 0;
-
+function toChartData(summary: AnalyticsSummary) {
   const byStatus: ChartBarItem[] = [
     {
       label: "Todo",
-      value: tasks.filter((task) => task.status === "backlog").length,
+      value: summary.byStatus.backlog + summary.byStatus.todo,
       gradient: "from-slate-600 to-slate-500/70",
       glow: "shadow-slate-500/20",
     },
     {
       label: "Doing",
-      value: tasks.filter(
-        (task) => task.status === "doing" || task.status === "review",
-      ).length,
+      value: summary.byStatus.in_progress,
       gradient: "from-violet-600 to-violet-400",
       glow: "shadow-violet-500/35",
     },
     {
       label: "Done",
-      value: done,
+      value: summary.byStatus.done,
       gradient: "from-emerald-600 to-emerald-400",
       glow: "shadow-emerald-500/35",
     },
   ];
 
-  const sourceMap: {
-    source: TaskSource;
-    label: string;
-    gradient: string;
-    glow: string;
-  }[] = [
+  const bySource: ChartBarItem[] = [
     {
-      source: "github",
       label: "GH",
+      value: summary.bySource.github,
       gradient: "from-violet-600 to-violet-400",
       glow: "shadow-violet-500/35",
     },
     {
-      source: "asana",
       label: "Asana",
+      value: summary.bySource.asana,
       gradient: "from-sky-500 to-sky-300",
       glow: "shadow-sky-400/35",
     },
     {
-      source: "internal",
       label: "Int",
+      value: summary.bySource.internal,
       gradient: "from-amber-500 to-amber-300",
       glow: "shadow-amber-400/35",
     },
   ];
 
-  const bySource: ChartBarItem[] = sourceMap.map(
-    ({ source, label, gradient, glow }) => ({
-      label,
-      value: tasks.filter((task) => task.source === source).length,
-      gradient,
-      glow,
-    }),
-  );
-
-  return { total, done, blocked, progress, byStatus, bySource };
+  return {
+    total: summary.total,
+    done: summary.byStatus.done,
+    blocked: summary.blocked,
+    progress: summary.avgProgress,
+    byStatus,
+    bySource,
+  };
 }
 
 export function AnalyticsMetrics() {
-  const [tasks, setTasks] = useState<TaskListItem[]>([]);
+  const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setTasks(readStoredTasks() ?? []);
+    let cancelled = false;
+
+    clientApi
+      .get<{ summary: AnalyticsSummary }>("/analytics/summary")
+      .then((response) => {
+        if (!cancelled) {
+          setSummary(response.data.summary);
+          setError(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError("Could not load metrics. Is the server running?");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const metrics = useMemo(() => computeMetrics(tasks), [tasks]);
+  const metrics = useMemo(
+    () => (summary ? toChartData(summary) : null),
+    [summary],
+  );
 
   return (
     <section className="rounded-xl border border-border/60 bg-[#16171b] p-4 shadow-sm">
-      <div className="mb-3 flex items-center gap-2">
-        <div className="grid size-6 place-items-center rounded-md bg-violet-500/15">
-          <BarChart3 className="size-3.5 text-violet-400" />
-        </div>
-        <h2 className="text-base font-semibold tracking-tight">Metrics</h2>
-      </div>
+      <AnalyticsSectionHeader
+        icon={<BarChart3 className="size-3.5 text-violet-400" />}
+        title="Metrics"
+      />
 
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryStat label="Total" value={metrics.total} />
-        <SummaryStat
-          label="Done"
-          value={metrics.done}
-          valueClassName="text-emerald-400"
-        />
-        <SummaryStat
-          label="Blocked"
-          value={metrics.blocked}
-          valueClassName="text-rose-400"
-        />
-        <SummaryStat
-          label="Progress"
-          value={`${metrics.progress}%`}
-          valueClassName="text-sky-400"
-        />
-      </div>
+      {error ? (
+        <p className="text-sm text-rose-400">{error}</p>
+      ) : !metrics ? (
+        <p className="text-sm text-muted-foreground">Loading metrics...</p>
+      ) : (
+        <>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <SummaryStat label="Total" value={metrics.total} />
+            <SummaryStat
+              label="Done"
+              value={metrics.done}
+              valueClassName="text-emerald-400"
+            />
+            <SummaryStat
+              label="Blocked"
+              value={metrics.blocked}
+              valueClassName="text-rose-400"
+            />
+            <SummaryStat
+              label="Progress"
+              value={`${metrics.progress}%`}
+              valueClassName="text-sky-400"
+            />
+          </div>
 
-      <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        <AnalyticsBarChart title="By status" items={metrics.byStatus} />
-        <AnalyticsBarChart title="By source" items={metrics.bySource} />
-      </div>
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            <AnalyticsBarChart title="By status" items={metrics.byStatus} />
+            <AnalyticsBarChart title="By source" items={metrics.bySource} />
+          </div>
+        </>
+      )}
     </section>
   );
 }
