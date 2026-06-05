@@ -32,20 +32,46 @@ const UI_TO_PRIORITY: Record<string, TaskPriority> = {
   urgent: "URGENT",
 };
 
-export function parseMembersJson(value: string | null | undefined): string[] {
+export type TaskMember = {
+  initials: string;
+  avatarUrl?: string;
+};
+
+function normalizeMember(value: unknown): TaskMember | null {
+  if (typeof value === "string" && value.trim()) {
+    return { initials: value };
+  }
+
+  if (value && typeof value === "object") {
+    const member = value as { initials?: string; avatarUrl?: string };
+    if (member.initials?.trim()) {
+      return { initials: member.initials, avatarUrl: member.avatarUrl };
+    }
+  }
+
+  return null;
+}
+
+export function parseMembersJson(value: string | null | undefined): TaskMember[] {
   if (!value) return [];
   try {
     const parsed = JSON.parse(value) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((m): m is string => typeof m === "string")
-      : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map(normalizeMember)
+      .filter((member): member is TaskMember => member !== null);
   } catch {
     return [];
   }
 }
 
-export function serializeMembers(members: string[] | undefined): string {
-  return JSON.stringify(members ?? []);
+export function serializeMembers(
+  members: Array<string | TaskMember> | undefined,
+): string {
+  const normalized = (members ?? []).map((member) =>
+    typeof member === "string" ? { initials: member } : member,
+  );
+  return JSON.stringify(normalized);
 }
 
 export function toTaskListItem(row: Task): TaskListItemDto {

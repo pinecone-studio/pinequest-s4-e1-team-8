@@ -3,16 +3,6 @@ type MeetingApiOptions = {
   method?: "GET" | "POST";
 };
 
-const getApiBaseUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-
-  if (!baseUrl) {
-    throw new Error("NEXT_PUBLIC_API_URL is not configured.");
-  }
-
-  return baseUrl.replace(/\/$/, "");
-};
-
 const getErrorMessage = async (response: Response) => {
   const fallback = `Meeting API request failed with status ${response.status}.`;
 
@@ -29,7 +19,7 @@ export const meetingApi = async <TResponse>(
   path: string,
   options: MeetingApiOptions = {}
 ) => {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+  const response = await fetch(path, {
     body: options.body ? JSON.stringify(options.body) : undefined,
     credentials: "include",
     headers: options.body ? { "Content-Type": "application/json" } : undefined,

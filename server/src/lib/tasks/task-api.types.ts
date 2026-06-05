@@ -1,4 +1,5 @@
 import type { TaskSource } from "../../schema/task.model";
+import type { TaskMember } from "./task-mapper";
 
 /** Matches client `TaskListItem` in components/tasks/task-row.tsx */
 export type TaskListItemDto = {
@@ -14,7 +15,7 @@ export type TaskListItemDto = {
   timeLeft: string;
   doneCount: number;
   blockedCount: number;
-  members: string[];
+  members: TaskMember[];
 };
 
 export type CreateTaskBody = {
@@ -28,7 +29,7 @@ export type CreateTaskBody = {
   timeLeft?: string;
   doneCount?: number;
   blockedCount?: number;
-  members?: string[];
+  members?: Array<string | TaskMember>;
   workspaceId?: string;
   projectId?: string;
   subTeamId?: string;

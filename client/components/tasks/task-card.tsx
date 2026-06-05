@@ -1,6 +1,8 @@
 "use client";
 
 import type { TaskListItem, TaskUpdate } from "@/components/tasks/task-types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { normalizeMembers } from "@/lib/tasks/map-api-task";
 import { cn } from "@/lib/utils";
 import { Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

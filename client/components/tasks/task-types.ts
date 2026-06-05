@@ -46,6 +46,11 @@ export type TaskSource = "github" | "asana" | "internal";
 export type TaskStatus = (typeof taskStatuses)[number];
 export type TaskPriority = (typeof taskPriorities)[number];
 
+export type TaskMember = {
+  initials: string;
+  avatarUrl?: string;
+};
+
 export type TaskListItem = {
   id: string;
   source: TaskSource;

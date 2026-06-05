@@ -14,6 +14,12 @@ export type StartMeetingEgressResponse = {
   status: "processing";
 };
 
+export type GenerateMeetingSummaryResponse = {
+  id: string;
+  transcript: string;
+  summary?: string | null;
+};
+
 export type MeetingTranscriptionStatus =
   | "pending"
   | "processing"

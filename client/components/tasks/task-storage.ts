@@ -2,6 +2,7 @@ import {
   normalizeTaskStatus,
   type TaskListItem,
 } from "@/components/tasks/task-types";
+import { normalizeMembers } from "@/lib/tasks/map-api-task";
 
 const STORAGE_KEY = "team-project-tasks";
 

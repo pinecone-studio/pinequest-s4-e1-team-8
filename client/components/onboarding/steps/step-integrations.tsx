@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, ArrowRight } from "lucide-react";
+import { redirectToGithubConnect } from "@/lib/integrations/github";
 import type { OnboardingData } from "../onboarding-types";
 
 function GithubMark() {
@@ -94,7 +95,7 @@ export function StepIntegrations({ data, onChange, onNext, onSkip }: StepIntegra
           desc="Sync commits, PRs & issues"
           logo={<GithubMark />}
           connected={data.githubConnected}
-          onToggle={() => onChange({ githubConnected: !data.githubConnected })}
+          onToggle={redirectToGithubConnect}
         />
         <IntegrationCard
           name="Asana"

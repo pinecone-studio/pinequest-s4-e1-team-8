@@ -4,5 +4,6 @@ export * from "./member.model";
 export * from "./project.model";
 export * from "./sub-team.model";
 export * from "./task.model";
+export * from "./github-integration.model";
 export * from "./ai.model";
 export * from "./meetingTranscription/meeting-transcription.schema";

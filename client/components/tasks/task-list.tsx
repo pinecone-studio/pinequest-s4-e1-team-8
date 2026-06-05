@@ -11,6 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ListTodo, RefreshCw } from "lucide-react";
 
+type TasksResponse = {
+  tasks: ApiTaskListItem[];
+};
+
 export function TaskList() {
   const {
     activeSource,
@@ -43,7 +47,7 @@ export function TaskList() {
               variant="outline"
               className="rounded-lg"
               disabled={isLoading}
-              onClick={loadMockTasks}
+              onClick={loadTasks}
             >
               <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
               Refresh
