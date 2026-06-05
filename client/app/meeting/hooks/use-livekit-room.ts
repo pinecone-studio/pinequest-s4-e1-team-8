@@ -68,7 +68,6 @@ export const useLivekitRoom = ({
     const recordState = (state: ConnectionState) => {
       if (!isActive || attemptIdRef.current !== attemptId) return;
 
-      console.info("[meeting] LiveKit state", state);
       setConnectionState(state);
       setStateTransitions((current) => [...current, state]);
     };
@@ -96,20 +95,11 @@ export const useLivekitRoom = ({
         return;
       }
 
-      console.info("[meeting] LiveKit connect start", {
-        token: currentTokenDiagnostics,
-        url: currentUrlDiagnostics,
-      });
-
       try {
         await activeRoom.connect(currentUrlDiagnostics.href, token);
         hasActiveConnectRef.current = false;
 
         if (!isActive || attemptIdRef.current !== attemptId) return;
-
-        console.info("[meeting] LiveKit room.connect succeeded", {
-          roomState: activeRoom.state,
-        });
 
         try {
           await activeRoom.localParticipant.enableCameraAndMicrophone();

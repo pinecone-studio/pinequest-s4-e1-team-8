@@ -16,8 +16,6 @@ export const MeetingRoomForm = () => {
   const [meetingId, setMeetingId] = useState("");
   const [roomName, setRoomName] = useState("");
   const [participantName, setParticipantName] = useState("");
-  const [token, setToken] = useState("");
-  const [livekitUrl, setLivekitUrl] = useState("");
   const [response, setResponse] = useState<MeetingRoomTokenResponse | null>(
     null
   );
@@ -31,15 +29,11 @@ export const MeetingRoomForm = () => {
   if (response) {
     return (
       <ConnectedMeetingPanel
-        livekitUrl={livekitUrl}
         meetingId={meetingId}
         onLeave={() => {
-          setLivekitUrl("");
           setResponse(null);
-          setToken("");
         }}
         response={response}
-        token={token}
       />
     );
   }
@@ -54,8 +48,6 @@ export const MeetingRoomForm = () => {
           ? await createMeetingRoom({ hostName: participantName, roomName })
           : await joinMeetingRoom({ participantName, roomName });
 
-      setToken(result.token);
-      setLivekitUrl(result.url);
       setResponse(result);
     } catch (caughtError) {
       setError((caughtError as Error).message);
@@ -65,11 +57,12 @@ export const MeetingRoomForm = () => {
   };
 
   return (
-    <section
-      className="space-y-4 rounded-md border border-zinc-200 bg-white p-5"
-    >
+    <section className="mx-auto max-w-2xl space-y-5 rounded-3xl border border-white/10 bg-[#14111f] p-5 shadow-2xl shadow-black/30">
       <div>
-        <h1 className="text-xl font-semibold text-zinc-950">Meeting Room</h1>
+        <h1 className="text-xl font-semibold text-white">Meeting Room</h1>
+        <p className="mt-1 text-sm text-zinc-400">
+          Create or join a room to open the conference workspace.
+        </p>
       </div>
 
       <FormField
@@ -91,7 +84,11 @@ export const MeetingRoomForm = () => {
         value={participantName}
       />
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? (
+        <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+          {error}
+        </p>
+      ) : null}
 
       <MeetingActionButtons
         disabled={isActionDisabled}

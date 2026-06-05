@@ -46,7 +46,7 @@ export function TaskCard({
   const [draftTitle, setDraftTitle] = useState(task.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  \const members = normalizeMemberInitials((task.members ?? []) as unknown[]);
+  const members = normalizeMemberInitials((task.members ?? []) as unknown[]);
   const primaryMember = members[0];
 
   useEffect(() => {
