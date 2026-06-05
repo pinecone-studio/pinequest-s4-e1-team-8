@@ -1,9 +1,9 @@
 import { Context } from "hono";
 import { useDB } from "../../lib/db/db";
+import { finalizeRecordingUrl } from "./egress-finalization.service";
 import {
   findByEgressId,
   markFailed,
-  transcribeRecording,
 } from "./meeting-transcription.service";
 import { parseLiveKitEgressCompletePayload } from "./livekit-webhook-parser";
 import type { Bindings } from "../../lib/common/types";
@@ -12,10 +12,14 @@ export const liveKitWebhook = async (c: Context<{ Bindings: Bindings }>) => {
   try {
     // TODO: Verify LiveKit webhook signatures before trusting payloads.
     const payload = await c.req.json();
-    const { egressId, recordingUrl } =
+    const { egressId, event, isFinal, recordingUrl } =
       parseLiveKitEgressCompletePayload(payload);
 
     if (!egressId) return c.json({ error: "egressId is required" }, 400);
+
+    if (!isFinal) {
+      return c.json({ egressId, ignored: true, status: "ignored" }, 200);
+    }
 
     const db = useDB(c);
     const transcription = await findByEgressId(db, egressId);
@@ -25,6 +29,11 @@ export const liveKitWebhook = async (c: Context<{ Bindings: Bindings }>) => {
     }
 
     if (!recordingUrl) {
+      console.warn("[meetingTranscription] Final egress webhook missing URL", {
+        egressId,
+        event,
+      });
+
       await markFailed(
         db,
         transcription.id,
@@ -34,10 +43,10 @@ export const liveKitWebhook = async (c: Context<{ Bindings: Bindings }>) => {
       return c.json({ error: "recordingUrl is required" }, 400);
     }
 
-    await transcribeRecording({
+    await finalizeRecordingUrl({
       db,
       env: c.env,
-      transcriptionId: transcription.id,
+      egressId,
       recordingUrl,
     });
 

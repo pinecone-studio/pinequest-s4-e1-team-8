@@ -8,6 +8,7 @@ import {
   type StopMeetingEgressResponse,
 } from "../index";
 import { RecordingActionButton } from "./recording-action-button";
+import { TranscriptPanel } from "./transcript-panel";
 
 type RecordingControlsProps = {
   meetingId: string;
@@ -88,6 +89,7 @@ export const RecordingControls = ({
           </div>
         </dl>
       ) : null}
+      <TranscriptPanel transcriptionId={recording?.transcriptionId} />
     </section>
   );
 };

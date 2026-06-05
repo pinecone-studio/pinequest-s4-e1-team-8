@@ -2,3 +2,4 @@ GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 GITHUB_OAUTH_REDIRECT_URI=http://localhost:8788/integrations/github/callback
 CLIENT_APP_URL=http://localhost:3000
+GEMINI_API_KEY=AIzaSyB2NftJbHgLRgdGYah4zULFncU_upddxr4

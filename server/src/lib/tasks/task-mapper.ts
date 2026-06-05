@@ -78,7 +78,10 @@ export function toTaskListItem(row: Task): TaskListItemDto {
   return {
     id: row.id,
     source: row.source,
+    projectId: row.projectId,
+    parentId: row.parentId ?? null,
     title: row.title,
+    description: row.description ?? null,
     tool: row.tool ?? "Internal",
     status: STATUS_TO_UI[row.status] ?? row.status.toLowerCase(),
     priority: PRIORITY_TO_UI[row.priority] ?? row.priority.toLowerCase(),

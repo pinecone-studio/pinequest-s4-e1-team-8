@@ -3,6 +3,7 @@ import {
   EncodedFileOutput,
   EncodedFileType,
   S3Upload,
+  WebhookConfig,
 } from "livekit-server-sdk";
 import type { Bindings } from "../../lib/common/types";
 
@@ -38,6 +39,25 @@ const getEgressClient = (env: Bindings) => {
   );
 };
 
+const getWebhookUrl = (env: Bindings) => {
+  const url = env.LIVEKIT_EGRESS_WEBHOOK_URL?.trim();
+
+  return url && url.length > 0 ? url : null;
+};
+
+const getEgressWebhooks = (env: Bindings) => {
+  const url = getWebhookUrl(env);
+
+  if (!url) return undefined;
+
+  return [
+    new WebhookConfig({
+      url,
+      signingKey: env.LIVEKIT_API_KEY,
+    }),
+  ];
+};
+
 export const startRoomEgress = async ({
   env,
   roomName,
@@ -52,11 +72,15 @@ export const startRoomEgress = async ({
   filepath?: string;
 }) => {
   const egressClient = getEgressClient(env);
+  const egressOptions = {
+    audioOnly: true,
+    webhooks: getEgressWebhooks(env),
+  };
 
   const fileOutput = new EncodedFileOutput({
-    fileType: EncodedFileType.MP4,
+    fileType: EncodedFileType.MP3,
     filepath:
-      filepath ?? `meetings/${meetingId}/${transcriptionId}-{time}.mp4`,
+      filepath ?? `meetings/${meetingId}/${transcriptionId}-{time}.mp3`,
     output: {
       case: "s3",
       value: getR2Upload(env),
@@ -66,7 +90,7 @@ export const startRoomEgress = async ({
   return egressClient.startRoomCompositeEgress(
     roomName,
     { file: fileOutput },
-    { audioOnly: true },
+    egressOptions,
   );
 };
 
@@ -78,4 +102,16 @@ export const stopRoomEgress = async ({
   egressId: string;
 }) => {
   return getEgressClient(env).stopEgress(egressId);
+};
+
+export const getRoomEgressInfo = async ({
+  env,
+  egressId,
+}: {
+  env: Bindings;
+  egressId: string;
+}) => {
+  const [egress] = await getEgressClient(env).listEgress({ egressId });
+
+  return egress ?? null;
 };

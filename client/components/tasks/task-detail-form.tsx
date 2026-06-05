@@ -7,6 +7,7 @@ import {
   type TaskStatus,
   type TaskUpdate,
 } from "@/components/tasks/task-types";
+import { normalizeMemberInitials } from "@/lib/tasks/map-api-task";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { normalizeMembers } from "@/lib/tasks/map-api-task";
@@ -60,7 +61,7 @@ type TaskDetailFormProps = {
 export function TaskDetailForm({ task, onUpdate }: TaskDetailFormProps) {
   const dueDateValue = task.dueDate.slice(0, 10).replaceAll(".", "-");
   const primaryMember =
-    normalizeMembers(task.members as unknown[])[0]?.initials ?? "Unassigned";
+    normalizeMemberInitials((task.members ?? []) as unknown[])[0] ?? "Unassigned";
 
   return (
     <>

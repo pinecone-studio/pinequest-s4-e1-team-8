@@ -15,12 +15,12 @@ import webhookRoutes from "./routes/webhooks/webhook.routes";
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.use(
-  "/api/*",
+  "*",
   cors({
     origin: (_, c) =>
       (c.env as Bindings).FRONTEND_URL ?? "http://localhost:3000",
     allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
     maxAge: 86400,
   }),

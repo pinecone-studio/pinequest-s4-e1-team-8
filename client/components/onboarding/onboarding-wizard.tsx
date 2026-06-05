@@ -8,9 +8,13 @@ import { StepInviteTeam } from "./steps/step-invite-team";
 import { StepIntegrations } from "./steps/step-integrations";
 import { StepAiTasks } from "./steps/step-ai-tasks";
 import { saveOnboardingData } from "@/lib/onboarding-storage";
+import { createProjectId } from "@/lib/onboarding-utils";
+import { DEFAULT_WORKSPACE_ID } from "@/lib/workspace-defaults";
 import type { OnboardingData } from "./onboarding-types";
 
 const INITIAL_DATA: OnboardingData = {
+  projectId: createProjectId(),
+  workspaceId: DEFAULT_WORKSPACE_ID,
   projectName: "",
   description: "",
   timezone: "(GMT+00:00) UTC",

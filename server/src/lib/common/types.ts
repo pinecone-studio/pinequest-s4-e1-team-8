@@ -8,10 +8,13 @@ export interface Bindings {
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   GITHUB_OAUTH_REDIRECT_URI?: string;
+  /** Local dev only — bypasses OAuth when set */
+  GITHUB_TEST_TOKEN?: string;
   GITHUB_WEBHOOK_SECRET: string;
   LIVEKIT_URL: string;
   LIVEKIT_WS_URL?: string;
   LIVEKIT_API_URL?: string;
+  LIVEKIT_EGRESS_WEBHOOK_URL?: string;
   LIVEKIT_API_KEY: string;
   LIVEKIT_API_SECRET: string;
   R2_ACCOUNT_ID: string;
@@ -19,4 +22,5 @@ export interface Bindings {
   R2_SECRET_ACCESS_KEY: string;
   R2_BUCKET_NAME: string;
   FRONTEND_URL?: string;
+  GEMINI_API_KEY?: string;
 }
