@@ -17,20 +17,22 @@ export function TaskListSkeleton() {
             )}
           />
           <div className="flex flex-1 flex-col gap-3 p-3">
-            {Array.from({ length: status === "done" ? 3 : 2 }).map((_, index) => (
-              <div
-                key={index}
-                className="space-y-2 rounded-lg border border-border/50 bg-card p-3 dark:bg-[#1f2024]"
-              >
-                <div className="h-4 max-w-[85%] rounded bg-muted/60" />
-                <div className="h-3 max-w-[55%] rounded bg-muted/50" />
-                {index % 2 === 1 ? (
-                  <div className="flex justify-end pt-1">
-                    <div className="size-9 rounded-full bg-muted/50" />
-                  </div>
-                ) : null}
-              </div>
-            ))}
+            {Array.from({ length: status === "done" ? 3 : 2 }).map(
+              (_, index) => (
+                <div
+                  key={index}
+                  className="space-y-2 rounded-lg border border-border/50 bg-card p-3 dark:bg-[#1f2024]"
+                >
+                  <div className="h-4 max-w-[85%] rounded bg-muted/60" />
+                  <div className="h-3 max-w-[55%] rounded bg-muted/50" />
+                  {index % 2 === 1 ? (
+                    <div className="flex justify-end pt-1">
+                      <div className="size-9 rounded-full bg-muted/50" />
+                    </div>
+                  ) : null}
+                </div>
+              ),
+            )}
           </div>
         </div>
       ))}
