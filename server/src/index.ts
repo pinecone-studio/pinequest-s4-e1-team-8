@@ -2,14 +2,15 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import type { Bindings } from "./lib/common/types";
+import agentRoutes from "./routes/agent/agent.routes";
 import analyticsRoutes from "./routes/analytics/analytics.routes";
 import githubRoutes from "./routes/integrations/github.routes";
+import mappingsRoutes from "./routes/mappings/mappings.routes";
+import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";
+import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-transcription.routes";
 import taskRoutes from "./routes/tasks/task.routes";
 import userRoutes from "./routes/users/user.routes";
-import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-transcription.routes";
-import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
-import mappingsRoutes from "./routes/mappings/mappings.routes";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -33,5 +34,6 @@ app.route("/api/meeting-transcription", meetingTranscriptionRouter);
 app.route("/api/meeting-room", meetingRoomRouter);
 app.route("/api/webhooks", webhookRoutes);
 app.route("/api/mappings", mappingsRoutes);
+app.route("/api/agent", agentRoutes);
 
 export default app;
