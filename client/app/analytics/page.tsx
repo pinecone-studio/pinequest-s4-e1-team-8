@@ -1,4 +1,7 @@
+import { AnalyticsAsk } from "@/components/analytics/analytics-ask";
 import { AnalyticsMetrics } from "@/components/analytics/analytics-metrics";
+import { AnalyticsRisksPanel } from "@/components/analytics/analytics-risks";
+import { AnalyticsWeekly } from "@/components/analytics/analytics-weekly";
 import { DashboardHeader } from "@/components/dashboard/header/dashboard-header";
 
 export default function AnalyticsPage() {
@@ -14,7 +17,15 @@ export default function AnalyticsPage() {
             </h1>
           </div>
         </div>
+
         <AnalyticsMetrics />
+
+        <div className="grid gap-5 xl:grid-cols-2">
+          <AnalyticsRisksPanel />
+          <AnalyticsWeekly />
+        </div>
+
+        <AnalyticsAsk />
       </section>
     </>
   );
