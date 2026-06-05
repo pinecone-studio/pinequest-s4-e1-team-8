@@ -11,6 +11,9 @@ const AV_COLORS = [
   "#8B5CF6", "#14B8A6", "#F43F5E", "#0F172A", "#64748B",
 ];
 
+const inputClassName =
+  "rounded-lg border border-white/10 bg-[#121318] text-sm text-white placeholder:text-[#5c5c66] transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20";
+
 function avColor(name: string) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % AV_COLORS.length;
@@ -23,9 +26,9 @@ function initials(name: string) {
 }
 
 function roleBadgeStyle(role: TeamRole) {
-  if (role === "Manager") return { bg: "#EEF0FF", color: "#6366F1" };
-  if (role === "Developer") return { bg: "#ECFDF3", color: "#15803D" };
-  return { bg: "#F1F2F4", color: "#64748B" };
+  if (role === "Manager") return { bg: "rgba(124,58,237,0.18)", color: "#c4b5fd" };
+  if (role === "Developer") return { bg: "rgba(34,197,94,0.15)", color: "#86efac" };
+  return { bg: "rgba(255,255,255,0.06)", color: "#a1a1aa" };
 }
 
 interface StepInviteTeamProps {
@@ -59,38 +62,40 @@ export function StepInviteTeam({ data, onChange, onNext, onSkip }: StepInviteTea
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-[#0F172A]">
+        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-white">
           Invite your team
         </h2>
-        <p className="text-sm text-[#64748B] mt-1.5 leading-relaxed">
+        <p className="mt-1.5 text-sm leading-relaxed text-[#8e8e93]">
           Add teammates by email and assign their role. They&apos;ll get an invite link.
         </p>
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="mb-4 flex gap-2">
         <input
-          className="flex-1 h-11 px-3.5 bg-white border border-[#E8E9EC] rounded-lg text-sm text-[#0F172A] placeholder:text-[#94A3B8] transition-[border-color,box-shadow] focus:outline-none focus:border-[#6366F1] focus:ring-[3px] focus:ring-[#6366F1]/14"
+          className={`${inputClassName} h-11 flex-1 px-3.5`}
           placeholder="name@company.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addMember()}
         />
-        <div className="relative flex-none w-[130px]">
+        <div className="relative w-[130px] flex-none">
           <select
-            className="w-full h-11 pl-3.5 pr-8 bg-white border border-[#E8E9EC] rounded-lg text-sm text-[#0F172A] appearance-none cursor-pointer transition-[border-color,box-shadow] focus:outline-none focus:border-[#6366F1] focus:ring-[3px] focus:ring-[#6366F1]/14"
+            className={`${inputClassName} h-11 w-full cursor-pointer appearance-none pl-3.5 pr-8`}
             value={role}
             onChange={(e) => setRole(e.target.value as TeamRole)}
           >
             {ROLES.map((r) => (
-              <option key={r}>{r}</option>
+              <option key={r} className="bg-[#1a1b1f] text-white">
+                {r}
+              </option>
             ))}
           </select>
-          <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" width="12" height="12" viewBox="0 0 12 12">
-            <path d="M2.5 4.5L6 8l3.5-3.5" stroke="#64748B" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <svg className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2" width="12" height="12" viewBox="0 0 12 12">
+            <path d="M2.5 4.5L6 8l3.5-3.5" stroke="#8e8e93" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <button
-          className="flex-none h-11 px-4 flex items-center gap-1.5 bg-[#0F172A] hover:bg-[#1c2740] disabled:opacity-45 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex h-11 flex-none items-center gap-1.5 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45"
           disabled={!canAdd}
           onClick={addMember}
         >
@@ -101,7 +106,7 @@ export function StepInviteTeam({ data, onChange, onNext, onSkip }: StepInviteTea
 
       <div className="min-h-24">
         {data.members.length === 0 ? (
-          <div className="border-[1.5px] border-dashed border-[#E8E9EC] rounded-xl py-6 px-4 text-center text-[13.5px] text-[#94A3B8]">
+          <div className="rounded-xl border border-dashed border-white/10 px-4 py-6 text-center text-[13.5px] text-[#6b6b73]">
             No members added yet — invite your first teammate above.
           </div>
         ) : (
@@ -111,26 +116,26 @@ export function StepInviteTeam({ data, onChange, onNext, onSkip }: StepInviteTea
               return (
                 <div
                   key={i}
-                  className="flex items-center gap-3 border border-[#E8E9EC] rounded-xl px-3 py-2.5"
+                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#121318] px-3 py-2.5"
                 >
                   <div
-                    className="w-[34px] h-[34px] rounded-full flex-none grid place-items-center text-white text-[13px] font-semibold select-none"
+                    className="grid h-[34px] w-[34px] flex-none place-items-center rounded-full text-[13px] font-semibold text-white select-none"
                     style={{ background: avColor(m.name) }}
                   >
                     {initials(m.name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13.5px] font-semibold text-[#0F172A]">{m.name}</div>
-                    <div className="text-[12.5px] text-[#64748B] truncate">{m.email}</div>
+                    <div className="text-[13.5px] font-semibold text-white">{m.name}</div>
+                    <div className="truncate text-[12.5px] text-[#8e8e93]">{m.email}</div>
                   </div>
                   <span
-                    className="inline-flex items-center h-6 px-2.5 rounded-lg text-xs font-medium flex-none"
+                    className="inline-flex h-6 flex-none items-center rounded-lg px-2.5 text-xs font-medium"
                     style={{ background: bg, color }}
                   >
                     {m.role}
                   </span>
                   <button
-                    className="text-[#94A3B8] hover:text-[#EF4444] p-1 transition-colors"
+                    className="p-1 text-[#6b6b73] transition-colors hover:text-red-400"
                     onClick={() => removeMember(i)}
                   >
                     <Trash2 size={17} />
@@ -142,16 +147,16 @@ export function StepInviteTeam({ data, onChange, onNext, onSkip }: StepInviteTea
         )}
       </div>
 
-      <div className="flex items-center mt-7">
+      <div className="mt-7 flex items-center">
         <button
-          className="min-w-[150px] h-11 px-5 flex items-center justify-center gap-2 bg-[#6366F1] hover:bg-[#5457e5] text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
           onClick={onNext}
         >
           Continue
           <ArrowRight size={17} />
         </button>
         <button
-          className="ml-auto text-[13.5px] font-medium text-[#64748B] hover:text-[#6366F1] px-1.5 transition-colors"
+          className="ml-auto px-1.5 text-[13.5px] font-medium text-[#8e8e93] transition-colors hover:text-violet-400"
           onClick={onSkip}
         >
           Skip for now

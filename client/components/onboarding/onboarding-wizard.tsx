@@ -7,6 +7,7 @@ import { StepProjectSetup } from "./steps/step-project-setup";
 import { StepInviteTeam } from "./steps/step-invite-team";
 import { StepIntegrations } from "./steps/step-integrations";
 import { StepAiTasks } from "./steps/step-ai-tasks";
+import { saveOnboardingData } from "@/lib/onboarding-storage";
 import type { OnboardingData } from "./onboarding-types";
 
 const INITIAL_DATA: OnboardingData = {
@@ -30,26 +31,23 @@ export function OnboardingWizard() {
   const next = () => setStep((s) => Math.min(3, s + 1));
 
   const finish = () => {
+    saveOnboardingData(data);
     router.push("/dashboard");
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center px-5 py-12"
-      style={{ background: "#F4F5F7" }}
-    >
-      {/* Brisk logo */}
-      <div className="flex items-center gap-2.5 mb-6">
-        <div className="w-[30px] h-[30px] rounded-[9px] bg-[#0F172A] grid place-items-center text-white font-bold text-base">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#121212] px-5 py-12">
+      <div className="mb-6 flex items-center gap-2.5">
+        <div className="grid h-[30px] w-[30px] place-items-center rounded-[9px] bg-violet-600 text-base font-bold text-white">
           B
         </div>
-        <span className="text-lg font-semibold tracking-[-0.3px] text-[#0F172A]">Brisk</span>
+        <span className="text-lg font-semibold tracking-[-0.3px] text-white">
+          Brisk
+        </span>
       </div>
 
-      {/* Wizard card */}
       <div
-        className="w-full max-w-[480px] bg-white border border-[#E8E9EC] rounded-2xl"
-        style={{ padding: "28px 30px 30px" }}
+        className="w-full max-w-[480px] rounded-2xl border border-white/10 bg-[#1a1b1f] p-[28px_30px_30px] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)]"
       >
         <StepHeader step={step} />
 
@@ -67,9 +65,8 @@ export function OnboardingWizard() {
         )}
       </div>
 
-      {/* Skip all */}
       <button
-        className="mt-5 text-[13px] text-[#94A3B8] hover:text-[#64748B] px-1.5 py-1 transition-colors"
+        className="mt-5 px-1.5 py-1 text-[13px] text-[#6b6b73] transition-colors hover:text-[#a1a1aa]"
         onClick={finish}
       >
         Skip onboarding →

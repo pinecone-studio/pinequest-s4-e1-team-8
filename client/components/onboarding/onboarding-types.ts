@@ -15,3 +15,13 @@ export interface OnboardingData {
   asanaConnected: boolean;
   aiGoals: string;
 }
+
+export type UserProject = OnboardingData & {
+  id: string;
+  createdAt: string;
+};
+
+export type UserProjectsProfile = {
+  activeProjectId: string | null;
+  projects: UserProject[];
+};

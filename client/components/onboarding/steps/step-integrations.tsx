@@ -6,7 +6,7 @@ import type { OnboardingData } from "../onboarding-types";
 
 function GithubMark() {
   return (
-    <div className="w-6 h-6 rounded-full bg-[#0F172A] grid place-items-center text-white font-bold text-[13px]">
+    <div className="grid h-6 w-6 place-items-center rounded-full bg-white/10 text-[13px] font-bold text-white">
       GH
     </div>
   );
@@ -33,27 +33,31 @@ interface IntegrationCardProps {
 function IntegrationCard({ name, desc, logo, connected, onToggle }: IntegrationCardProps) {
   return (
     <div
-      className="flex-1 rounded-xl p-4 flex flex-col gap-3 transition-[border-color,background]"
+      className="flex flex-1 flex-col gap-3 rounded-xl border p-4 transition-[border-color,background]"
       style={{
-        border: connected ? "1.5px solid #22C55E" : "1px solid #E8E9EC",
-        background: connected ? "#ECFDF3" : "#fff",
+        borderColor: connected ? "rgba(34,197,94,0.45)" : "rgba(255,255,255,0.1)",
+        background: connected ? "rgba(34,197,94,0.08)" : "#121318",
       }}
     >
       <div className="flex items-center gap-2.5">
-        <div className="w-[42px] h-[42px] rounded-[10px] bg-white border border-[#E8E9EC] grid place-items-center flex-none">
+        <div className="grid h-[42px] w-[42px] flex-none place-items-center rounded-[10px] border border-white/10 bg-[#1a1b1f]">
           {logo}
         </div>
         <div>
-          <div className="text-[15px] font-semibold text-[#0F172A]">{name}</div>
-          <div className="text-[12.5px] text-[#64748B]">{desc}</div>
+          <div className="text-[15px] font-semibold text-white">{name}</div>
+          <div className="text-[12.5px] text-[#8e8e93]">{desc}</div>
         </div>
       </div>
       <button
-        className="w-full h-9 px-3.5 flex items-center justify-center gap-1.5 text-[13px] font-semibold rounded-lg transition-colors"
+        className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-[13px] font-semibold transition-colors"
         style={
           connected
-            ? { background: "#fff", border: "1px solid #22C55E", color: "#15803D" }
-            : { background: "#0F172A", color: "#fff" }
+            ? {
+                background: "rgba(34,197,94,0.12)",
+                border: "1px solid rgba(34,197,94,0.35)",
+                color: "#86efac",
+              }
+            : { background: "#7c3aed", color: "#fff" }
         }
         onClick={onToggle}
       >
@@ -81,10 +85,10 @@ export function StepIntegrations({ data, onChange, onNext, onSkip }: StepIntegra
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-[#0F172A]">
+        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-white">
           Connect your tools
         </h2>
-        <p className="text-sm text-[#64748B] mt-1.5 leading-relaxed">
+        <p className="mt-1.5 text-sm leading-relaxed text-[#8e8e93]">
           Link the services your team already uses. Brisk keeps everything in sync.
         </p>
       </div>
@@ -106,16 +110,16 @@ export function StepIntegrations({ data, onChange, onNext, onSkip }: StepIntegra
         />
       </div>
 
-      <div className="flex items-center mt-7">
+      <div className="mt-7 flex items-center">
         <button
-          className="min-w-[150px] h-11 px-5 flex items-center justify-center gap-2 bg-[#6366F1] hover:bg-[#5457e5] text-white text-sm font-semibold rounded-lg transition-colors"
+          className="flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
           onClick={onNext}
         >
           Continue
           <ArrowRight size={17} />
         </button>
         <button
-          className="ml-auto text-[13.5px] font-medium text-[#64748B] hover:text-[#6366F1] px-1.5 transition-colors"
+          className="ml-auto px-1.5 text-[13.5px] font-medium text-[#8e8e93] transition-colors hover:text-violet-400"
           onClick={onSkip}
         >
           Skip for now

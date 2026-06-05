@@ -1,8 +1,7 @@
 "use client";
 
-import { createMockTask } from "@/components/tasks/task-factory";
+import { createTask } from "@/components/tasks/task-factory";
 import { readStoredTasks, saveStoredTasks } from "@/components/tasks/task-storage";
-import { mockTasks } from "@/components/tasks/mock-tasks";
 import {
   getTaskTeam,
   type TaskListItem,
@@ -35,18 +34,18 @@ export function useTaskList() {
     [selectedTaskId, tasks],
   );
 
-  const loadMockTasks = useCallback(() => {
+  const loadTasks = useCallback(() => {
     setIsLoading(true);
 
     window.setTimeout(() => {
-      setTasks(readStoredTasks() ?? mockTasks);
+      setTasks(readStoredTasks() ?? []);
       setIsLoading(false);
     }, 300);
   }, []);
 
   useEffect(() => {
-    loadMockTasks();
-  }, [loadMockTasks]);
+    loadTasks();
+  }, [loadTasks]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -73,7 +72,7 @@ export function useTaskList() {
   const addTaskToColumn = useCallback(
     (status: TaskStatus) => {
       const team = activeTeam ?? sourceTasks[0]?.team ?? "General Team";
-      const newTask = createMockTask(activeSource, tasks.length + 1, team, status);
+      const newTask = createTask(activeSource, tasks.length + 1, team, status);
 
       setTasks((current) => {
         const next = [newTask, ...current];
@@ -105,7 +104,7 @@ export function useTaskList() {
     addTaskToColumn,
     deleteTask,
     isLoading,
-    loadMockTasks,
+    loadTasks,
     selectedTask,
     selectedTaskId,
     selectSource,

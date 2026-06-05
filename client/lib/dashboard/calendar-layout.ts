@@ -1,0 +1,17 @@
+export const CALENDAR_GUTTER_WIDTH = 52;
+export const CALENDAR_DAY_COL_MIN_WIDTH = 80;
+export const CALENDAR_VIEWPORT_HEIGHT = 600;
+export const CALENDAR_MIN_WIDTH =
+  CALENDAR_GUTTER_WIDTH + 7 * CALENDAR_DAY_COL_MIN_WIDTH;
+export const CALENDAR_HEADER_HEIGHT_PX = 64;
+export const CALENDAR_ALL_DAY_HEIGHT_PX = 28;
+export const CALENDAR_SHELL_HEIGHT_PX =
+  CALENDAR_HEADER_HEIGHT_PX +
+  CALENDAR_ALL_DAY_HEIGHT_PX +
+  CALENDAR_VIEWPORT_HEIGHT;
+
+export function getCalendarShellHeight(viewportHeight: number) {
+  return (
+    CALENDAR_HEADER_HEIGHT_PX + CALENDAR_ALL_DAY_HEIGHT_PX + viewportHeight
+  );
+}

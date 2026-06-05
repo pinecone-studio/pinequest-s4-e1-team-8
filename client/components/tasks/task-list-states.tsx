@@ -40,7 +40,7 @@ export function TaskListSkeleton() {
   );
 }
 
-export function EmptyTasks() {
+export function EmptyTasks({ source }: { source: string }) {
   return (
     <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/60 bg-[#18191d] px-6 text-center">
       <div className="rounded-lg bg-violet-500/15 p-3 text-violet-300">
@@ -49,7 +49,8 @@ export function EmptyTasks() {
       <div className="space-y-1">
         <h2 className="text-base font-semibold">No tasks yet</h2>
         <p className="max-w-md text-sm text-muted-foreground">
-          This source does not have mock tasks yet.
+          No {source} tasks to show. Add a task or connect an integration to get
+          started.
         </p>
       </div>
     </div>

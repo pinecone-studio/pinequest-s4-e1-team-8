@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  readLayoutPreferences,
+  saveLayoutPreferences,
+} from "@/lib/dashboard/layout-preferences";
+import {
   createContext,
   useCallback,
   useContext,
@@ -8,8 +12,6 @@ import {
   useMemo,
   useState,
 } from "react";
-
-const STORAGE_KEY = "dashboard-sidebar-collapsed";
 
 type SidebarContextValue = {
   collapsed: boolean;
@@ -24,20 +26,20 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "true") setCollapsedState(true);
+    const prefs = readLayoutPreferences();
+    setCollapsedState(prefs.sidebarCollapsed);
     setHydrated(true);
   }, []);
 
   const setCollapsed = useCallback((value: boolean) => {
     setCollapsedState(value);
-    localStorage.setItem(STORAGE_KEY, String(value));
+    saveLayoutPreferences({ sidebarCollapsed: value });
   }, []);
 
   const toggle = useCallback(() => {
     setCollapsedState((prev) => {
       const next = !prev;
-      localStorage.setItem(STORAGE_KEY, String(next));
+      saveLayoutPreferences({ sidebarCollapsed: next });
       return next;
     });
   }, []);

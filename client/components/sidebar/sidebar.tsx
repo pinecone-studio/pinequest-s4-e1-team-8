@@ -1,10 +1,13 @@
 "use client";
 
 import { SidebarAddProject } from "@/components/sidebar/sidebar-add-project";
-import { SidebarCollapseTrigger } from "@/components/sidebar/sidebar-collapse-trigger";
-import { SidebarProvider, useSidebar } from "@/components/sidebar/sidebar-context";
-import { SidebarNav } from "@/components/sidebar/sidebar-nav";
 import { SidebarAuth } from "@/components/sidebar/sidebar-auth";
+import { SidebarCollapseTrigger } from "@/components/sidebar/sidebar-collapse-trigger";
+import {
+  SidebarProvider,
+  useSidebar,
+} from "@/components/sidebar/sidebar-context";
+import { SidebarNav } from "@/components/sidebar/sidebar-nav";
 import { SidebarSearch } from "@/components/sidebar/sidebar-search";
 import { SidebarThemeToggle } from "@/components/sidebar/sidebar-theme-toggle";
 import { cn } from "@/lib/utils";
@@ -74,9 +77,7 @@ function DashboardSidebarInner() {
           <div
             className={cn(
               "flex items-center",
-              collapsed
-                ? "flex-col gap-1"
-                : "flex-1 justify-between",
+              collapsed ? "flex-col gap-1" : "flex-1 justify-between",
             )}
           >
             {utilityIcons.map(({ icon: Icon, label }, index) => (
