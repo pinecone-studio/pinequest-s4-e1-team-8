@@ -61,11 +61,11 @@ export const RecordingControls = ({
   const status = hasStopped ? "stopped" : recording?.status ?? "not started";
 
   return (
-    <section className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50 p-4">
+    <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-medium text-zinc-950">Recording</h3>
-          <p className="text-xs text-zinc-500">{status}</p>
+          <h3 className="text-sm font-semibold text-white">Recording</h3>
+          <p className="text-xs text-zinc-400">{status}</p>
         </div>
         <RecordingActionButton
           isLoading={isLoading}
@@ -76,15 +76,19 @@ export const RecordingControls = ({
         />
       </div>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? (
+        <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+          {error}
+        </p>
+      ) : null}
       {recording ? (
-        <dl className="grid gap-2 text-xs text-zinc-600 sm:grid-cols-2">
+        <dl className="grid gap-2 text-xs text-zinc-400">
           <div>
-            <dt className="font-medium text-zinc-900">Egress ID</dt>
+            <dt className="font-medium text-zinc-200">Egress ID</dt>
             <dd className="break-all">{recording.egressId}</dd>
           </div>
           <div>
-            <dt className="font-medium text-zinc-900">Transcription ID</dt>
+            <dt className="font-medium text-zinc-200">Transcription ID</dt>
             <dd className="break-all">{recording.transcriptionId}</dd>
           </div>
         </dl>

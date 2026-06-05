@@ -15,7 +15,7 @@ export const MeetingActionButtons = ({
 }: MeetingActionButtonsProps) => (
   <div className="flex flex-wrap gap-3">
     <button
-      className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+      className="rounded-2xl bg-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-400 disabled:opacity-60"
       disabled={disabled}
       onClick={() => onAction("create")}
       type="button"
@@ -23,7 +23,7 @@ export const MeetingActionButtons = ({
       {loadingAction === "create" ? "Creating..." : "Create room"}
     </button>
     <button
-      className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 disabled:opacity-60"
+      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-60"
       disabled={disabled}
       onClick={() => onAction("join")}
       type="button"
