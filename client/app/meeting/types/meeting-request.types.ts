@@ -17,3 +17,11 @@ export type StartMeetingEgressRequest = {
 export type GetMeetingTranscriptRequest = {
   id: string;
 };
+
+export type GenerateMeetingSummaryRequest = {
+  roomName: string;
+  meetingId: string;
+  recordingUrl: string;
+  egressId?: string;
+  summary?: string;
+};
