@@ -4,9 +4,11 @@ import { ConnectionState } from "livekit-client";
 import { useLivekitRoom } from "../hooks/use-livekit-room";
 import { DebugOutput } from "./debug-output";
 import { ParticipantTile } from "./participant-tile";
+import { RecordingControls } from "./recording-controls";
 
 type LivekitRoomViewProps = {
   livekitUrl: string;
+  meetingId: string;
   onLeave: () => void;
   roomName: string;
   token: string;
@@ -14,6 +16,7 @@ type LivekitRoomViewProps = {
 
 export const LivekitRoomView = ({
   livekitUrl,
+  meetingId,
   onLeave,
   roomName,
   token,
@@ -57,6 +60,8 @@ export const LivekitRoomView = ({
           {error}
         </div>
       ) : null}
+
+      <RecordingControls meetingId={meetingId} roomName={roomName} />
 
       <div className="grid gap-3 md:grid-cols-2">
         {localParticipant ? (

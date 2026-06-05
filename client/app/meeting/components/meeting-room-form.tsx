@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import {
   createMeetingRoom,
   joinMeetingRoom,
@@ -13,6 +13,7 @@ import { MeetingActionButtons } from "./meeting-action-buttons";
 type MeetingAction = "create" | "join";
 
 export const MeetingRoomForm = () => {
+  const [meetingId, setMeetingId] = useState("");
   const [roomName, setRoomName] = useState("");
   const [participantName, setParticipantName] = useState("");
   const [token, setToken] = useState("");
@@ -24,11 +25,14 @@ export const MeetingRoomForm = () => {
     null
   );
   const [error, setError] = useState("");
+  const isActionDisabled =
+    !meetingId || !roomName || !participantName || Boolean(loadingAction);
 
   if (response) {
     return (
       <ConnectedMeetingPanel
         livekitUrl={livekitUrl}
+        meetingId={meetingId}
         onLeave={() => {
           setLivekitUrl("");
           setResponse(null);
@@ -60,19 +64,20 @@ export const MeetingRoomForm = () => {
     }
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-  };
-
   return (
-    <form
+    <section
       className="space-y-4 rounded-md border border-zinc-200 bg-white p-5"
-      onSubmit={handleSubmit}
     >
       <div>
         <h1 className="text-xl font-semibold text-zinc-950">Meeting Room</h1>
       </div>
 
+      <FormField
+        label="Meeting ID"
+        onChange={(event) => setMeetingId(event.target.value)}
+        required
+        value={meetingId}
+      />
       <FormField
         label="Room name"
         onChange={(event) => setRoomName(event.target.value)}
@@ -89,10 +94,10 @@ export const MeetingRoomForm = () => {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
       <MeetingActionButtons
-        disabled={!roomName || !participantName || Boolean(loadingAction)}
+        disabled={isActionDisabled}
         loadingAction={loadingAction}
         onAction={(action) => void handleRoomAction(action)}
       />
-    </form>
+    </section>
   );
 };

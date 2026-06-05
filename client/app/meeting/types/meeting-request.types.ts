@@ -14,6 +14,10 @@ export type StartMeetingEgressRequest = {
   filepath?: string;
 };
 
+export type StopMeetingEgressRequest = {
+  egressId: string;
+};
+
 export type GetMeetingTranscriptRequest = {
   id: string;
 };
