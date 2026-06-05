@@ -1,4 +1,5 @@
 import type { TaskListItem, TaskSource } from "@/components/tasks/task-types";
+import { mapApiTaskToListItem, type ApiTaskListItem } from "@/lib/tasks/map-api-task";
 
 export const taskSources: TaskSource[] = ["github", "asana", "internal"];
 
@@ -8,7 +9,7 @@ export const sourceLabels: Record<TaskSource, string> = {
   internal: "Internal",
 };
 
-export const mockTasks: TaskListItem[] = [
+const rawMockTasks: ApiTaskListItem[] = [
   {
     id: "github-1",
     source: "github",
@@ -250,3 +251,5 @@ export const mockTasks: TaskListItem[] = [
     members: ["OD", "TU"],
   },
 ];
+
+export const mockTasks: TaskListItem[] = rawMockTasks.map(mapApiTaskToListItem);

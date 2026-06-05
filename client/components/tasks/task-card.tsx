@@ -1,5 +1,7 @@
 import { TaskEditMenu } from "@/components/tasks/task-edit-menu";
 import type { TaskListItem, TaskUpdate } from "@/components/tasks/task-types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { normalizeMembers } from "@/lib/tasks/map-api-task";
 import { cn } from "@/lib/utils";
 
 type TaskCardProps = {
@@ -18,7 +20,9 @@ const memberColors = [
 ];
 
 export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
-  const primaryMember = task.members[0];
+  const members = normalizeMembers(task.members);
+  const primaryMember = members[0];
+  const memberLabel = members.map((member) => member.initials).join(", ");
 
   return (
     <article className="relative rounded-lg border border-border/70 bg-card p-3 text-card-foreground shadow-sm transition-colors hover:border-violet-400/50 dark:bg-[#1f2024]">
@@ -36,15 +40,19 @@ export function TaskCard({ task, onUpdate, onDelete }: TaskCardProps) {
 
       {primaryMember ? (
         <div className="mt-3 flex justify-end">
-          <span
-            className={cn(
-              "grid size-9 place-items-center rounded-full text-[11px] font-semibold text-white",
-              memberColors[primaryMember.charCodeAt(0) % memberColors.length],
-            )}
-            title={task.members.join(", ")}
-          >
-            {primaryMember}
-          </span>
+          <Avatar className="size-9" title={memberLabel}>
+            {primaryMember.avatarUrl ? (
+              <AvatarImage src={primaryMember.avatarUrl} alt={primaryMember.initials} />
+            ) : null}
+            <AvatarFallback
+              className={cn(
+                "text-[11px] font-semibold text-white",
+                memberColors[primaryMember.initials.charCodeAt(0) % memberColors.length],
+              )}
+            >
+              {primaryMember.initials}
+            </AvatarFallback>
+          </Avatar>
         </div>
       ) : null}
 

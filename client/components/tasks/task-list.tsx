@@ -1,8 +1,8 @@
 "use client";
 
+import { clientApi } from "@/app/lib/client-api";
 import { createMockTask } from "@/components/tasks/task-factory";
 import { EmptyTasks, TaskListSkeleton } from "@/components/tasks/task-list-states";
-import { readStoredTasks, saveStoredTasks } from "@/components/tasks/task-storage";
 import { mockTasks, sourceLabels, taskSources } from "@/components/tasks/mock-tasks";
 import { TaskBoard } from "@/components/tasks/task-board";
 import { TaskTeamFilter } from "@/components/tasks/task-team-filter";
@@ -12,11 +12,17 @@ import {
   type TaskSource,
   type TaskUpdate,
 } from "@/components/tasks/task-types";
+import { mapApiTaskToListItem, type ApiTaskListItem } from "@/lib/tasks/map-api-task";
+import { getGithubRepo, syncGithubIssues } from "@/lib/integrations/github";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ListTodo, Plus, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+type TasksResponse = {
+  tasks: ApiTaskListItem[];
+};
 
 export function TaskList() {
   const [tasks, setTasks] = useState<TaskListItem[]>([]);
@@ -26,64 +32,57 @@ export function TaskList() {
 
   const sourceTasks = useMemo(
     () => tasks.filter((task) => task.source === activeSource),
-    [activeSource, tasks]
+    [activeSource, tasks],
   );
   const visibleTasks = useMemo(
     () =>
       activeTeam
         ? sourceTasks.filter((task) => getTaskTeam(task) === activeTeam)
         : sourceTasks,
-    [activeTeam, sourceTasks]
+    [activeTeam, sourceTasks],
   );
 
-  const loadMockTasks = useCallback(() => {
+  const loadTasks = useCallback(async () => {
     setIsLoading(true);
 
-    window.setTimeout(() => {
-      setTasks(readStoredTasks() ?? mockTasks);
+    try {
+      if (activeSource === "github" && getGithubRepo()) {
+        try {
+          await syncGithubIssues();
+        } catch {
+          // Sync can fail; still load whatever is in the DB.
+        }
+      }
+
+      const { data } = await clientApi.get<TasksResponse>("/tasks");
+      const rows = Array.isArray(data?.tasks) ? data.tasks : [];
+      setTasks(rows.map(mapApiTaskToListItem));
+    } catch {
+      setTasks(mockTasks);
+    } finally {
       setIsLoading(false);
-    }, 300);
-  }, []);
-
-  useEffect(() => {
-    loadMockTasks();
-  }, [loadMockTasks]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      saveStoredTasks(tasks);
     }
-  }, [isLoading, tasks]);
+  }, [activeSource]);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const updateTask = useCallback((taskId: string, update: TaskUpdate) => {
-    // Swap this mock update for PATCH /issues/:id when the API is ready.
-    setTasks((current) => {
-      const next = current.map((task) =>
-        task.id === taskId ? { ...task, ...update } : task,
-      );
-      saveStoredTasks(next);
-      return next;
-    });
+    setTasks((current) =>
+      current.map((task) => (task.id === taskId ? { ...task, ...update } : task)),
+    );
   }, []);
 
   const addTask = useCallback(() => {
     setTasks((current) => {
       const team = activeTeam ?? sourceTasks[0]?.team ?? "General Team";
-      const next = [
-        createMockTask(activeSource, current.length + 1, team),
-        ...current,
-      ];
-      saveStoredTasks(next);
-      return next;
+      return [createMockTask(activeSource, current.length + 1, team), ...current];
     });
   }, [activeSource, activeTeam, sourceTasks]);
 
   const deleteTask = useCallback((taskId: string) => {
-    setTasks((current) => {
-      const next = current.filter((task) => task.id !== taskId);
-      saveStoredTasks(next);
-      return next;
-    });
+    setTasks((current) => current.filter((task) => task.id !== taskId));
   }, []);
 
   return (
@@ -109,7 +108,7 @@ export function TaskList() {
               variant="outline"
               className="rounded-lg"
               disabled={isLoading}
-              onClick={loadMockTasks}
+              onClick={loadTasks}
             >
               <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
               Refresh
@@ -128,7 +127,7 @@ export function TaskList() {
                 "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
                 activeSource === source
                   ? "border-violet-500 bg-violet-500 text-white"
-                  : "border-border/70 bg-card text-muted-foreground hover:text-foreground"
+                  : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
               )}
               onClick={() => {
                 setActiveSource(source);

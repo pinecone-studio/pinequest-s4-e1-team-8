@@ -49,7 +49,7 @@ export const tasks = sqliteTable("tasks", {
   doneCount: integer("done_count").notNull().default(0),
   blockedCount: integer("blocked_count").notNull().default(0),
   timeLeft: text("time_left"),
-  /** JSON array of member initials, e.g. ["MG","SC"] */
+  /** JSON array of members, e.g. [{"initials":"MG","avatarUrl":"https://..."}] */
   membersJson: text("members_json").notNull().default("[]"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
