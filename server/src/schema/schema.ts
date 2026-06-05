@@ -6,3 +6,5 @@ export * from "./sub-team.model";
 export * from "./task.model";
 export * from "./ai.model";
 export * from "./meetingTranscription/meeting-transcription.schema";
+export { syncMappings, syncMappingsRelations } from "../db/schema";
+export type { SyncMapping, NewSyncMapping } from "../db/schema";

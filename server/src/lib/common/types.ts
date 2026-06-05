@@ -13,4 +13,6 @@ export interface Bindings {
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
   R2_BUCKET_NAME: string;
+  GITHUB_WEBHOOK_SECRET: string;
+  FRONTEND_URL?: string;
 }
