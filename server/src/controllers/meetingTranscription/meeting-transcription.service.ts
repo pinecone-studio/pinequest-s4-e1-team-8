@@ -57,6 +57,16 @@ export const findByEgressId = async (
     .get();
 };
 
+export const markEgressStopped = async (
+  db: MeetingTranscriptionDb,
+  transcriptionId: string,
+) => {
+  await db
+    .update(meetingTranscriptions)
+    .set({ status: "processing", errorMessage: null })
+    .where(eq(meetingTranscriptions.id, transcriptionId));
+};
+
 export const markFailed = async (
   db: MeetingTranscriptionDb,
   transcriptionId: string,
