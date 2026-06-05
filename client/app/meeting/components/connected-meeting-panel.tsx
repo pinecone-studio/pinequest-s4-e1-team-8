@@ -6,6 +6,7 @@ import { LivekitRoomView } from "./livekit-room-view";
 
 type ConnectedMeetingPanelProps = {
   livekitUrl: string;
+  meetingId: string;
   onLeave: () => void;
   response: MeetingRoomTokenResponse;
   token: string;
@@ -13,6 +14,7 @@ type ConnectedMeetingPanelProps = {
 
 export const ConnectedMeetingPanel = ({
   livekitUrl,
+  meetingId,
   onLeave,
   response,
   token,
@@ -20,6 +22,7 @@ export const ConnectedMeetingPanel = ({
   <div className="space-y-4">
     <LivekitRoomView
       livekitUrl={response.url}
+      meetingId={meetingId}
       onLeave={onLeave}
       roomName={response.roomName}
       token={response.token}
