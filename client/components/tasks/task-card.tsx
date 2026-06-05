@@ -2,7 +2,7 @@
 
 import type { TaskListItem, TaskUpdate } from "@/components/tasks/task-types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { normalizeMembers } from "@/lib/tasks/map-api-task";
+import { normalizeMemberInitials } from "@/lib/tasks/map-api-task";
 import { cn } from "@/lib/utils";
 import { Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -45,7 +45,8 @@ export function TaskCard({
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(task.title);
   const inputRef = useRef<HTMLInputElement>(null);
-  const primaryMember = task.members[0];
+  const members = normalizeMemberInitials((task.members ?? []) as unknown[]);
+  const primaryMember = members[0];
 
   useEffect(() => {
     if (!isEditing) {
@@ -136,7 +137,7 @@ export function TaskCard({
                       primaryMember.charCodeAt(0) % memberColors.length
                     ],
                   )}
-                  title={task.members.join(", ")}
+                  title={members.join(", ")}
                 >
                   {primaryMember}
                 </span>

@@ -1,4 +1,5 @@
 import { getTaskTeam, type TaskListItem } from "@/components/tasks/task-types";
+import { normalizeMemberInitials } from "@/lib/tasks/map-api-task";
 import { Code2, LayoutGrid, Palette, PieChart } from "lucide-react";
 
 export type TeamSummary = {
@@ -58,7 +59,13 @@ export function buildTeamSummaries(tasks: TaskListItem[]): TeamSummary[] {
   }
 
   return Array.from(grouped.entries()).map(([name, teamTasks]) => {
-    const members = [...new Set(teamTasks.flatMap((task) => task.members))];
+    const members = [
+      ...new Set(
+        teamTasks.flatMap((task) =>
+          normalizeMemberInitials((task.members ?? []) as unknown[]),
+        ),
+      ),
+    ];
     const progress = Math.round(
       teamTasks.reduce((sum, task) => sum + task.progress, 0) / teamTasks.length,
     );

@@ -42,6 +42,10 @@ export function normalizeMembers(members: unknown[] | undefined): TaskMember[] {
   });
 }
 
+export function normalizeMemberInitials(members: unknown[] | undefined): string[] {
+  return normalizeMembers(members).map((member) => member.initials);
+}
+
 function normalizePriority(priority: string): TaskPriority {
   if (priority === "low" || priority === "normal" || priority === "medium" || priority === "high" || priority === "urgent") {
     return priority;
