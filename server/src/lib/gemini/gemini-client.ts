@@ -1,6 +1,6 @@
 import type { Bindings } from "../common/types";
 
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 type GeminiResponse = {
   candidates?: Array<{
