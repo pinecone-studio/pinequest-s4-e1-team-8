@@ -17,24 +17,23 @@ import {
 import { EventCard } from "./event-card";
 import { cn } from "@/lib/utils";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const GUTTER_WIDTH    = 52;   // px — left time-axis column width
-const VIEWPORT_HEIGHT = 600;  // px — height of the scrollable time window (~9 hrs visible)
+const GUTTER_WIDTH    = 52;
+const VIEWPORT_HEIGHT = 600;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface CalendarGridProps {
-  weekStart:       number;
-  events:          CalendarEvent[];
-  currentTimePx:   number | null;
-  todayMidnight:   number;
-  draggingId:      string | null;
-  onDragStart:     (e: React.DragEvent, event: CalendarEvent, dayMidnight: number) => void;
-  onDragEnd:       () => void;
-  onDragOver:      (e: React.DragEvent, day: WeekDay) => void;
-  onDrop:          (e: React.DragEvent) => void;
+  weekStart:      number;
+  events:         CalendarEvent[];
+  currentTimePx:  number | null;
+  todayMidnight:  number;
+  draggingId:     string | null;
+  onDragStart:    (e: React.DragEvent, event: CalendarEvent, dayMidnight: number) => void;
+  onDragEnd:      () => void;
+  onDragOver:     (e: React.DragEvent, day: WeekDay) => void;
+  onDrop:         (e: React.DragEvent) => void;
+  onEdit:         (e: React.MouseEvent, event: CalendarEvent) => void;
+  onCreateSlot:   (dayUnix: number, startUnix: number, e: React.MouseEvent) => void;
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
 export function CalendarGrid({
   weekStart,
   events,
@@ -45,25 +44,24 @@ export function CalendarGrid({
   onDragEnd,
   onDragOver,
   onDrop,
+  onEdit,
+  onCreateSlot,
 }: CalendarGridProps) {
   const scrollRef  = useRef<HTMLDivElement>(null);
   const weekDays   = getWeekDays(weekStart, todayMidnight);
   const timeLabels = getTimeLabels();
 
-  // Auto-scroll to ~1/3 above current time on initial mount
   useEffect(() => {
     if (!scrollRef.current || currentTimePx === null) return;
     scrollRef.current.scrollTop = Math.max(0, currentTimePx - VIEWPORT_HEIGHT / 3);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Events for one day column
   const eventsForDay = useCallback((day: WeekDay) => {
     const nextDay = day.dayUnix + 86_400_000;
     return events.filter(e => e.startUnix >= day.dayUnix && e.startUnix < nextDay);
   }, [events]);
 
-  // All-day events that span a given day
   const allDayForDay = useCallback((day: WeekDay) =>
     events.filter(
       e => e.type === 'all-day' &&
@@ -79,14 +77,9 @@ export function CalendarGrid({
       className="overflow-hidden rounded-2xl border border-[#1a1d24] bg-[#0d0e12]"
       style={{ minWidth: GUTTER_WIDTH + 7 * 80 }}
     >
-
-      {/* ── Day-of-week header ─────────────────────────────────────────────── */}
+      {/* Day-of-week header */}
       <div className="flex border-b border-[#1a1d24]">
-        {/* Gutter spacer */}
-        <div
-          className="shrink-0 border-r border-[#1a1d24]"
-          style={{ width: GUTTER_WIDTH }}
-        />
+        <div className="shrink-0 border-r border-[#1a1d24]" style={{ width: GUTTER_WIDTH }} />
         {weekDays.map(day => (
           <div
             key={day.dayUnix}
@@ -114,7 +107,7 @@ export function CalendarGrid({
         ))}
       </div>
 
-      {/* ── All-day shelf ─────────────────────────────────────────────────── */}
+      {/* All-day shelf */}
       {hasAnyAllDay && (
         <div className="flex min-h-[28px] border-b border-[#1a1d24]">
           <div
@@ -154,15 +147,11 @@ export function CalendarGrid({
         </div>
       )}
 
-      {/* ── Scrollable time grid ──────────────────────────────────────────── */}
-      <div
-        ref={scrollRef}
-        className="overflow-y-auto"
-        style={{ maxHeight: VIEWPORT_HEIGHT }}
-      >
+      {/* Scrollable time grid */}
+      <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: VIEWPORT_HEIGHT }}>
         <div className="flex" style={{ height: TOTAL_GRID_HEIGHT_PX }}>
 
-          {/* ── Left time axis ─────────────────────────────────────────── */}
+          {/* Left time axis */}
           <div
             className="relative shrink-0 border-r border-[#1a1d24]"
             style={{ width: GUTTER_WIDTH, height: TOTAL_GRID_HEIGHT_PX }}
@@ -170,7 +159,7 @@ export function CalendarGrid({
             {timeLabels.map(({ hour, label, topPx }) => (
               <span
                 key={hour}
-                className="absolute right-[8px] text-[9px] tabular-nums text-[#2c3040] -translate-y-1/2"
+                className="absolute right-[8px] -translate-y-1/2 text-[9px] tabular-nums text-[#2c3040]"
                 style={{ top: topPx }}
               >
                 {label}
@@ -178,7 +167,7 @@ export function CalendarGrid({
             ))}
           </div>
 
-          {/* ── Day columns ──────────────────────────────────────────────── */}
+          {/* Day columns */}
           {weekDays.map(day => {
             const laid = layoutEventsForDay(eventsForDay(day), day.dayUnix);
             return (
@@ -192,6 +181,8 @@ export function CalendarGrid({
                 onDragEnd={onDragEnd}
                 onDragOver={onDragOver}
                 onDrop={onDrop}
+                onEdit={onEdit}
+                onCreateSlot={onCreateSlot}
               />
             );
           })}
@@ -202,15 +193,18 @@ export function CalendarGrid({
 }
 
 // ─── Day column ────────────────────────────────────────────────────────────────
+
 interface DayColumnProps {
-  day:          WeekDay;
-  events:       CalendarEvent[];
-  draggingId:   string | null;
+  day:           WeekDay;
+  events:        CalendarEvent[];
+  draggingId:    string | null;
   currentTimePx: number | null;
-  onDragStart:  (e: React.DragEvent, event: CalendarEvent, dayMidnight: number) => void;
-  onDragEnd:    () => void;
-  onDragOver:   (e: React.DragEvent, day: WeekDay) => void;
-  onDrop:       (e: React.DragEvent) => void;
+  onDragStart:   (e: React.DragEvent, event: CalendarEvent, dayMidnight: number) => void;
+  onDragEnd:     () => void;
+  onDragOver:    (e: React.DragEvent, day: WeekDay) => void;
+  onDrop:        (e: React.DragEvent) => void;
+  onEdit:        (e: React.MouseEvent, event: CalendarEvent) => void;
+  onCreateSlot:  (dayUnix: number, startUnix: number, e: React.MouseEvent) => void;
 }
 
 function DayColumn({
@@ -222,14 +216,26 @@ function DayColumn({
   onDragEnd,
   onDragOver,
   onDrop,
+  onEdit,
+  onCreateSlot,
 }: DayColumnProps) {
+  function handleColumnClick(e: React.MouseEvent) {
+    // getBoundingClientRect accounts for scroll, giving position in full column
+    const rect      = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    const hourOffset = relativeY / HOUR_HEIGHT_PX + GRID_START_HOUR;
+    const clickedUnix = day.dayUnix + hourOffset * 3_600_000;
+    onCreateSlot(day.dayUnix, clickedUnix, e);
+  }
+
   return (
     <div
       className={cn(
-        "relative flex-1 border-l border-[#1a1d24]",
+        "relative flex-1 cursor-crosshair border-l border-[#1a1d24]",
         day.isToday && "bg-[#0f1016]",
       )}
       style={{ height: TOTAL_GRID_HEIGHT_PX }}
+      onClick={handleColumnClick}
       onDragOver={e => { e.preventDefault(); onDragOver(e, day); }}
       onDrop={onDrop}
     >
@@ -242,56 +248,48 @@ function DayColumn({
           isDragging={event.id === draggingId}
           onDragStart={(e, ev) => onDragStart(e, ev, day.dayUnix)}
           onDragEnd={onDragEnd}
+          onEdit={onEdit}
         />
       ))}
 
-      {/* Current time indicator — only rendered in today's column */}
-      {currentTimePx !== null && (
-        <CurrentTimeLine topPx={currentTimePx} />
-      )}
+      {currentTimePx !== null && <CurrentTimeLine topPx={currentTimePx} />}
     </div>
   );
 }
 
 // ─── Grid lines ────────────────────────────────────────────────────────────────
-// One div per 15-minute interval. Hour lines (#1a1d24) are more visible than
-// quarter-hour lines (#141618) to create a clear visual rhythm.
+
 function GridLines() {
-  const totalSlots = (TOTAL_GRID_HEIGHT_PX / QUARTER_HEIGHT_PX);
+  const totalSlots = TOTAL_GRID_HEIGHT_PX / QUARTER_HEIGHT_PX;
   return (
     <>
-      {Array.from({ length: totalSlots }, (_, i) => {
-        const isHour = i % 4 === 0;
-        return (
-          <div
-            key={i}
-            className="pointer-events-none absolute left-0 right-0 border-t"
-            style={{
-              top:         i * QUARTER_HEIGHT_PX,
-              borderColor: isHour ? '#1a1d24' : '#111318',
-            }}
-          />
-        );
-      })}
+      {Array.from({ length: totalSlots }, (_, i) => (
+        <div
+          key={i}
+          className="pointer-events-none absolute left-0 right-0 border-t"
+          style={{
+            top:         i * QUARTER_HEIGHT_PX,
+            borderColor: i % 4 === 0 ? '#1a1d24' : '#111318',
+          }}
+        />
+      ))}
     </>
   );
 }
 
 // ─── Current time indicator ────────────────────────────────────────────────────
+
 function CurrentTimeLine({ topPx }: { topPx: number }) {
   return (
     <div
       className="pointer-events-none absolute left-0 right-0 z-20 flex items-center"
       style={{ top: topPx }}
     >
-      {/* Dot */}
-      <div className="h-[7px] w-[7px] shrink-0 rounded-full bg-cyan-400 -translate-x-[3.5px] shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
-      {/* Line */}
+      <div className="h-[7px] w-[7px] shrink-0 -translate-x-[3.5px] rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
       <div className="h-px flex-1 bg-cyan-400/60" />
     </div>
   );
 }
 
-// ─── Exports ───────────────────────────────────────────────────────────────────
 export type { CalendarGridProps };
 export { snapTo15Minutes, HOUR_HEIGHT_PX, GRID_START_HOUR };

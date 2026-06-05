@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CalendarControlsProps {
   weekStart:   number;
   onPrevWeek:  () => void;
   onNextWeek:  () => void;
   onGoToToday: () => void;
+  onNewEvent:  (e: React.MouseEvent) => void;
+  isSyncing:   boolean;
+  lastSynced:  Date | null;
+  onRefresh:   () => void;
 }
 
 const MONTH_NAMES = [
@@ -17,19 +22,38 @@ const MONTH_NAMES = [
   "July","August","September","October","November","December",
 ] as const;
 
+function formatRelative(d: Date): string {
+  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 10)  return 'just now';
+  if (s < 60)  return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60)  return `${m}m ago`;
+  return `${Math.floor(m / 60)}h ago`;
+}
+
 export function CalendarControls({
   weekStart,
   onPrevWeek,
   onNextWeek,
   onGoToToday,
+  onNewEvent,
+  isSyncing,
+  lastSynced,
+  onRefresh,
 }: CalendarControlsProps) {
   const [view, setView] = useState("blocks");
 
-  // Build "June 2025" or "Jun – Jul 2025" if the week crosses month boundaries
-  const weekEnd  = weekStart + 6 * 86_400_000;
-  const dStart   = new Date(weekStart);
-  const dEnd     = new Date(weekEnd);
-  const sameMonth = dStart.getMonth() === dEnd.getMonth();
+  // Tick every 15 s so the "X ago" label stays fresh between syncs
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 15_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const weekEnd    = weekStart + 6 * 86_400_000;
+  const dStart     = new Date(weekStart);
+  const dEnd       = new Date(weekEnd);
+  const sameMonth  = dStart.getMonth() === dEnd.getMonth();
   const monthLabel = sameMonth
     ? `${MONTH_NAMES[dStart.getMonth()]} ${dStart.getFullYear()}`
     : `${MONTH_NAMES[dStart.getMonth()].slice(0,3)} – ${MONTH_NAMES[dEnd.getMonth()].slice(0,3)} ${dEnd.getFullYear()}`;
@@ -37,10 +61,9 @@ export function CalendarControls({
   const isCurrentWeek = (() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    const dow      = now.getDay();
-    const toMonday = dow === 0 ? -6 : 1 - dow;
+    const dow = now.getDay();
     const thisMonday = new Date(now);
-    thisMonday.setDate(now.getDate() + toMonday);
+    thisMonday.setDate(now.getDate() + (dow === 0 ? -6 : 1 - dow));
     return weekStart === thisMonday.getTime();
   })();
 
@@ -54,10 +77,7 @@ export function CalendarControls({
         {/* View toggle */}
         <ToggleGroup
           value={[view]}
-          onValueChange={(next) => {
-            const last = next[next.length - 1];
-            if (last) setView(last);
-          }}
+          onValueChange={(next) => { const last = next[next.length - 1]; if (last) setView(last); }}
           variant="outline"
           className="rounded-xl border-border/60 bg-muted/20 p-0.5"
         >
@@ -66,29 +86,60 @@ export function CalendarControls({
           <ToggleGroupItem value="table"  className="rounded-lg px-3 text-sm">Table</ToggleGroupItem>
         </ToggleGroup>
 
-        {/* Week navigation */}
-        <div className="flex items-center gap-2">
-          {!isCurrentWeek && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-xl text-xs"
-              onClick={onGoToToday}
-            >
-              Today
-            </Button>
-          )}
+        {/* New Event */}
+        <Button
+          size="sm"
+          className="gap-1.5 rounded-xl bg-[#2563eb] text-xs text-white hover:bg-[#1d4ed8]"
+          onClick={onNewEvent}
+        >
+          <Plus className="size-3.5" />
+          New Event
+        </Button>
 
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon-sm" onClick={onPrevWeek} aria-label="Previous week">
-              <ChevronLeft className="size-4" />
-            </Button>
-            <span className="min-w-[120px] text-center text-sm font-medium tabular-nums">
-              {monthLabel}
+        {/* Week navigation + sync indicator */}
+        <div className="flex items-center gap-3">
+          {/* Sync indicator */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={onRefresh}
+              disabled={isSyncing}
+              title={lastSynced ? `Last synced ${formatRelative(lastSynced)}` : 'Sync with Google Calendar'}
+              className="text-[#3a4050] transition-colors hover:text-[#5a6170] disabled:cursor-not-allowed"
+            >
+              <RefreshCw
+                className={cn(
+                  "size-3.5 transition-colors",
+                  isSyncing ? "animate-spin text-[#2563eb]" : "text-[#3a4050]",
+                )}
+              />
+            </button>
+            <span className="min-w-[56px] text-[10px] tabular-nums text-[#3a4050]">
+              {isSyncing
+                ? 'Syncing…'
+                : lastSynced
+                  ? formatRelative(lastSynced)
+                  : ''}
             </span>
-            <Button variant="ghost" size="icon-sm" onClick={onNextWeek} aria-label="Next week">
-              <ChevronRight className="size-4" />
-            </Button>
+          </div>
+
+          {/* Today + week arrows */}
+          <div className="flex items-center gap-2">
+            {!isCurrentWeek && (
+              <Button variant="outline" size="sm" className="rounded-xl text-xs" onClick={onGoToToday}>
+                Today
+              </Button>
+            )}
+            <div className="flex items-center gap-0.5">
+              <Button variant="ghost" size="icon-sm" onClick={onPrevWeek} aria-label="Previous week">
+                <ChevronLeft className="size-4" />
+              </Button>
+              <span className="min-w-[120px] text-center text-sm font-medium tabular-nums">
+                {monthLabel}
+              </span>
+              <Button variant="ghost" size="icon-sm" onClick={onNextWeek} aria-label="Next week">
+                <ChevronRight className="size-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

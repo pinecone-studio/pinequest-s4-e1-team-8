@@ -42,7 +42,7 @@ export function DashboardHeader() {
             placeholder="Type to search"
             className="h-10 rounded-full border-border/60 bg-muted/30 pl-9 pr-10"
           />
-          <Mic className="absolute top-1/2 right-3 size-4 text-muted-foreground" />
+          <Mic className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
         </div>
         <div className="flex items-center justify-end gap-2">
           <Button variant="ghost" size="icon" className="relative rounded-xl">

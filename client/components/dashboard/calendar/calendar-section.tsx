@@ -14,54 +14,88 @@ import {
 import { CalendarControls } from "./calendar-controls";
 import { CalendarGrid } from "./calendar-grid";
 import { ConnectCalendarBanner } from "./connect-calendar";
+import { EventEditPopover } from "./event-edit-popover";
+import { CreateEventPopover } from "./create-event-popover";
 
-// How long to wait after a drag move before firing the PATCH API call (ms)
-const DEBOUNCE_MS = 500;
+const DEBOUNCE_MS   = 500;
+const POLL_INTERVAL = 30_000; // 30 s
+
+interface EditingState  { event: CalendarEvent; pos: { x: number; y: number } }
+interface CreatingState { startUnix: number;    pos: { x: number; y: number } }
 
 export function CalendarSection() {
   const todayMidnight = getTodayMidnight();
 
-  // ─── Week state ──────────────────────────────────────────────────────────────
+  // ─── Week ─────────────────────────────────────────────────────────────────
   const [weekStart, setWeekStart] = useState(() => getWeekStart(Date.now()));
+  const prevWeek  = useCallback(() => setWeekStart(w => w - 7 * 86_400_000), []);
+  const nextWeek  = useCallback(() => setWeekStart(w => w + 7 * 86_400_000), []);
+  const goToToday = useCallback(() => setWeekStart(getWeekStart(Date.now())), []);
 
-  const prevWeek   = useCallback(() => setWeekStart(w => w - 7 * 86_400_000), []);
-  const nextWeek   = useCallback(() => setWeekStart(w => w + 7 * 86_400_000), []);
-  const goToToday  = useCallback(() => setWeekStart(getWeekStart(Date.now())), []);
-
-  // ─── Events + connection state ────────────────────────────────────────────────
+  // ─── Events + connection ──────────────────────────────────────────────────
   const [events,    setEvents]    = useState<CalendarEvent[]>([]);
-  const [connected, setConnected] = useState<boolean | null>(null); // null = loading
+  const [connected, setConnected] = useState<boolean | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setConnected(null);
-    (async () => {
-      try {
-        const res  = await fetch(`/api/google-calendar?weekStart=${weekStart}`);
-        const data = (await res.json()) as {
-          connected?: boolean;
-          events?:    CalendarEvent[];
-          error?:     string;
-        };
-        if (cancelled) return;
-        if (data.connected === false) {
-          setConnected(false);
-          setEvents([]);
-        } else {
-          setConnected(true);
-          setEvents(data.events ?? []);
-        }
-      } catch {
-        if (!cancelled) {
-          setConnected(false);
-          setEvents([]);
-        }
+  // Ref so the polling closure always sees the current drag state
+  const isDraggingRef = useRef(false);
+
+  // Core fetch — silent=false shows the loading skeleton (initial/week-change)
+  //              silent=true  keeps existing events visible while re-fetching
+  const fetchEvents = useCallback(async (wStart: number, silent: boolean) => {
+    if (!silent) setConnected(null);
+    setIsSyncing(true);
+    try {
+      const res  = await fetch(`/api/google-calendar?weekStart=${wStart}`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { connected?: boolean; events?: CalendarEvent[] };
+      if (data.connected === false) {
+        setConnected(false);
+        setEvents([]);
+      } else {
+        setConnected(true);
+        setEvents(data.events ?? []);
+        setLastSynced(new Date());
       }
-    })();
-    return () => { cancelled = true; };
-  }, [weekStart]);
+    } catch {
+      // keep existing state on network error
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
 
-  // ─── Current time ──────────────────────────────────────────────────────────
+  // Initial load + week-change (full skeleton)
+  useEffect(() => {
+    fetchEvents(weekStart, false);
+  }, [weekStart, fetchEvents]);
+
+  // Background polling
+  useEffect(() => {
+    const poll = () => {
+      if (document.visibilityState === 'hidden') return;
+      if (isDraggingRef.current) return;
+      fetchEvents(weekStart, true);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') fetchEvents(weekStart, true);
+    };
+
+    const id = setInterval(poll, POLL_INTERVAL);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [weekStart, fetchEvents]);
+
+  // Manual refresh (from controls bar)
+  const handleRefresh = useCallback(() => {
+    fetchEvents(weekStart, true);
+  }, [weekStart, fetchEvents]);
+
+  // ─── Current time ─────────────────────────────────────────────────────────
   const [currentTimePx, setCurrentTimePx] = useState<number | null>(null);
 
   useEffect(() => {
@@ -78,34 +112,23 @@ export function CalendarSection() {
     return () => clearInterval(id);
   }, []);
 
-  // ─── Drag-and-drop ─────────────────────────────────────────────────────────
+  // ─── Drag-and-drop ────────────────────────────────────────────────────────
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
   interface DragSession {
-    event:          CalendarEvent;
-    offsetY:        number;       // px from top of card where grab started
-    dayMidnightUnix: number;
-    colRect:        DOMRect | null;
+    event: CalendarEvent; offsetY: number;
+    dayMidnightUnix: number; colRect: DOMRect | null;
   }
-  const dragRef    = useRef<DragSession | null>(null);
+  const dragRef     = useRef<DragSession | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleDragStart = useCallback((
-    e: React.DragEvent,
-    event: CalendarEvent,
-    dayMidnight: number,
+    e: React.DragEvent, event: CalendarEvent, dayMidnight: number,
   ) => {
+    isDraggingRef.current = true;
     setDraggingId(event.id);
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    dragRef.current = {
-      event,
-      offsetY:         e.clientY - rect.top,
-      dayMidnightUnix: dayMidnight,
-      colRect:         null,
-    };
-
-    // Replace the browser ghost with a transparent element so we can draw
-    // our own preview via CSS opacity on the original card
+    dragRef.current = { event, offsetY: e.clientY - rect.top, dayMidnightUnix: dayMidnight, colRect: null };
     const ghost = document.createElement('div');
     ghost.style.cssText = 'position:fixed;top:-9999px;opacity:0;';
     document.body.appendChild(ghost);
@@ -115,59 +138,119 @@ export function CalendarSection() {
 
   const handleDragOver = useCallback((e: React.DragEvent, day: WeekDay) => {
     e.preventDefault();
-    // Capture ref synchronously — it may be nulled by drop/dragend on the next tick
     const session = dragRef.current;
     if (!session) return;
-
-    const colEl = e.currentTarget as HTMLElement;
-    const rect  = colEl.getBoundingClientRect();
-    // relativeY is the position within the day column in grid pixels
-    const relativeY = e.clientY - rect.top - session.offsetY;
+    const rect       = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const relativeY  = e.clientY - rect.top - session.offsetY;
     const durationMs = session.event.endUnix - session.event.startUnix;
-
-    // Convert pixel offset to a local time offset
-    const newStartHourOffset = relativeY / HOUR_HEIGHT_PX; // hours from GRID_START_HOUR
-    const newStartMs = day.dayUnix + (GRID_START_HOUR + newStartHourOffset) * 3_600_000;
+    const newStartMs = day.dayUnix + (GRID_START_HOUR + relativeY / HOUR_HEIGHT_PX) * 3_600_000;
     const snappedStart = snapTo15Minutes(newStartMs);
     const snappedEnd   = snappedStart + durationMs;
-
     const eventId = session.event.id;
-
-    // Optimistic local update (immediate visual feedback)
     setEvents(prev => prev.map(ev =>
-      ev.id === eventId
-        ? { ...ev, startUnix: snappedStart, endUnix: snappedEnd }
-        : ev,
+      ev.id === eventId ? { ...ev, startUnix: snappedStart, endUnix: snappedEnd } : ev,
     ));
-
-    // Update drag session reference so the next dragover delta is correct
     dragRef.current = {
       ...session,
-      event:           { ...session.event, startUnix: snappedStart, endUnix: snappedEnd },
+      event: { ...session.event, startUnix: snappedStart, endUnix: snappedEnd },
       dayMidnightUnix: day.dayUnix,
     };
-
-    // Debounce the API PATCH — fire once the user settles on a position
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetch('/api/google-calendar', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ eventId, startUnix: snappedStart, endUnix: snappedEnd }),
       }).catch(err => console.error('[calendar drag PATCH]', err));
     }, DEBOUNCE_MS);
   }, []);
 
-  const handleDrop    = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    isDraggingRef.current = false;
     setDraggingId(null);
     dragRef.current = null;
   }, []);
 
   const handleDragEnd = useCallback(() => {
+    isDraggingRef.current = false;
     setDraggingId(null);
     dragRef.current = null;
   }, []);
+
+  // ─── Edit event ───────────────────────────────────────────────────────────
+  const [editing, setEditing] = useState<EditingState | null>(null);
+
+  const handleOpenEdit = useCallback((e: React.MouseEvent, event: CalendarEvent) => {
+    setCreating(null);
+    setEditing({ event, pos: { x: e.clientX, y: e.clientY } });
+  }, []);
+
+  const handleSaveEdit = useCallback(async (
+    eventId: string,
+    patch: { title?: string; startUnix?: number; endUnix?: number; addMeet?: boolean },
+  ) => {
+    setEditing(null);
+    if (patch.title !== undefined || patch.startUnix !== undefined || patch.endUnix !== undefined) {
+      setEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, ...patch } : ev));
+    }
+    try {
+      const res = await fetch('/api/google-calendar', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId, ...patch }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { ok: boolean; event?: CalendarEvent };
+        if (data.event) setEvents(prev => prev.map(ev => ev.id === eventId ? { ...data.event! } : ev));
+      }
+    } catch (err) { console.error('[calendar save edit]', err); }
+  }, []);
+
+  const handleDelete = useCallback(async (eventId: string) => {
+    setEditing(null);
+    setEvents(prev => prev.filter(ev => ev.id !== eventId));
+    try {
+      await fetch('/api/google-calendar', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId }),
+      });
+    } catch (err) { console.error('[calendar delete]', err); }
+  }, []);
+
+  // ─── Create event ─────────────────────────────────────────────────────────
+  const [creating, setCreating] = useState<CreatingState | null>(null);
+
+  const handleOpenCreate = useCallback((_dayUnix: number, startUnix: number, e: React.MouseEvent) => {
+    setEditing(null);
+    setCreating({ startUnix, pos: { x: e.clientX, y: e.clientY } });
+  }, []);
+
+  const handleNewEventButton = useCallback((e: React.MouseEvent) => {
+    setEditing(null);
+    setCreating({ startUnix: snapTo15Minutes(Date.now()), pos: { x: e.clientX, y: e.clientY } });
+  }, []);
+
+  const handleCreateEvent = useCallback(async (data: {
+    title: string; startUnix: number; endUnix: number; addMeet: boolean;
+  }) => {
+    setCreating(null);
+    try {
+      const res = await fetch('/api/google-calendar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const result = (await res.json()) as { ok: boolean; event?: CalendarEvent };
+        if (result.event) {
+          const weekEnd = weekStart + 7 * 86_400_000;
+          if (result.event.startUnix >= weekStart && result.event.startUnix < weekEnd) {
+            setEvents(prev => [...prev, result.event!]);
+          }
+        }
+      }
+    } catch (err) { console.error('[calendar create]', err); }
+  }, [weekStart]);
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <section className="flex flex-col gap-3 overflow-x-auto px-6 py-2">
@@ -176,23 +259,24 @@ export function CalendarSection() {
         onPrevWeek={prevWeek}
         onNextWeek={nextWeek}
         onGoToToday={goToToday}
+        onNewEvent={handleNewEventButton}
+        isSyncing={isSyncing}
+        lastSynced={lastSynced}
+        onRefresh={handleRefresh}
       />
 
-      {/* Connected = null → loading skeleton */}
       {connected === null && (
         <div className="flex min-h-[200px] items-center justify-center rounded-2xl border border-[#1a1d24] bg-[#0d0e12]">
-          <span className="text-xs text-[#3a4050] animate-pulse">Loading calendar…</span>
+          <span className="animate-pulse text-xs text-[#3a4050]">Loading calendar…</span>
         </div>
       )}
 
-      {/* Not connected → show OAuth prompt */}
       {connected === false && (
         <Suspense>
           <ConnectCalendarBanner />
         </Suspense>
       )}
 
-      {/* Connected → show the full grid */}
       {connected === true && (
         <CalendarGrid
           weekStart={weekStart}
@@ -204,6 +288,27 @@ export function CalendarSection() {
           onDragEnd={handleDragEnd}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          onEdit={handleOpenEdit}
+          onCreateSlot={handleOpenCreate}
+        />
+      )}
+
+      {editing && (
+        <EventEditPopover
+          event={editing.event}
+          pos={editing.pos}
+          onSave={handleSaveEdit}
+          onDelete={handleDelete}
+          onClose={() => setEditing(null)}
+        />
+      )}
+
+      {creating && (
+        <CreateEventPopover
+          startUnix={creating.startUnix}
+          pos={creating.pos}
+          onCreate={handleCreateEvent}
+          onClose={() => setCreating(null)}
         />
       )}
     </section>
