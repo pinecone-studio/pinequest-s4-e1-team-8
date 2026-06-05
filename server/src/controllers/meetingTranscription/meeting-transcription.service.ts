@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { meetingTranscriptions } from "../../schema/meetingTranscription/meeting-transcription.schema";
 import { transcribeAudio } from "./chimege-client";
+import { downloadRecordingFromR2 } from "./r2-recording-download.service";
 import type { Bindings } from "../../lib/common/types";
 import type { MeetingTranscriptionDb } from "../../lib/meetingTypes/meeting-transcription.types";
 
@@ -98,13 +99,17 @@ export const transcribeRecording = async ({
       .where(eq(meetingTranscriptions.id, transcriptionId));
 
     // TODO: Move audio download and Chimege polling into a Queue/Workflow for production Workers.
-    const audioRes = await fetch(recordingUrl);
-    if (!audioRes.ok) throw new Error("Failed to fetch recording from LiveKit");
+    const recording = await downloadRecordingFromR2({ env, recordingUrl });
 
     const transcript = await transcribeAudio(
-      await audioRes.arrayBuffer(),
+      recording.buffer,
       env.CHIMEGE_API_KEY,
-      { baseUrl: env.CHIMEGE_BASE_URL },
+      {
+        baseUrl: env.CHIMEGE_BASE_URL,
+        filename: recording.filename,
+        fileSize: recording.size,
+        mimeType: recording.contentType,
+      },
     );
 
     await db

@@ -14,6 +14,7 @@ export interface Bindings {
   LIVEKIT_URL: string;
   LIVEKIT_WS_URL?: string;
   LIVEKIT_API_URL?: string;
+  LIVEKIT_EGRESS_WEBHOOK_URL?: string;
   LIVEKIT_API_KEY: string;
   LIVEKIT_API_SECRET: string;
   R2_ACCOUNT_ID: string;
