@@ -47,15 +47,19 @@ INSERT INTO sub_team_members (id, sub_team_id, user_id, created_at) VALUES
   ('stm_3', 'sub_website', 'user_mr', strftime('%s', 'now')),
   ('stm_4', 'sub_dribbble', 'user_ak', strftime('%s', 'now'));
 
--- Tasks (checklist + board samples)
-INSERT INTO tasks (id, workspace_id, project_id, sub_team_id, assignee_id, parent_id, title, description, status, priority, created_at, updated_at) VALUES
-  ('task_research', 'ws_pinequest', 'proj_smart_home', 'sub_apps', 'user_sj', NULL, 'Research', 'User interviews and competitive analysis', 'DONE', 'HIGH', strftime('%s', 'now'), strftime('%s', 'now')),
-  ('task_wireframe', 'ws_pinequest', 'proj_smart_home', 'sub_apps', 'user_wr', NULL, 'Wireframe', 'Low-fidelity flows for main screens', 'DONE', 'MEDIUM', strftime('%s', 'now'), strftime('%s', 'now')),
-  ('task_ui', 'ws_pinequest', 'proj_smart_home', 'sub_apps', 'user_mr', NULL, 'UI Design', 'High-fidelity screens in Figma', 'DONE', 'HIGH', strftime('%s', 'now'), strftime('%s', 'now')),
-  ('task_proto', 'ws_pinequest', 'proj_smart_home', 'sub_apps', 'user_ak', NULL, 'Prototype', 'Interactive prototype for stakeholder review', 'IN_PROGRESS', 'MEDIUM', strftime('%s', 'now'), strftime('%s', 'now')),
-  ('task_ab', 'ws_pinequest', 'proj_smart_home', 'sub_apps', NULL, NULL, 'A/B Test', 'Plan experiments for onboarding funnel', 'TODO', 'LOW', strftime('%s', 'now'), strftime('%s', 'now')),
-  ('task_landing', 'ws_pinequest', 'proj_edu', NULL, 'user_wr', NULL, 'Hero section', 'Above-the-fold layout and copy', 'IN_PROGRESS', 'URGENT', strftime('%s', 'now'), strftime('%s', 'now')),
-  ('task_social_feed', 'ws_pinequest', 'proj_social', NULL, 'user_ak', NULL, 'Feed infinite scroll', 'Performance pass on feed list', 'BACKLOG', 'MEDIUM', strftime('%s', 'now'), strftime('%s', 'now'));
+-- Tasks (task page — mirrors client/components/tasks/mock-tasks.ts)
+INSERT INTO tasks (
+  id, workspace_id, project_id, sub_team_id, assignee_id, parent_id,
+  title, description, status, priority,
+  source, tool, due_date, progress, blocked, done_count, blocked_count, time_left, members_json,
+  created_at, updated_at
+) VALUES
+  ('github-1', 'ws_pinequest', 'proj_team', 'sub_apps', 'user_wr', NULL, 'Backend Team', 'GitHub project issue sample', 'IN_PROGRESS', 'HIGH', 'github', 'Python', '2026-06-11', 80, 0, 12, 7, '1 Week Left', '["MG","SC","IP","LF"]', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('github-2', 'ws_pinequest', 'proj_team', 'sub_apps', 'user_sj', NULL, 'Front End Team', 'GitHub project issue sample', 'IN_PROGRESS', 'MEDIUM', 'github', 'React', '2026-06-18', 70, 1, 8, 6, '2 Weeks Left', '["NH","EM","KB"]', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('asana-1', 'ws_pinequest', 'proj_team', 'sub_website', 'user_mr', NULL, 'UX UI Team', 'Asana task sample', 'DONE', 'MEDIUM', 'asana', 'Figma', '2026-06-09', 90, 0, 14, 4, '5 Days Left', '["RS","MI","JP"]', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('asana-2', 'ws_pinequest', 'proj_team', NULL, 'user_ak', NULL, 'Marketing Team', 'Asana task sample', 'IN_PROGRESS', 'LOW', 'asana', 'Notion', '2026-06-13', 40, 0, 19, 10, '1 Week Left', '["UF","TR"]', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('internal-1', 'ws_pinequest', 'proj_team', 'sub_apps', 'user_wr', NULL, 'Product Ops', 'Internal Brisk task', 'TODO', 'URGENT', 'internal', 'Internal', '2026-06-07', 35, 1, 5, 9, '3 Days Left', '["BA","OD","TU"]', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('internal-2', 'ws_pinequest', 'proj_team', 'sub_dribbble', 'user_ak', NULL, 'QA Release', 'Internal Brisk task', 'IN_PROGRESS', 'HIGH', 'internal', 'Checklist', '2026-06-15', 65, 0, 11, 3, '10 Days Left', '["QA","ER","PM"]', strftime('%s', 'now'), strftime('%s', 'now'));
 
 -- AI conversation (onboarding-style)
 INSERT INTO ai_conversations (id, workspace_id, user_id, title, created_at, updated_at) VALUES
