@@ -1,7 +1,6 @@
 "use client";
 
 import { AnalyticsBarChart, type ChartBarItem } from "@/components/analytics/analytics-bar-chart";
-import { mockTasks } from "@/components/tasks/mock-tasks";
 import { readStoredTasks } from "@/components/tasks/task-storage";
 import type { TaskListItem, TaskSource } from "@/components/tasks/task-types";
 import { cn } from "@/lib/utils";
@@ -79,10 +78,10 @@ function computeMetrics(tasks: TaskListItem[]) {
 }
 
 export function AnalyticsMetrics() {
-  const [tasks, setTasks] = useState<TaskListItem[]>(mockTasks);
+  const [tasks, setTasks] = useState<TaskListItem[]>([]);
 
   useEffect(() => {
-    setTasks(readStoredTasks() ?? mockTasks);
+    setTasks(readStoredTasks() ?? []);
   }, []);
 
   const metrics = useMemo(() => computeMetrics(tasks), [tasks]);
