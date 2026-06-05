@@ -1,8 +1,11 @@
-import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount } from "@/components/ui/avatar";
+"use client";
+
+import { Avatar, AvatarFallback, AvatarGroup } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { teamAvatars } from "@/lib/dashboard/data";
+import { useOnboardingData } from "@/hooks/use-onboarding-data";
+import { memberAvatarColor, memberInitials } from "@/lib/onboarding-utils";
 import {
   Bell,
   ChevronDown,
@@ -11,26 +14,41 @@ import {
   Search,
   Share2,
 } from "lucide-react";
+import Link from "next/link";
 
 export function DashboardHeader() {
+  const { data, loaded, hasProject } = useOnboardingData();
+  const projectName = hasProject && data ? data.projectName : "Your Project";
+  const members = data?.members ?? [];
+
   return (
     <header className="shrink-0 border-b border-border/60 px-6 py-4">
       <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,420px)_auto]">
         <div className="flex items-center gap-3">
           <span className="size-3 shrink-0 rounded-full bg-sky-400" />
-          <h1 className="text-xl font-semibold tracking-tight">Team Project</h1>
-          <AvatarGroup>
-            {teamAvatars.slice(0, 3).map((member) => (
-              <Avatar key={member.initials} size="sm">
-                <AvatarFallback
-                  className={`${member.color} text-[10px] text-white`}
-                >
-                  {member.initials}
-                </AvatarFallback>
-              </Avatar>
-            ))}
-            <AvatarGroupCount className="bg-muted text-[10px]">+4</AvatarGroupCount>
-          </AvatarGroup>
+          <h1 className="text-xl font-semibold tracking-tight">
+            {loaded ? projectName : "Loading…"}
+          </h1>
+          {members.length > 0 ? (
+            <AvatarGroup>
+              {members.slice(0, 4).map((member) => (
+                <Avatar key={member.email} size="sm">
+                  <AvatarFallback
+                    className={`${memberAvatarColor(member.name)} text-[10px] text-white`}
+                  >
+                    {memberInitials(member.name)}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+            </AvatarGroup>
+          ) : loaded && !hasProject ? (
+            <Link
+              href="/onboarding"
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Set up project
+            </Link>
+          ) : null}
         </div>
         <div className="relative w-full">
           <Label htmlFor="global-search" className="sr-only">
@@ -47,7 +65,6 @@ export function DashboardHeader() {
         <div className="flex items-center justify-end gap-2">
           <Button variant="ghost" size="icon" className="relative rounded-xl">
             <Bell className="size-4" />
-            <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-rose-500" />
           </Button>
           <Button variant="ghost" size="icon" className="rounded-xl">
             <FileText className="size-4" />

@@ -1,73 +1,78 @@
-import { ProgressRing } from "@/components/dashboard/shared/progress-ring";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { chartBars, chartDays } from "@/lib/dashboard/data";
+"use client";
 
-const legend = [
-  { label: "Doing", color: "bg-violet-500" },
-  { label: "Progress", color: "bg-sky-400" },
-  { label: "Completed", color: "bg-emerald-400" },
-] as const;
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useOnboardingData } from "@/hooks/use-onboarding-data";
+import { BarChart3 } from "lucide-react";
+import Link from "next/link";
 
 export function TeamInsightsWidget() {
+  const { loaded, hasProject } = useOnboardingData();
+
+  if (!loaded) {
+    return (
+      <Card className="rounded-2xl border-border/60 bg-card/80 py-3">
+        <CardHeader className="px-4 pb-1">
+          <div className="h-5 w-32 animate-pulse rounded bg-muted/50" />
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <div className="h-48 animate-pulse rounded-2xl bg-muted/30" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="rounded-2xl border-border/60 bg-card/80 py-3">
-      <CardHeader className="flex-row items-center justify-between space-y-0 px-4 pb-1">
-        <div>
-          <CardTitle className="text-base">Team Insights</CardTitle>
-          <p className="text-xs text-emerald-500">+19,24</p>
-        </div>
-        <Button variant="link" size="sm" className="h-auto px-0 text-violet-500">
-          View all
-        </Button>
+      <CardHeader className="items-center pb-1">
+        <CardTitle className="text-base">Team Insights</CardTitle>
+        <CardAction>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto px-0 text-violet-500"
+            disabled
+          >
+            View all
+          </Button>
+        </CardAction>
       </CardHeader>
-      <CardContent className="grid gap-3 px-4 pb-4 md:grid-cols-2">
-        <div className="space-y-3">
-          <ProgressRing
-            label="Time Spent"
-            display="9h"
-            value={75}
-            colorClass="text-violet-500"
-          />
-          <ProgressRing
-            label="Tasks"
-            display="10"
-            value={68}
-            colorClass="text-sky-400"
-          />
-          <div className="flex flex-wrap gap-3">
-            {legend.map((item) => (
-              <div key={item.label} className="flex items-center gap-1.5">
-                <span className={`size-2.5 rounded-full ${item.color}`} />
-                <Label className="text-[11px] font-normal text-muted-foreground">
-                  {item.label}
-                </Label>
-              </div>
-            ))}
+      <CardContent className="px-4 pb-4">
+        <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border/60 bg-muted/10 px-6 py-8 text-center">
+          <div className="rounded-xl bg-sky-500/10 p-3 text-sky-400">
+            <BarChart3 className="size-5" />
           </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium">No insights yet</p>
+            <p className="max-w-sm text-xs text-muted-foreground">
+              {hasProject
+                ? "Team activity and progress will show up here once tasks are added and work begins."
+                : "Set up your project and add tasks to start tracking team activity."}
+            </p>
+          </div>
+          {!hasProject ? (
+            <Link
+              href="/onboarding"
+              className="text-xs font-medium text-violet-500 hover:text-violet-400"
+            >
+              Complete onboarding
+            </Link>
+          ) : (
+            <Link
+              href="/tasks"
+              className="text-xs font-medium text-violet-500 hover:text-violet-400"
+            >
+              Go to tasks
+            </Link>
+          )}
         </div>
-        <ActivityChart />
       </CardContent>
     </Card>
-  );
-}
-
-function ActivityChart() {
-  return (
-    <div className="flex items-end justify-between gap-1 pt-1">
-      {chartBars.map((bar, index) => (
-        <div key={`chart-day-${index}`} className="flex flex-1 flex-col items-center gap-1">
-          <div className="flex h-16 w-full flex-col-reverse overflow-hidden rounded-lg">
-            <div className="bg-emerald-400" style={{ height: `${bar.completed}%` }} />
-            <div className="bg-sky-400" style={{ height: `${bar.progress}%` }} />
-            <div className="bg-violet-500" style={{ height: `${bar.doing}%` }} />
-          </div>
-          <Label className="text-[10px] font-normal text-muted-foreground">
-            {chartDays[index]}
-          </Label>
-        </div>
-      ))}
-    </div>
   );
 }

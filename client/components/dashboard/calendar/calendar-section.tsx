@@ -13,6 +13,10 @@ import {
 } from "@/lib/dashboard/calendar-engine";
 import { CalendarControls } from "./calendar-controls";
 import { CalendarGrid } from "./calendar-grid";
+import { CalendarLoadingGrid } from "./calendar-loading-grid";
+import { CalendarFrame } from "./calendar-frame";
+import { CalendarResizableShell } from "./calendar-resizable-shell";
+import { CalendarViewportProvider } from "./calendar-viewport-context";
 import { ConnectCalendarBanner } from "./connect-calendar";
 import { EventEditPopover } from "./event-edit-popover";
 import { CreateEventPopover } from "./create-event-popover";
@@ -253,45 +257,53 @@ export function CalendarSection() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <section className="flex flex-col gap-3 overflow-x-auto px-6 py-2">
-      <CalendarControls
-        weekStart={weekStart}
-        onPrevWeek={prevWeek}
-        onNextWeek={nextWeek}
-        onGoToToday={goToToday}
-        onNewEvent={handleNewEventButton}
-        isSyncing={isSyncing}
-        lastSynced={lastSynced}
-        onRefresh={handleRefresh}
-      />
-
-      {connected === null && (
-        <div className="flex min-h-[200px] items-center justify-center rounded-2xl border border-[#1a1d24] bg-[#0d0e12]">
-          <span className="animate-pulse text-xs text-[#3a4050]">Loading calendar…</span>
-        </div>
-      )}
-
-      {connected === false && (
-        <Suspense>
-          <ConnectCalendarBanner />
-        </Suspense>
-      )}
-
-      {connected === true && (
-        <CalendarGrid
+    <CalendarViewportProvider>
+      <section className="flex flex-col gap-3 overflow-x-auto px-6 py-2">
+        <CalendarControls
           weekStart={weekStart}
-          events={events}
-          currentTimePx={currentTimePx}
-          todayMidnight={todayMidnight}
-          draggingId={draggingId}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onEdit={handleOpenEdit}
-          onCreateSlot={handleOpenCreate}
+          onPrevWeek={prevWeek}
+          onNextWeek={nextWeek}
+          onGoToToday={goToToday}
+          onNewEvent={handleNewEventButton}
+          isSyncing={isSyncing}
+          lastSynced={lastSynced}
+          onRefresh={handleRefresh}
         />
-      )}
+
+        <CalendarResizableShell>
+          {connected === null && (
+            <CalendarLoadingGrid
+              weekStart={weekStart}
+              todayMidnight={todayMidnight}
+            />
+          )}
+
+          {connected === false && (
+            <CalendarFrame weekStart={weekStart} todayMidnight={todayMidnight}>
+              <div className="flex h-full min-h-full items-center justify-center px-8 py-12">
+                <Suspense>
+                  <ConnectCalendarBanner />
+                </Suspense>
+              </div>
+            </CalendarFrame>
+          )}
+
+          {connected === true && (
+            <CalendarGrid
+              weekStart={weekStart}
+              events={events}
+              currentTimePx={currentTimePx}
+              todayMidnight={todayMidnight}
+              draggingId={draggingId}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onEdit={handleOpenEdit}
+              onCreateSlot={handleOpenCreate}
+            />
+          )}
+        </CalendarResizableShell>
 
       {editing && (
         <EventEditPopover
@@ -311,6 +323,7 @@ export function CalendarSection() {
           onClose={() => setCreating(null)}
         />
       )}
-    </section>
+      </section>
+    </CalendarViewportProvider>
   );
 }

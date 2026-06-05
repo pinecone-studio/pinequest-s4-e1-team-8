@@ -17,9 +17,6 @@ export function TaskToolbar() {
       <Button variant="outline" size="sm" className="gap-1.5 rounded-xl">
         <SlidersHorizontal className="size-3.5" />
         Filters
-        <span className="rounded-full bg-violet-600 px-1.5 text-[10px] text-white">
-          3
-        </span>
       </Button>
       <div className="flex items-center gap-2">
         <Label className="text-xs text-muted-foreground">Color</Label>
@@ -47,9 +44,6 @@ export function TaskToolbar() {
         <Button variant="destructive" size="sm" className="gap-1.5 rounded-xl">
           <Trash2 className="size-3.5" />
           Deleted
-          <span className="rounded-full bg-destructive px-1.5 text-[10px] text-white">
-            2
-          </span>
         </Button>
       </div>
     </div>

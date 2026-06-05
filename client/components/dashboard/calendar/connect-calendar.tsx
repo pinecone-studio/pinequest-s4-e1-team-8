@@ -7,8 +7,7 @@ export function ConnectCalendarBanner() {
   const error  = params.get("gcal_error");
 
   return (
-    <div className="flex min-h-[200px] flex-col items-center justify-center gap-4 rounded-2xl border border-[#1a1d24] bg-[#0d0e12] px-8 py-12 text-center">
-      {/* Google Calendar icon */}
+    <div className="flex max-w-sm flex-col items-center justify-center gap-4 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1a1d24]">
         <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none">
           <rect x="3" y="4" width="18" height="17" rx="2" stroke="#3b82f6" strokeWidth="1.5"/>
@@ -19,7 +18,7 @@ export function ConnectCalendarBanner() {
 
       <div className="space-y-1">
         <p className="text-sm font-semibold text-white">Connect Google Calendar</p>
-        <p className="max-w-xs text-xs text-[#5a6170]">
+        <p className="text-xs text-[#5a6170]">
           Grant access to display your real events, meetings, and tasks in this view.
         </p>
       </div>

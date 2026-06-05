@@ -7,6 +7,7 @@ import { StepProjectSetup } from "./steps/step-project-setup";
 import { StepInviteTeam } from "./steps/step-invite-team";
 import { StepIntegrations } from "./steps/step-integrations";
 import { StepAiTasks } from "./steps/step-ai-tasks";
+import { saveOnboardingData } from "@/lib/onboarding-storage";
 import type { OnboardingData } from "./onboarding-types";
 
 const INITIAL_DATA: OnboardingData = {
@@ -30,6 +31,7 @@ export function OnboardingWizard() {
   const next = () => setStep((s) => Math.min(3, s + 1));
 
   const finish = () => {
+    saveOnboardingData(data);
     router.push("/dashboard");
   };
 

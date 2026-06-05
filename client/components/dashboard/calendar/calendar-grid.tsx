@@ -14,11 +14,11 @@ import {
   snapTo15Minutes,
   type WeekDay,
 } from "@/lib/dashboard/calendar-engine";
+import { CALENDAR_GUTTER_WIDTH } from "@/lib/dashboard/calendar-layout";
 import { EventCard } from "./event-card";
+import { CalendarFrame } from "./calendar-frame";
+import { useCalendarViewport } from "./calendar-viewport-context";
 import { cn } from "@/lib/utils";
-
-const GUTTER_WIDTH    = 52;
-const VIEWPORT_HEIGHT = 600;
 
 interface CalendarGridProps {
   weekStart:      number;
@@ -48,12 +48,12 @@ export function CalendarGrid({
   onCreateSlot,
 }: CalendarGridProps) {
   const scrollRef  = useRef<HTMLDivElement>(null);
-  const weekDays   = getWeekDays(weekStart, todayMidnight);
+  const { viewportHeight } = useCalendarViewport();
   const timeLabels = getTimeLabels();
 
   useEffect(() => {
     if (!scrollRef.current || currentTimePx === null) return;
-    scrollRef.current.scrollTop = Math.max(0, currentTimePx - VIEWPORT_HEIGHT / 3);
+    scrollRef.current.scrollTop = Math.max(0, currentTimePx - viewportHeight / 3);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -70,129 +70,70 @@ export function CalendarGrid({
     ),
   [events]);
 
-  const hasAnyAllDay = weekDays.some(d => allDayForDay(d).length > 0);
+  const days = getWeekDays(weekStart, todayMidnight);
 
   return (
-    <div
-      className="overflow-hidden rounded-2xl border border-[#1a1d24] bg-[#0d0e12]"
-      style={{ minWidth: GUTTER_WIDTH + 7 * 80 }}
-    >
-      {/* Day-of-week header */}
-      <div className="flex border-b border-[#1a1d24]">
-        <div className="shrink-0 border-r border-[#1a1d24]" style={{ width: GUTTER_WIDTH }} />
-        {weekDays.map(day => (
-          <div
-            key={day.dayUnix}
-            className={cn(
-              "flex flex-1 flex-col items-center justify-center gap-1 py-3",
-              "border-l border-[#1a1d24]",
-              day.isToday && "bg-[#13151c]",
-            )}
-          >
-            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#3d4252]">
-              {day.shortDay}
-            </span>
-            <span
-              className={cn(
-                "flex h-[26px] w-[26px] items-center justify-center rounded-full",
-                "text-[13px] font-semibold tabular-nums",
-                day.isToday
-                  ? "bg-[#2563eb] text-white shadow-[0_0_16px_rgba(37,99,235,0.5)]"
-                  : "text-[#5a6170]",
-              )}
+    <CalendarFrame
+      weekStart={weekStart}
+      todayMidnight={todayMidnight}
+      renderAllDayCell={(day) =>
+        allDayForDay(day).map((ev) => {
+          const hex = EVENT_COLORS[ev.color].accent;
+          return (
+            <div
+              key={ev.id}
+              className="truncate rounded-sm px-1.5 py-[1px] text-[8px] font-medium"
+              style={{
+                backgroundColor: `${hex}22`,
+                color: hex,
+                border: `1px solid ${hex}44`,
+              }}
             >
-              {day.label}
+              {ev.title}
+            </div>
+          );
+        })
+      }
+      bodyRef={scrollRef}
+    >
+      <div className="flex" style={{ height: TOTAL_GRID_HEIGHT_PX }}>
+        <div
+          className="relative shrink-0 border-r border-[#1a1d24]"
+          style={{ width: CALENDAR_GUTTER_WIDTH, height: TOTAL_GRID_HEIGHT_PX }}
+        >
+          {timeLabels.map(({ hour, label, topPx }) => (
+            <span
+              key={hour}
+              className="absolute right-[8px] -translate-y-1/2 text-[9px] tabular-nums text-[#2c3040]"
+              style={{ top: topPx }}
+            >
+              {label}
             </span>
-          </div>
-        ))}
-      </div>
-
-      {/* All-day shelf */}
-      {hasAnyAllDay && (
-        <div className="flex min-h-[28px] border-b border-[#1a1d24]">
-          <div
-            className="flex shrink-0 items-center justify-center border-r border-[#1a1d24]"
-            style={{ width: GUTTER_WIDTH }}
-          >
-            <span className="text-[8px] font-medium uppercase tracking-widest text-[#2e3240]">
-              All day
-            </span>
-          </div>
-          {weekDays.map(day => {
-            const pills = allDayForDay(day);
-            return (
-              <div
-                key={day.dayUnix}
-                className="flex flex-1 flex-col justify-center gap-[2px] border-l border-[#1a1d24] px-1 py-[3px]"
-              >
-                {pills.map(ev => {
-                  const hex = EVENT_COLORS[ev.color].accent;
-                  return (
-                    <div
-                      key={ev.id}
-                      className="truncate rounded-sm px-1.5 py-[1px] text-[8px] font-medium"
-                      style={{
-                        backgroundColor: `${hex}22`,
-                        color:           hex,
-                        border:          `1px solid ${hex}44`,
-                      }}
-                    >
-                      {ev.title}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+          ))}
         </div>
-      )}
 
-      {/* Scrollable time grid */}
-      <div ref={scrollRef} className="overflow-y-auto" style={{ maxHeight: VIEWPORT_HEIGHT }}>
-        <div className="flex" style={{ height: TOTAL_GRID_HEIGHT_PX }}>
-
-          {/* Left time axis */}
-          <div
-            className="relative shrink-0 border-r border-[#1a1d24]"
-            style={{ width: GUTTER_WIDTH, height: TOTAL_GRID_HEIGHT_PX }}
-          >
-            {timeLabels.map(({ hour, label, topPx }) => (
-              <span
-                key={hour}
-                className="absolute right-[8px] -translate-y-1/2 text-[9px] tabular-nums text-[#2c3040]"
-                style={{ top: topPx }}
-              >
-                {label}
-              </span>
-            ))}
-          </div>
-
-          {/* Day columns */}
-          {weekDays.map(day => {
-            const laid = layoutEventsForDay(eventsForDay(day), day.dayUnix);
-            return (
-              <DayColumn
-                key={day.dayUnix}
-                day={day}
-                events={laid}
-                draggingId={draggingId}
-                currentTimePx={day.isToday ? currentTimePx : null}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                onDragOver={onDragOver}
-                onDrop={onDrop}
-                onEdit={onEdit}
-                onCreateSlot={onCreateSlot}
-              />
-            );
-          })}
-        </div>
+        {days.map(day => {
+          const laid = layoutEventsForDay(eventsForDay(day), day.dayUnix);
+          return (
+            <DayColumn
+              key={day.dayUnix}
+              day={day}
+              events={laid}
+              draggingId={draggingId}
+              currentTimePx={day.isToday ? currentTimePx : null}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+              onEdit={onEdit}
+              onCreateSlot={onCreateSlot}
+            />
+          );
+        })}
       </div>
-    </div>
+    </CalendarFrame>
   );
 }
-
-// ─── Day column ────────────────────────────────────────────────────────────────
 
 interface DayColumnProps {
   day:           WeekDay;
@@ -220,7 +161,6 @@ function DayColumn({
   onCreateSlot,
 }: DayColumnProps) {
   function handleColumnClick(e: React.MouseEvent) {
-    // getBoundingClientRect accounts for scroll, giving position in full column
     const rect      = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const relativeY = e.clientY - rect.top;
     const hourOffset = relativeY / HOUR_HEIGHT_PX + GRID_START_HOUR;
@@ -257,8 +197,6 @@ function DayColumn({
   );
 }
 
-// ─── Grid lines ────────────────────────────────────────────────────────────────
-
 function GridLines() {
   const totalSlots = TOTAL_GRID_HEIGHT_PX / QUARTER_HEIGHT_PX;
   return (
@@ -276,8 +214,6 @@ function GridLines() {
     </>
   );
 }
-
-// ─── Current time indicator ────────────────────────────────────────────────────
 
 function CurrentTimeLine({ topPx }: { topPx: number }) {
   return (
