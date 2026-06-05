@@ -64,6 +64,6 @@ export function mapApiTaskToListItem(task: ApiTaskListItem): TaskListItem {
     timeLeft: task.timeLeft,
     doneCount: task.doneCount,
     blockedCount: task.blockedCount,
-    members: normalizeMembers(task.members ?? []).map((member) => member.initials),
+    members: normalizeMembers(task.members ?? []),
   };
 }
