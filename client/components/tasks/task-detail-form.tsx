@@ -9,6 +9,7 @@ import {
 } from "@/components/tasks/task-types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { normalizeMembers } from "@/lib/tasks/map-api-task";
 import { cn } from "@/lib/utils";
 import { CalendarDays } from "lucide-react";
 
@@ -58,7 +59,8 @@ type TaskDetailFormProps = {
 
 export function TaskDetailForm({ task, onUpdate }: TaskDetailFormProps) {
   const dueDateValue = task.dueDate.slice(0, 10).replaceAll(".", "-");
-  const primaryMember = task.members[0] ?? "Unassigned";
+  const primaryMember =
+    normalizeMembers(task.members as unknown[])[0]?.initials ?? "Unassigned";
 
   return (
     <>

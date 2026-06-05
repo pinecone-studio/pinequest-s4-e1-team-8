@@ -20,7 +20,7 @@ export function createMockTask(
     timeLeft: "1 Week Left",
     doneCount: 0,
     blockedCount: 0,
-    members: ["ME"],
+    members: [{ initials: "ME" }],
     description: "",
   };
 }

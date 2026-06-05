@@ -65,7 +65,7 @@ export type TaskListItem = {
   timeLeft: string;
   doneCount: number;
   blockedCount: number;
-  members: string[];
+  members: TaskMember[];
   description?: string;
 };
 

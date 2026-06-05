@@ -45,7 +45,8 @@ export function TaskCard({
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(task.title);
   const inputRef = useRef<HTMLInputElement>(null);
-  const primaryMember = task.members[0];
+  const members = normalizeMembers(task.members as unknown[]);
+  const primaryMember = members[0];
 
   useEffect(() => {
     if (!isEditing) {
@@ -133,12 +134,12 @@ export function TaskCard({
                   className={cn(
                     "grid size-8 place-items-center rounded-full text-[11px] font-semibold text-white",
                     memberColors[
-                      primaryMember.charCodeAt(0) % memberColors.length
+                      primaryMember.initials.charCodeAt(0) % memberColors.length
                     ],
                   )}
-                  title={task.members.join(", ")}
+                  title={members.map((member) => member.initials).join(", ")}
                 >
-                  {primaryMember}
+                  {primaryMember.initials}
                 </span>
               </div>
             ) : null}

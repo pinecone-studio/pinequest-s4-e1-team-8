@@ -58,7 +58,7 @@ export function TaskTeamCard({ team, active, onClick }: TaskTeamCardProps) {
       <div className="mt-4 flex items-center">
         {team.members.slice(0, 4).map((member, index) => (
           <span
-            key={`${team.name}-${member}`}
+            key={`${team.name}-${member}-${index}`}
             className={cn(
               "grid size-8 place-items-center rounded-full border-2 border-card text-[11px] font-semibold text-white dark:border-[#1f2024]",
               index > 0 && "-ml-2",
