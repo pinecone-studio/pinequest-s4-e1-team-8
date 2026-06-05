@@ -1,5 +1,6 @@
 export const sidebarNavItems = [
   { label: "Dashboard", href: "/dashboard", dot: true },
+  { label: "Tasks", href: "/tasks" },
   { label: "Project Board", href: "#", expandable: true },
   {
     label: "Schedule",
