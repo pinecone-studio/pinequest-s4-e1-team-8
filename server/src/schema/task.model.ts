@@ -16,6 +16,10 @@ export type TaskStatus = (typeof taskStatusEnum)[number];
 export const taskPriorityEnum = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 export type TaskPriority = (typeof taskPriorityEnum)[number];
 
+/** Matches task page tabs in client/components/tasks/task-list.tsx */
+export const taskSourceEnum = ["github", "asana", "internal"] as const;
+export type TaskSource = (typeof taskSourceEnum)[number];
+
 export const tasks = sqliteTable("tasks", {
   id: text("id").primaryKey(),
   workspaceId: text("workspace_id")
@@ -37,6 +41,16 @@ export const tasks = sqliteTable("tasks", {
   priority: text("priority", { enum: taskPriorityEnum })
     .notNull()
     .default("MEDIUM"),
+  source: text("source", { enum: taskSourceEnum }).notNull().default("internal"),
+  tool: text("tool"),
+  dueDate: text("due_date"),
+  progress: integer("progress").notNull().default(0),
+  blocked: integer("blocked", { mode: "boolean" }).notNull().default(false),
+  doneCount: integer("done_count").notNull().default(0),
+  blockedCount: integer("blocked_count").notNull().default(0),
+  timeLeft: text("time_left"),
+  /** JSON array of member initials, e.g. ["MG","SC"] */
+  membersJson: text("members_json").notNull().default("[]"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

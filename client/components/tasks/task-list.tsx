@@ -42,12 +42,12 @@ export function TaskList() {
     window.setTimeout(() => {
       setTasks(readStoredTasks() ?? mockTasks);
       setIsLoading(false);
-    }, 300);
-  }, []);
+    }
+  }, [activeSource]);
 
   useEffect(() => {
-    loadMockTasks();
-  }, [loadMockTasks]);
+    loadTasks();
+  }, [loadTasks]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -147,7 +147,7 @@ export function TaskList() {
 
         {isLoading ? (
           <TaskListSkeleton />
-        ) : visibleTasks.length === 0 ? (
+        ) : (tasks ?? []).length === 0 ? (
           <EmptyTasks />
         ) : (
           <TaskBoard
