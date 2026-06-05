@@ -11,6 +11,33 @@ const getUrl = (value: unknown) => {
   return url.startsWith("http://") || url.startsWith("https://") ? url : null;
 };
 
+const FINAL_EGRESS_EVENTS = new Set(["egress_ended"]);
+
+const FINAL_EGRESS_STATUSES = new Set([
+  "EGRESS_COMPLETE",
+  "EGRESS_FAILED",
+  "EGRESS_ABORTED",
+  "EGRESS_LIMIT_REACHED",
+]);
+
+const getEgressStatus = (value: unknown) => {
+  const status = getString(value);
+
+  if (!status) return null;
+  return status.toUpperCase();
+};
+
+const isFinalEgressEvent = (
+  event: string | null,
+  egressData: Record<string, unknown>,
+) => {
+  if (event && FINAL_EGRESS_EVENTS.has(event)) return true;
+
+  const status = getEgressStatus(egressData.status);
+
+  return status ? FINAL_EGRESS_STATUSES.has(status) : false;
+};
+
 const findRecordingUrl = (value: unknown): string | null => {
   if (!value || typeof value !== "object") return null;
 
@@ -36,10 +63,16 @@ export const parseLiveKitEgressCompletePayload = (
   payload: unknown,
 ): LiveKitEgressCompletePayload => {
   if (!payload || typeof payload !== "object") {
-    return { egressId: null, recordingUrl: null };
+    return {
+      egressId: null,
+      event: null,
+      isFinal: false,
+      recordingUrl: null,
+    };
   }
 
   const data = payload as Record<string, unknown>;
+  const event = getString(data.event);
   const egressInfo = data.egressInfo ?? data.egress_info ?? data.egress;
   const egressData =
     egressInfo && typeof egressInfo === "object"
@@ -47,11 +80,13 @@ export const parseLiveKitEgressCompletePayload = (
       : data;
 
   return {
+    event,
     egressId:
       getString(egressData.egressId) ??
       getString(egressData.egress_id) ??
       getString(data.egressId) ??
       getString(data.egress_id),
+    isFinal: isFinalEgressEvent(event, egressData),
     recordingUrl: findRecordingUrl(egressData) ?? findRecordingUrl(data),
   };
 };

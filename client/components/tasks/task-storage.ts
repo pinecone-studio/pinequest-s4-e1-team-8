@@ -2,7 +2,7 @@ import {
   normalizeTaskStatus,
   type TaskListItem,
 } from "@/components/tasks/task-types";
-import { normalizeMembers } from "@/lib/tasks/map-api-task";
+import { normalizeMemberInitials } from "@/lib/tasks/map-api-task";
 
 const STORAGE_KEY = "team-project-tasks";
 
@@ -19,7 +19,7 @@ export function readStoredTasks() {
       team: task.team ?? task.title,
       status: normalizeTaskStatus(task.status),
       description: task.description ?? "",
-      members: normalizeMembers((task.members ?? []) as unknown[]),
+      members: normalizeMemberInitials((task.members ?? []) as unknown[]),
     }));
   } catch {
     return null;

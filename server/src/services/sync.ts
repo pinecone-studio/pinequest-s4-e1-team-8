@@ -1,9 +1,8 @@
 import { eq } from "drizzle-orm";
 import type { getDrizzleDb } from "../lib/db/db";
 import { syncMappings } from "../schema/schema";
-import { mapGithubIssueToAsanaTask } from "./github";
+import { mapGithubIssueToAsanaTask, type GitHubIssue } from "./github-asana";
 import { createTask } from "./asana";
-import type { GitHubIssue } from "./github";
 
 type DB = ReturnType<typeof getDrizzleDb>;
 

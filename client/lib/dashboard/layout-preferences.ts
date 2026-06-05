@@ -89,9 +89,3 @@ export function saveLayoutPreferences(
   window.localStorage.removeItem(LEGACY_SIDEBAR_KEY);
 }
 
-export function readInitialLayoutPreferences(): DashboardLayoutPreferences {
-  if (typeof window === "undefined") {
-    return DEFAULT_PREFERENCES;
-  }
-  return readLayoutPreferences();
-}

@@ -3,6 +3,7 @@
   "name": "server-preset",
   "main": "src/index.ts",
   "compatibility_date": "2026-04-16",
+  "compatibility_flags": ["nodejs_compat"],
   "account_id": "a60e9697809a342d3482149cd0ac135e",
   "d1_databases": [
     {

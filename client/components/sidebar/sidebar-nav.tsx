@@ -3,7 +3,7 @@
 import { SidebarNavItem } from "@/components/sidebar/sidebar-nav-item";
 import { SidebarTree } from "@/components/sidebar/sidebar-tree";
 import { useSidebar } from "@/components/sidebar/sidebar-context";
-import { sidebarNavItems } from "@/lib/dashboard/data";
+import { sidebarNavItems, sidebarWorkflowItems } from "@/lib/dashboard/data";
 import { cn } from "@/lib/utils";
 
 export function SidebarNav() {
@@ -28,6 +28,19 @@ export function SidebarNav() {
             {!collapsed && "expandable" in item && item.expandable && (
               <SidebarTree />
             )}
+          </li>
+        ))}
+      </ul>
+
+      {!collapsed && (
+        <p className="mb-2.5 mt-5 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b73]">
+          Workflow
+        </p>
+      )}
+      <ul className="space-y-0.5">
+        {sidebarWorkflowItems.map((item) => (
+          <li key={item.label}>
+            <SidebarNavItem item={item} />
           </li>
         ))}
       </ul>

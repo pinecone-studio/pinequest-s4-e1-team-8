@@ -8,6 +8,10 @@ export const sidebarNavItems = [
   { label: "Inbox", href: "#" },
 ] as const;
 
+export const sidebarWorkflowItems = [
+  { label: "Workflow", href: "/workflow" },
+] as const;
+
 export const toolbarColors = [
   "bg-amber-400",
   "bg-pink-400",

@@ -6,11 +6,11 @@ import {
   WIDGETS_LEFT_RATIO_DEFAULT,
   WIDGETS_LEFT_RATIO_MAX,
   WIDGETS_LEFT_RATIO_MIN,
-  readInitialLayoutPreferences,
+  readLayoutPreferences,
   saveLayoutPreferences,
 } from "@/lib/dashboard/layout-preferences";
 import { cn } from "@/lib/utils";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 function clampRatio(ratio: number) {
   return Math.min(
@@ -22,11 +22,13 @@ function clampRatio(ratio: number) {
 export function DashboardWidgetsSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const ratioRef = useRef(WIDGETS_LEFT_RATIO_DEFAULT);
-  const [leftRatio, setLeftRatio] = useState(() => {
-    const initial = readInitialLayoutPreferences().widgetsLeftRatio;
+  const [leftRatio, setLeftRatio] = useState(WIDGETS_LEFT_RATIO_DEFAULT);
+
+  useEffect(() => {
+    const initial = readLayoutPreferences().widgetsLeftRatio;
     ratioRef.current = initial;
-    return initial;
-  });
+    setLeftRatio(initial);
+  }, []);
 
   const onDividerPointerDown = useCallback(
     (event: React.PointerEvent<HTMLButtonElement>) => {

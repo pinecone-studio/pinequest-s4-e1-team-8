@@ -1,9 +1,10 @@
 import axios from "axios";
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL;
+const serverBaseURL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8788";
 
 /** For Client Components / the browser (`withCredentials` for cookies). */
 export const clientApi = axios.create({
-  baseURL,
+  // Same-origin in the browser so Next.js rewrites proxy to the backend.
+  baseURL: typeof window !== "undefined" ? "" : serverBaseURL,
   withCredentials: true,
 });
