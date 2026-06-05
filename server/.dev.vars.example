@@ -2,3 +2,7 @@ GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 GITHUB_OAUTH_REDIRECT_URI=http://localhost:8788/integrations/github/callback
 CLIENT_APP_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+GITHUB_WEBHOOK_SECRET=dev-webhook-secret
+# Local dev only — skips OAuth on the workflow page when set
+GITHUB_TEST_TOKEN=

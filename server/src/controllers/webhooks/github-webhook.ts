@@ -1,7 +1,7 @@
 import { Context } from "hono";
 import { useDB } from "../../lib/db/db";
 import type { Bindings } from "../../lib/common/types";
-import type { GitHubIssue } from "../../services/github";
+import type { GitHubIssue } from "../../services/github-asana";
 import { syncIssueToAsana } from "../../services/sync";
 
 type GitHubIssueEventPayload = {
