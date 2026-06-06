@@ -14,7 +14,10 @@ type BriskAgentResponse =
       code: string | null;
     };
 
-const SERVER_URL = (process.env.API_URL ?? "http://localhost:8788").replace(/\/$/, "");
+const SERVER_URL = (process.env.API_URL ?? "http://localhost:8788").replace(
+  /\/$/,
+  "",
+);
 const ENDPOINT = `${SERVER_URL}/api/run-agent`;
 
 const WORKSPACES = [
@@ -35,9 +38,16 @@ function makeSuccessBody(projectId: string): BriskAgentResponse {
     phasesCreated: 4,
     tasksCreated: 16,
     history: [
-      { type: "ai", content: "Project context verified and ready for provisioning." },
+      {
+        type: "ai",
+        content: "Project context verified and ready for provisioning.",
+      },
       { type: "ai", content: "Generated 4 phases with 12 tasks." },
-      { type: "ai", content: 'Persisted project "Brisk Test Project" with 4 milestones and 16 total records.' },
+      {
+        type: "ai",
+        content:
+          'Persisted project "Brisk Test Project" with 4 milestones and 16 total records.',
+      },
     ],
   };
 }
@@ -48,14 +58,17 @@ describe("request construction", () => {
 
     const mockFetch = mock(async (url: string, init?: RequestInit) => {
       captured.push({ url, init: init ?? {} });
-      return new Response(JSON.stringify(makeSuccessBody(FIXTURE_INPUT.projectId)), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify(makeSuccessBody(FIXTURE_INPUT.projectId)),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     });
 
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = mockFetch as typeof globalThis.fetch;
+    globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch;
 
     const params = {
       ...FIXTURE_INPUT,
@@ -81,7 +94,10 @@ describe("request construction", () => {
       "application/json",
     );
 
-    const parsed = JSON.parse(call.init.body as string) as Record<string, unknown>;
+    const parsed = JSON.parse(call.init.body as string) as Record<
+      string,
+      unknown
+    >;
     expect(parsed.projectId).toBe(FIXTURE_INPUT.projectId);
     expect(parsed.inputMessage).toBe(FIXTURE_INPUT.inputMessage);
     expect(parsed.workspaceId).toBe(WORKSPACES[0].id);
@@ -109,7 +125,7 @@ describe("request construction", () => {
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
-    }) as typeof globalThis.fetch;
+    }) as unknown as typeof globalThis.fetch;
 
     const response = await fetch(ENDPOINT, {
       method: "POST",
@@ -140,11 +156,14 @@ describe("multi-workspace routing", () => {
           unknown
         >;
         captured.push(String(parsed.workspaceId ?? ""));
-        return new Response(JSON.stringify(makeSuccessBody(FIXTURE_INPUT.projectId)), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
-      }) as typeof globalThis.fetch;
+        return new Response(
+          JSON.stringify(makeSuccessBody(FIXTURE_INPUT.projectId)),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }) as unknown as typeof globalThis.fetch;
 
       await fetch(ENDPOINT, {
         method: "POST",
@@ -162,7 +181,11 @@ describe("telemetry metadata shape", () => {
     const telemetry = {
       runName: "brisk-agent",
       tags: ["brisk-agent", "workspace:ws_pinequest"],
-      metadata: { projectId: "proj_test", workspaceId: "ws_pinequest", userId: null },
+      metadata: {
+        projectId: "proj_test",
+        workspaceId: "ws_pinequest",
+        userId: null,
+      },
     };
 
     expect(telemetry.runName).toBe("brisk-agent");

@@ -1,5 +1,4 @@
-const BASE_URL = process.env.API_URL ?? "http://localhost:8788";
-const TOKEN = process.env.CLERK_TEST_TOKEN ?? "";
+const BASE_URL = process.env.API_URL ?? "http://localhost:8787";
 
 type WorkspaceTestCase = {
   label: string;
@@ -35,8 +34,8 @@ const WORKSPACES: WorkspaceTestCase[] = [
 
 function buildAuthHeaders(): Record<string, string> {
   return {
+    Authorization: `Bearer ${process.env.CLERK_TEST_TOKEN ?? ""}`,
     "Content-Type": "application/json",
-    Authorization: `Bearer ${TOKEN}`,
   };
 }
 
@@ -90,8 +89,10 @@ async function runUnauthenticatedTest(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  if (!TOKEN) {
-    console.error("CLERK_TEST_TOKEN is not set. Export it before running this script.");
+  if (!process.env.CLERK_TEST_TOKEN) {
+    console.error(
+      "CLERK_TEST_TOKEN is not set. Export it before running this script.",
+    );
     process.exit(1);
   }
 
