@@ -347,6 +347,90 @@ export async function syncGithubIssues() {
   });
 }
 
+export type GithubProject = {
+  id: string;
+  number: number;
+  title: string;
+  url: string;
+  closed: boolean;
+  shortDescription: string | null;
+  owner: string;
+};
+
+export type GithubProjectField = {
+  id: string;
+  name: string;
+  dataType: string;
+  options?: { id: string; name: string }[];
+};
+
+export type GithubProjectItemContent =
+  | { type: "Issue"; id: string; title: string; number: number; state: string; url: string; body?: string | null }
+  | { type: "PullRequest"; id: string; title: string; number: number; state: string; url: string }
+  | { type: "DraftIssue"; id: string; title: string; body?: string | null }
+  | null;
+
+export type GithubProjectFieldValue = {
+  fieldId: string;
+  fieldName: string;
+  value: string | number | null;
+  optionId?: string;
+};
+
+export type GithubProjectItem = {
+  id: string;
+  type: "ISSUE" | "PULL_REQUEST" | "DRAFT_ISSUE";
+  content: GithubProjectItemContent;
+  fieldValues: GithubProjectFieldValue[];
+};
+
+export type ProjectFieldValue =
+  | { text: string }
+  | { number: number }
+  | { date: string }
+  | { singleSelectOptionId: string }
+  | { iterationId: string };
+
+export async function fetchGithubProjects(org?: string): Promise<GithubProject[]> {
+  const { data } = await clientApi.get<{ projects: GithubProject[] }>(
+    "/integrations/github/projects",
+    { params: { userId: uid(), ...(org ? { org } : {}) } },
+  );
+  return data.projects;
+}
+
+export async function fetchGithubProjectDetail(
+  projectId: string,
+): Promise<{ fields: GithubProjectField[]; items: GithubProjectItem[] }> {
+  const { data } = await clientApi.get<{ fields: GithubProjectField[]; items: GithubProjectItem[] }>(
+    "/integrations/github/projects/detail",
+    { params: { userId: uid(), projectId } },
+  );
+  return data;
+}
+
+export async function addGithubProjectItem(params: {
+  projectId: string;
+  contentId?: string;
+  title?: string;
+  itemBody?: string;
+}): Promise<string> {
+  const { data } = await clientApi.post<{ itemId: string }>(
+    "/integrations/github/projects/items",
+    { userId: uid(), ...params },
+  );
+  return data.itemId;
+}
+
+export async function updateGithubProjectItemField(params: {
+  projectId: string;
+  itemId: string;
+  fieldId: string;
+  value: ProjectFieldValue;
+}): Promise<void> {
+  await clientApi.patch("/integrations/github/projects/items", { userId: uid(), ...params });
+}
+
 export function extractApiError(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "response" in err) {
     return (

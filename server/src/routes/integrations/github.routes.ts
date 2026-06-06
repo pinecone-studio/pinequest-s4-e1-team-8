@@ -26,6 +26,10 @@ import {
   postGithubPullReview,
   postGithubPullReviewers,
   postGithubSync,
+  getGithubProjects,
+  getGithubProjectDetail,
+  postGithubProjectItem,
+  patchGithubProjectItem,
 } from "../../controllers/integrations/github";
 import { Bindings } from "../../lib/common/types";
 
@@ -57,5 +61,10 @@ githubRoutes.post("/pulls/reviewers", postGithubPullReviewers);
 githubRoutes.post("/pulls/generate", postGithubGeneratePrMessage);
 githubRoutes.patch("/pulls", patchGithubPull);
 githubRoutes.post("/sync", postGithubSync);
+
+githubRoutes.get("/projects", getGithubProjects);
+githubRoutes.get("/projects/detail", getGithubProjectDetail);
+githubRoutes.post("/projects/items", postGithubProjectItem);
+githubRoutes.patch("/projects/items", patchGithubProjectItem);
 
 export default githubRoutes;
