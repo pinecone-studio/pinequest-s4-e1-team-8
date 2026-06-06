@@ -10,6 +10,10 @@ import { createPersistTasksNode } from "./nodes/persist-tasks.node";
 import { createValidateInputNode } from "./nodes/validate-input.node";
 import { validateBreakdownNode } from "./nodes/validate-breakdown.node";
 import { createVerifyProjectNode } from "./nodes/verify-project.node";
+import { supervisorNode } from "./nodes/supervisor.node";
+import { onboardingWorkerNode } from "./nodes/onboarding-worker.node";
+import { metricsWorkerNode } from "./nodes/metrics-worker.node";
+import { riskWorkerNode } from "./nodes/risk-worker.node";
 
 export type { BriskAgentRuntime };
 export { BriskState };
@@ -74,6 +78,10 @@ export function briskAgent(db: BriskAgentDb) {
     .addNode("persistProject", persistProjectNode)
     .addNode("persistTasks", persistTasksNode)
     .addNode("logExecution", logExecutionNode)
+    .addNode("supervisor", supervisorNode)
+    .addNode("onboardingWorker", onboardingWorkerNode)
+    .addNode("metricsWorker", metricsWorkerNode)
+    .addNode("riskWorker", riskWorkerNode)
     .addEdge(START, "validateInput");
 
   workflow.addConditionalEdges("validateInput", routeAfterValidateInput, {
