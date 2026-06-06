@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const clientRoot = path.dirname(fileURLToPath(import.meta.url));
+const monorepoRoot = path.resolve(clientRoot, "..");
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8788";
 
 const nextConfig: NextConfig = {
