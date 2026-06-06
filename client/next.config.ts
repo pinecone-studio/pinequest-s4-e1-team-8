@@ -7,7 +7,10 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8788";
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: clientRoot,
+    // Set to monorepo root so Turbopack matches where bun.lock lives.
+    // Without this, Turbopack auto-detects the root from the lock file
+    // at the monorepo root but then fails to find `next` from there.
+    root: monorepoRoot,
     resolveAlias: {
       tailwindcss: path.join(clientRoot, "node_modules/tailwindcss"),
       "tw-animate-css": path.join(clientRoot, "node_modules/tw-animate-css"),

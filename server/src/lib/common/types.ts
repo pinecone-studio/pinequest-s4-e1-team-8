@@ -3,6 +3,7 @@ import { D1Database } from "@cloudflare/workers-types";
 export interface Bindings {
   DB: D1Database;
   CLIENT_APP_URL?: string;
+  CLERK_PUBLISHABLE_KEY?: string;
   CHIMEGE_API_KEY: string;
   CHIMEGE_BASE_URL?: string;
   GITHUB_CLIENT_ID?: string;

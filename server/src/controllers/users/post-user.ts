@@ -8,18 +8,27 @@ export const createUser = async (c: Context<{ Bindings: Bindings }>) => {
 
   const body = await c.req.json().catch(() => null);
 
-  if (!body) {
-    return c.json({ error: "Body is required" }, 400);
+  if (!body?.id || !body.clerkId || !body.email || !body.name) {
+    return c.json({ error: "id, clerkId, name, and email are required" }, 400);
   }
 
-  const [newUser] = await db
+  const [upsertedUser] = await db
     .insert(users)
     .values({
       id: body.id,
       clerkId: body.clerkId,
       name: body.name,
       email: body.email,
-      avatarUrl: body.avatarUrl,
+      avatarUrl: body.avatarUrl ?? null,
+    })
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
+        name: body.name,
+        email: body.email,
+        avatarUrl: body.avatarUrl ?? null,
+        updatedAt: new Date(),
+      },
     })
     .returning({
       id: users.id,
@@ -29,5 +38,5 @@ export const createUser = async (c: Context<{ Bindings: Bindings }>) => {
       avatarUrl: users.avatarUrl,
     });
 
-  return c.json({ new_user: newUser }, 201);
+  return c.json({ user: upsertedUser }, 200);
 };

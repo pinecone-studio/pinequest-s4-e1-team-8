@@ -501,7 +501,7 @@ export function WorkflowContent() {
         </div>
         <Button
           className="bg-violet-600 hover:bg-violet-700"
-          onClick={redirectToGithubConnect}
+          onClick={() => redirectToGithubConnect(userId)}
         >
           Connect GitHub
         </Button>

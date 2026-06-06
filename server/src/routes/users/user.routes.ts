@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { getUserById } from "../../controllers/users/get-user";
 import { getUsers } from "../../controllers/users/get-users";
 import { createUser } from "../../controllers/users/post-user";
 import { syncUser } from "../../controllers/users/post-sync-user";
