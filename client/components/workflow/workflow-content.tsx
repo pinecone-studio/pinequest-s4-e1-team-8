@@ -279,12 +279,12 @@ export function WorkflowContent() {
   useEffect(() => {
     if (!repoParts || !selectedPull) return;
     void loadPullDetail(repoParts.owner, repoParts.repo, selectedPull.number);
-  }, [selectedPull?.number, repoParts, loadPullDetail]);
+  }, [selectedPull, repoParts, loadPullDetail]);
 
   useEffect(() => {
     if (!repoParts || !selectedIssue) return;
     void loadIssueDetail(repoParts.owner, repoParts.repo, selectedIssue.number);
-  }, [selectedIssue?.number, repoParts, loadIssueDetail]);
+  }, [selectedIssue, repoParts, loadIssueDetail]);
 
   async function handleRepoChange(fullName: string) {
     setSelectedRepo(fullName);
