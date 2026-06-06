@@ -111,8 +111,9 @@ export function getGithubRepo(): { owner: string; repo: string } | null {
   return owner && repo ? { owner, repo } : null;
 }
 
-export function redirectToGithubConnect() {
-  window.location.href = `/integrations/github/connect?userId=${encodeURIComponent(uid())}`;
+export function redirectToGithubConnect(userId?: string) {
+  const id = userId ?? uid();
+  window.location.href = `/integrations/github/connect?userId=${encodeURIComponent(id)}`;
 }
 
 type RepoParams = { owner: string; repo: string };
