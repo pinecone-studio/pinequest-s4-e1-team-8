@@ -58,14 +58,22 @@ export const createGenerateBreakdownNode =
       return {
         breakdown: null,
         isStepValid: false,
+        errorCode: "MODEL_FAILURE" as const,
+        retryCount: state.retryCount + 1,
         messages: [new AIMessage("Execution failed: No onboarding goal was provided.")],
       };
     }
+
+    const retryHint =
+      state.retryCount > 0
+        ? `\nPrevious attempt failed validation. Ensure exactly 3-6 phases, each with 2-5 actionable tasks.`
+        : null;
 
     const contextLines = [
       config.projectName ? `Project name: ${config.projectName}` : null,
       config.projectDescription ? `Project description: ${config.projectDescription}` : null,
       `User goal: ${userGoal}`,
+      retryHint,
     ].filter((line): line is string => line !== null);
 
     const response = await model.invoke([
@@ -84,6 +92,8 @@ export const createGenerateBreakdownNode =
       return {
         breakdown: null,
         isStepValid: false,
+        errorCode: "MODEL_FAILURE" as const,
+        retryCount: state.retryCount + 1,
         messages: [new AIMessage("Execution failed: Model response was not valid JSON.")],
       };
     }
@@ -93,6 +103,7 @@ export const createGenerateBreakdownNode =
     return {
       breakdown,
       isStepValid: true,
+      errorCode: null,
       messages: [
         new AIMessage(`Generated ${breakdown.phases.length} phases with ${taskCount} tasks.`),
       ],

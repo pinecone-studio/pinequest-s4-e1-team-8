@@ -13,56 +13,66 @@ export const createPersistTasksNode =
     if (!state.isStepValid || !state.breakdown) {
       return {
         isStepValid: false,
+        errorCode: "DB_WRITE_FAILED" as const,
         messages: [new AIMessage("Task persist skipped: Invalid state or missing breakdown.")],
       };
     }
 
-    let tasksCreated = 0;
+    try {
+      let tasksCreated = 0;
 
-    for (const phase of state.breakdown.phases) {
-      const phaseTaskId = `internal-${nanoid(10)}`;
+      for (const phase of state.breakdown.phases) {
+        const phaseTaskId = `internal-${nanoid(10)}`;
 
-      await db.insert(tasks).values({
-        id: phaseTaskId,
-        workspaceId: config.workspaceId,
-        projectId: state.projectId,
-        title: phase.name.trim(),
-        description: phase.description?.trim() || null,
-        status: "TODO",
-        priority: "HIGH",
-        source: "internal",
-        tool: "Brisk AI",
-      });
-
-      tasksCreated += 1;
-
-      for (const task of phase.tasks) {
         await db.insert(tasks).values({
-          id: `internal-${nanoid(10)}`,
+          id: phaseTaskId,
           workspaceId: config.workspaceId,
           projectId: state.projectId,
-          parentId: phaseTaskId,
-          title: task.title.trim(),
-          description: task.description?.trim() || null,
-          status: task.status ?? "BACKLOG",
-          priority: task.priority ?? "MEDIUM",
+          title: phase.name.trim(),
+          description: phase.description?.trim() || null,
+          status: "TODO",
+          priority: "HIGH",
           source: "internal",
           tool: "Brisk AI",
         });
 
         tasksCreated += 1;
+
+        for (const task of phase.tasks) {
+          await db.insert(tasks).values({
+            id: `internal-${nanoid(10)}`,
+            workspaceId: config.workspaceId,
+            projectId: state.projectId,
+            parentId: phaseTaskId,
+            title: task.title.trim(),
+            description: task.description?.trim() || null,
+            status: task.status ?? "BACKLOG",
+            priority: task.priority ?? "MEDIUM",
+            source: "internal",
+            tool: "Brisk AI",
+          });
+
+          tasksCreated += 1;
+        }
       }
+
+      const projectTitle =
+        state.breakdown.projectTitle?.trim() || config.projectName?.trim() || "New Project";
+
+      return {
+        isStepValid: true,
+        errorCode: null,
+        messages: [
+          new AIMessage(
+            `Persisted project "${projectTitle}" with ${state.breakdown.phases.length} milestones and ${tasksCreated} total records.`,
+          ),
+        ],
+      };
+    } catch {
+      return {
+        isStepValid: false,
+        errorCode: "DB_WRITE_FAILED" as const,
+        messages: [new AIMessage("Task persist failed: Unable to write task records to database.")],
+      };
     }
-
-    const projectTitle =
-      state.breakdown.projectTitle?.trim() || config.projectName?.trim() || "New Project";
-
-    return {
-      isStepValid: true,
-      messages: [
-        new AIMessage(
-          `Persisted project "${projectTitle}" with ${state.breakdown.phases.length} milestones and ${tasksCreated} total records.`,
-        ),
-      ],
-    };
   };

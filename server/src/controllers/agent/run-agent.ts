@@ -1,7 +1,7 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { eq } from "drizzle-orm";
 import { Context } from "hono";
-import { createBriskAgent, type BriskAgentDb } from "../../agent/briskGraph";
+import { briskAgent, type BriskAgentDb } from "../../agent/briskGraph";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
@@ -58,11 +58,11 @@ export const runAgent = async (c: Context<{ Bindings: Bindings }>) => {
     return c.json({ error: message, success: false }, 500);
   }
 
-  const briskAgent = createBriskAgent(agentDb);
+  const agent = briskAgent(agentDb);
   const projectId = body.projectId.trim();
 
   try {
-    const finalState = await briskAgent.invoke({
+    const finalState = await agent.invoke({
       messages: [new HumanMessage(body.inputMessage.trim())],
       projectId,
       isStepValid: false,

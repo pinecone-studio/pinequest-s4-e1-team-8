@@ -13,6 +13,7 @@ export const createVerifyProjectNode =
     if (!state.projectId.trim()) {
       return {
         isStepValid: false,
+        errorCode: "INVALID_INPUT" as const,
         messages: [new AIMessage("Verification failed: Active project context missing.")],
       };
     }
@@ -26,6 +27,7 @@ export const createVerifyProjectNode =
     if (project) {
       return {
         isStepValid: true,
+        errorCode: null,
         messages: [new AIMessage("Project framework verified successfully.")],
       };
     }
@@ -39,12 +41,14 @@ export const createVerifyProjectNode =
     if (!workspace) {
       return {
         isStepValid: false,
+        errorCode: "WORKSPACE_NOT_FOUND" as const,
         messages: [new AIMessage("Verification failed: Target workspace context missing.")],
       };
     }
 
     return {
       isStepValid: true,
+      errorCode: null,
       messages: [new AIMessage("Project context verified and ready for provisioning.")],
     };
   };
