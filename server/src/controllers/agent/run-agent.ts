@@ -118,11 +118,22 @@ export const runAgent = async (c: Context<{ Bindings: Bindings }>) => {
   const agent = briskAgent(agentDb);
 
   try {
-    const finalState = await agent.invoke({
-      messages: [new HumanMessage(body.inputMessage)],
-      projectId: body.projectId,
-      isStepValid: false,
-    });
+    const finalState = await agent.invoke(
+      {
+        messages: [new HumanMessage(body.inputMessage)],
+        projectId: body.projectId,
+        isStepValid: false,
+      },
+      {
+        runName: "brisk-agent",
+        tags: ["brisk-agent", `workspace:${body.workspaceId ?? DEFAULT_WORKSPACE_ID}`],
+        metadata: {
+          projectId: body.projectId,
+          workspaceId: body.workspaceId ?? DEFAULT_WORKSPACE_ID,
+          userId: body.userId ?? null,
+        },
+      },
+    );
 
     if (!finalState.isStepValid) {
       const code = finalState.errorCode ?? null;
