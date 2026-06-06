@@ -10,7 +10,6 @@ import {
 import { normalizeMemberInitials } from "@/lib/tasks/map-api-task";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { normalizeMembers } from "@/lib/tasks/map-api-task";
 import { cn } from "@/lib/utils";
 import { CalendarDays } from "lucide-react";
 

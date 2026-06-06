@@ -83,8 +83,9 @@ export function DashboardWidgetsSection() {
           <LastProjectsWidget />
         </div>
 
-        <button
-          type="button"
+        <div
+          role="separator"
+          tabIndex={0}
           aria-label="Resize widget columns"
           aria-orientation="vertical"
           aria-valuemin={WIDGETS_LEFT_RATIO_MIN * 100}
@@ -97,7 +98,7 @@ export function DashboardWidgetsSection() {
           )}
         >
           <span className="h-10 w-1 rounded-full bg-border/70 transition-colors group-hover/widgets-divider:bg-violet-500/60" />
-        </button>
+        </div>
 
         <div
           className="min-w-0 shrink-0 pl-2"

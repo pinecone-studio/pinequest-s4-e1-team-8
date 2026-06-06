@@ -7,6 +7,10 @@
   "scripts": {
     "dev:server": "bun run --cwd server dev",
     "dev:client": "bun run --cwd client dev",
+    "typecheck": "bun run typecheck:client && bun run typecheck:server",
+    "typecheck:client": "bun x tsc --noEmit -p client/tsconfig.json",
+    "typecheck:server": "bun x tsc --noEmit -p server/tsconfig.json",
+    "lint": "bun run --cwd client lint",
     "test:agent": "bun test ./scripts/test-agent.ts"
   },
   "devDependencies": {
