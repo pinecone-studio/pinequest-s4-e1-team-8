@@ -41,6 +41,15 @@ import {
   updateGithubPull,
 } from "../../lib/github/github";
 import { mapGithubIssueToTask } from "../../lib/github/map-github-issue";
+import {
+  addProjectDraftItem,
+  addProjectItemById,
+  fetchOrgProjects,
+  fetchProjectDetail,
+  fetchUserProjects,
+  updateProjectItemField,
+  type ProjectFieldValue,
+} from "../../lib/github/projects";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import { githubIntegrations, tasks } from "../../schema/schema";
 
@@ -834,6 +843,40 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Sync failed";
     return c.json({ error: message }, 502);
+  }
+};
+
+export const postGithubPAT = async (c: Context<{ Bindings: Bindings }>) => {
+  const { userId, token } = await c.req.json<{ userId: string; token: string }>();
+  if (!userId || !token) return c.json({ error: "userId and token are required" }, 400);
+
+  try {
+    const githubLogin = await fetchGithubLogin(token);
+    const db = useDB(c);
+
+    const [existing] = await db
+      .select({ id: githubIntegrations.id })
+      .from(githubIntegrations)
+      .where(eq(githubIntegrations.userId, userId))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(githubIntegrations)
+        .set({ accessToken: token, githubLogin })
+        .where(eq(githubIntegrations.id, existing.id));
+    } else {
+      await db.insert(githubIntegrations).values({
+        id: `gh-int-${nanoid(10)}`,
+        userId,
+        accessToken: token,
+        githubLogin,
+      });
+    }
+
+    return c.json({ githubLogin });
+  } catch {
+    return c.json({ error: "Invalid token or GitHub API error" }, 400);
   }
 };
 

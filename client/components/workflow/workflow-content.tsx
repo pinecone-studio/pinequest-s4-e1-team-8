@@ -38,6 +38,7 @@ import {
   type GithubReview,
   type PrFilter,
   redirectToGithubConnect,
+  connectGithubPAT,
 } from "@/lib/integrations/github";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, ExternalLink, GitPullRequest, Loader2, Sparkles } from "lucide-react";
@@ -67,6 +68,9 @@ export function WorkflowContent() {
   const [authMode, setAuthMode] = useState<"oauth" | "test-token">();
   const [githubLogin, setGithubLogin] = useState<string>();
   const [loading, setLoading] = useState(true);
+  const [patValue, setPatValue] = useState("");
+  const [patLoading, setPatLoading] = useState(false);
+  const [patError, setPatError] = useState<string>();
   const [repos, setRepos] = useState<GithubRepoOption[]>([]);
   const [selectedRepo, setSelectedRepo] = useState("");
   const [branches, setBranches] = useState<string[]>([]);
@@ -217,6 +221,22 @@ export function WorkflowContent() {
     },
     [loadPulls, loadIssues],
   );
+
+  async function handlePATConnect() {
+    if (!patValue.trim()) return;
+    setPatLoading(true);
+    setPatError(undefined);
+    try {
+      const { githubLogin: login } = await connectGithubPAT(patValue.trim());
+      setConnected(true);
+      setAuthMode("oauth");
+      setGithubLogin(login);
+    } catch {
+      setPatError("Invalid token — make sure it has repo and project scopes.");
+    } finally {
+      setPatLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -488,23 +508,48 @@ export function WorkflowContent() {
 
   if (!connected) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-24 text-center">
         <div className="flex size-14 items-center justify-center rounded-2xl bg-violet-500/10">
           <GitPullRequest className="size-7 text-violet-500" />
         </div>
         <div>
           <h2 className="text-xl font-semibold text-foreground">Connect GitHub</h2>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {error ??
-              "Link your GitHub account to create issues and pull requests directly from this workflow."}
+            {error ?? "Link your GitHub account to create issues and pull requests directly from this workflow."}
           </p>
         </div>
         <Button
           className="bg-violet-600 hover:bg-violet-700"
           onClick={() => redirectToGithubConnect(userId)}
         >
-          Connect GitHub
+          Connect GitHub via OAuth
         </Button>
+        <div className="flex w-full max-w-sm flex-col gap-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="h-px flex-1 bg-border" />
+            <span>or use a Personal Access Token</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <input
+            type="password"
+            placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+            value={patValue}
+            onChange={(e) => setPatValue(e.target.value)}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+          />
+          {patError && <p className="text-xs text-destructive">{patError}</p>}
+          <Button
+            variant="outline"
+            disabled={!patValue.trim() || patLoading}
+            onClick={() => void handlePATConnect()}
+          >
+            {patLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+            Connect with PAT
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Generate a token at github.com/settings/tokens with <code className="text-xs">repo</code> and <code className="text-xs">project</code> scopes.
+          </p>
+        </div>
       </div>
     );
   }

@@ -116,6 +116,14 @@ export function redirectToGithubConnect(userId?: string) {
   window.location.href = `/integrations/github/connect?userId=${encodeURIComponent(id)}`;
 }
 
+export async function connectGithubPAT(token: string): Promise<{ githubLogin: string }> {
+  const { data } = await clientApi.post<{ githubLogin: string }>("/integrations/github/pat", {
+    userId: uid(),
+    token,
+  });
+  return data;
+}
+
 type RepoParams = { owner: string; repo: string };
 
 export async function fetchGithubStatus(): Promise<GithubStatus> {
