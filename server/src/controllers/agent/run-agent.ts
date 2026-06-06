@@ -11,6 +11,7 @@ type RunAgentBody = {
   inputMessage?: string;
   projectId?: string;
   workspaceId?: string;
+  userId?: string;
   projectName?: string;
   projectDescription?: string;
 };
@@ -29,6 +30,7 @@ function createAgentDb(
     briskConfig: {
       geminiApiKey,
       workspaceId: body.workspaceId?.trim() || DEFAULT_WORKSPACE_ID,
+      userId: body.userId?.trim() || undefined,
       projectName: body.projectName?.trim() || undefined,
       projectDescription: body.projectDescription?.trim() || undefined,
     },
