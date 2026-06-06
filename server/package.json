@@ -20,7 +20,8 @@
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.12",
     "livekit-server-sdk": "^2.15.4",
-    "nanoid": "^5.1.11"
+    "nanoid": "^5.1.11",
+    "svix": "^1.95.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260411.1",

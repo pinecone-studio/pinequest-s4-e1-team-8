@@ -4,22 +4,24 @@ import { Context } from "hono";
 import { briskAgent, type BriskAgentDb } from "../../agent/briskGraph";
 import type { BriskErrorCode } from "../../agent/brisk.state";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { Bindings } from "../../lib/common/types";
+import { Bindings, Variables } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import { tasks } from "../../schema/schema";
+
+type HonoEnv = { Bindings: Bindings; Variables: Variables };
 
 type RunAgentBody = {
   inputMessage: string;
   projectId: string;
   workspaceId?: string;
-  userId?: string;
+  userId: string;
   projectName?: string;
   projectDescription?: string;
 };
 
 type ValidationResult =
-  | { ok: true; data: RunAgentBody }
+  | { ok: true; data: Omit<RunAgentBody, "userId"> }
   | { ok: false; error: string; field: string };
 
 const ERROR_HTTP_STATUS: Record<BriskErrorCode, ContentfulStatusCode> = {
@@ -49,17 +51,12 @@ function validateBody(raw: unknown): ValidationResult {
     return { ok: false, error: "workspaceId must be a non-empty string.", field: "workspaceId" };
   }
 
-  if (b.userId !== undefined && (typeof b.userId !== "string" || !b.userId.trim())) {
-    return { ok: false, error: "userId must be a non-empty string.", field: "userId" };
-  }
-
   return {
     ok: true,
     data: {
       projectId: (b.projectId as string).trim(),
       inputMessage: (b.inputMessage as string).trim(),
       workspaceId: b.workspaceId ? (b.workspaceId as string).trim() : undefined,
-      userId: b.userId ? (b.userId as string).trim() : undefined,
       projectName:
         typeof b.projectName === "string" && b.projectName.trim()
           ? b.projectName.trim()
@@ -73,7 +70,7 @@ function validateBody(raw: unknown): ValidationResult {
 }
 
 function buildAgentDb(
-  c: Context<{ Bindings: Bindings }>,
+  c: Context<HonoEnv>,
   body: RunAgentBody,
 ): BriskAgentDb {
   const geminiApiKey = c.env.GEMINI_API_KEY?.trim();
@@ -82,7 +79,7 @@ function buildAgentDb(
     throw new Error("GEMINI_API_KEY is not configured.");
   }
 
-  return Object.assign(useDB(c), {
+  return Object.assign(useDB(c as unknown as Context<{ Bindings: Bindings }>), {
     briskConfig: {
       geminiApiKey,
       workspaceId: body.workspaceId ?? DEFAULT_WORKSPACE_ID,
@@ -93,7 +90,13 @@ function buildAgentDb(
   });
 }
 
-export const runAgent = async (c: Context<{ Bindings: Bindings }>) => {
+export const runAgent = async (c: Context<HonoEnv>) => {
+  const authenticatedUserId = c.get("userId");
+
+  if (!authenticatedUserId) {
+    return c.json({ success: false, error: "Unauthorized" }, 401);
+  }
+
   const raw = await c.req.json().catch(() => null);
   const validation = validateBody(raw);
 
@@ -104,7 +107,10 @@ export const runAgent = async (c: Context<{ Bindings: Bindings }>) => {
     );
   }
 
-  const body = validation.data;
+  const body: RunAgentBody = {
+    ...validation.data,
+    userId: authenticatedUserId,
+  };
 
   let agentDb: BriskAgentDb;
 
@@ -130,7 +136,7 @@ export const runAgent = async (c: Context<{ Bindings: Bindings }>) => {
         metadata: {
           projectId: body.projectId,
           workspaceId: body.workspaceId ?? DEFAULT_WORKSPACE_ID,
-          userId: body.userId ?? null,
+          userId: body.userId,
         },
       },
     );

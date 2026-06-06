@@ -4,12 +4,12 @@ export interface Bindings {
   DB: D1Database;
   CLIENT_APP_URL?: string;
   CLERK_PUBLISHABLE_KEY?: string;
+  CLERK_WEBHOOK_SECRET: string;
   CHIMEGE_API_KEY: string;
   CHIMEGE_BASE_URL?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   GITHUB_OAUTH_REDIRECT_URI?: string;
-  /** Local dev only — bypasses OAuth when set */
   GITHUB_TEST_TOKEN?: string;
   GITHUB_WEBHOOK_SECRET: string;
   LIVEKIT_URL: string;
@@ -24,4 +24,8 @@ export interface Bindings {
   R2_BUCKET_NAME: string;
   FRONTEND_URL?: string;
   GEMINI_API_KEY?: string;
+}
+
+export interface Variables {
+  userId: string;
 }
