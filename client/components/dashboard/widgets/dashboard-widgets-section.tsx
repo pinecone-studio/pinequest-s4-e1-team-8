@@ -20,6 +20,8 @@ function clampRatio(ratio: number) {
 }
 
 export function DashboardWidgetsSection() {
+
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const ratioRef = useRef(WIDGETS_LEFT_RATIO_DEFAULT);
   const [leftRatio, setLeftRatio] = useState(WIDGETS_LEFT_RATIO_DEFAULT);
@@ -41,9 +43,7 @@ export function DashboardWidgetsSection() {
 
       const onPointerMove = (moveEvent: PointerEvent) => {
         const rect = container.getBoundingClientRect();
-        const next = clampRatio(
-          (moveEvent.clientX - rect.left) / rect.width,
-        );
+        const next = clampRatio((moveEvent.clientX - rect.left) / rect.width);
         ratioRef.current = next;
         setLeftRatio(next);
       };
@@ -76,10 +76,7 @@ export function DashboardWidgetsSection() {
         ref={containerRef}
         className="hidden items-start px-6 pt-2 pb-8 lg:flex"
       >
-        <div
-          className="min-w-0 shrink-0 pr-2"
-          style={{ width: leftPercent }}
-        >
+        <div className="min-w-0 shrink-0 pr-2" style={{ width: leftPercent }}>
           <LastProjectsWidget />
         </div>
 
@@ -100,10 +97,7 @@ export function DashboardWidgetsSection() {
           <span className="h-10 w-1 rounded-full bg-border/70 transition-colors group-hover/widgets-divider:bg-violet-500/60" />
         </div>
 
-        <div
-          className="min-w-0 shrink-0 pl-2"
-          style={{ width: rightPercent }}
-        >
+        <div className="min-w-0 shrink-0 pl-2" style={{ width: rightPercent }}>
           <TeamInsightsWidget />
         </div>
       </section>
