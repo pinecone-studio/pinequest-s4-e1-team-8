@@ -41,15 +41,6 @@ import {
   updateGithubPull,
 } from "../../lib/github/github";
 import { mapGithubIssueToTask } from "../../lib/github/map-github-issue";
-import {
-  addProjectDraftItem,
-  addProjectItemById,
-  fetchOrgProjects,
-  fetchProjectDetail,
-  fetchUserProjects,
-  updateProjectItemField,
-  type ProjectFieldValue,
-} from "../../lib/github/projects";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import { githubIntegrations, tasks } from "../../schema/schema";
 
