@@ -36,7 +36,7 @@ export function buildGithubAuthorizeUrl(bindings: Bindings, userId: string): str
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
-    scope: "repo read:user",
+    scope: "repo read:user project",
     state,
   });
 
@@ -176,7 +176,7 @@ async function githubJson<T>(
 export async function fetchGithubRepos(accessToken: string): Promise<GithubRepo[]> {
   return githubJson<GithubRepo[]>(
     accessToken,
-    "/user/repos?sort=updated&per_page=100&affiliation=owner,collaborator",
+    "/user/repos?sort=updated&per_page=100&affiliation=owner,collaborator,organization_member",
   );
 }
 

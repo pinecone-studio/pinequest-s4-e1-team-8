@@ -4,6 +4,15 @@ import { nanoid } from "nanoid";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import {
+  addProjectDraftItem,
+  addProjectItemById,
+  fetchOrgProjects,
+  fetchProjectDetail,
+  fetchUserProjects,
+  updateProjectItemField,
+  type ProjectFieldValue,
+} from "../../lib/github/projects";
+import {
   buildGithubAuthorizeUrl,
   createGithubIssue,
   createGithubPull,
@@ -824,6 +833,94 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
     return c.json({ synced: rows.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Sync failed";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const getGithubProjects = async (c: Context<{ Bindings: Bindings }>) => {
+  const userId = c.req.query("userId");
+  const org = c.req.query("org");
+  if (!userId) return c.json({ error: "userId is required" }, 400);
+
+  const auth = await resolveGithubAuth(c, userId);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const [userProjects, orgProjects] = await Promise.all([
+      fetchUserProjects(auth.accessToken),
+      org ? fetchOrgProjects(auth.accessToken, org) : Promise.resolve([]),
+    ]);
+    return c.json({ projects: [...userProjects, ...orgProjects] });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch projects";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const getGithubProjectDetail = async (c: Context<{ Bindings: Bindings }>) => {
+  const userId = c.req.query("userId");
+  const projectId = c.req.query("projectId");
+  if (!userId || !projectId) return c.json({ error: "userId and projectId are required" }, 400);
+
+  const auth = await resolveGithubAuth(c, userId);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const detail = await fetchProjectDetail(auth.accessToken, projectId);
+    return c.json(detail);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch project";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const postGithubProjectItem = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = await c.req.json<{
+    userId: string;
+    projectId: string;
+    contentId?: string;
+    title?: string;
+    itemBody?: string;
+  }>();
+  const { userId, projectId, contentId, title, itemBody } = body;
+  if (!userId || !projectId) return c.json({ error: "userId and projectId are required" }, 400);
+  if (!contentId && !title) return c.json({ error: "contentId or title required" }, 400);
+
+  const auth = await resolveGithubAuth(c, userId);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const itemId = contentId
+      ? await addProjectItemById(auth.accessToken, projectId, contentId)
+      : await addProjectDraftItem(auth.accessToken, projectId, title!, itemBody);
+    return c.json({ itemId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to add project item";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const patchGithubProjectItem = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = await c.req.json<{
+    userId: string;
+    projectId: string;
+    itemId: string;
+    fieldId: string;
+    value: ProjectFieldValue;
+  }>();
+  const { userId, projectId, itemId, fieldId, value } = body;
+  if (!userId || !projectId || !itemId || !fieldId || value === undefined) {
+    return c.json({ error: "userId, projectId, itemId, fieldId and value are required" }, 400);
+  }
+
+  const auth = await resolveGithubAuth(c, userId);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    await updateProjectItemField(auth.accessToken, projectId, itemId, fieldId, value);
+    return c.json({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update project item";
     return c.json({ error: message }, 502);
   }
 };
