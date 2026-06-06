@@ -7,6 +7,8 @@ import { createGenerateBreakdownNode } from "./nodes/generate-breakdown.node";
 import { createLogExecutionNode } from "./nodes/log-execution.node";
 import { createPersistProjectNode } from "./nodes/persist-project.node";
 import { createPersistTasksNode } from "./nodes/persist-tasks.node";
+import { createValidateInputNode } from "./nodes/validate-input.node";
+import { validateBreakdownNode } from "./nodes/validate-breakdown.node";
 import { createVerifyProjectNode } from "./nodes/verify-project.node";
 
 export type { BriskAgentRuntime };
@@ -18,7 +20,9 @@ export type BriskAgentDb = DrizzleDb & {
   briskConfig: BriskAgentRuntime;
 };
 
-export function createBriskAgent(db: BriskAgentDb) {
+const MAX_RETRIES = 3;
+
+export function briskAgent(db: BriskAgentDb) {
   const { briskConfig } = db;
 
   const model = new ChatGoogleGenerativeAI({
@@ -27,31 +31,55 @@ export function createBriskAgent(db: BriskAgentDb) {
     temperature: 0.2,
   });
 
+  const validateInputNode = createValidateInputNode(briskConfig);
   const verifyProjectNode = createVerifyProjectNode(db, briskConfig);
   const generateBreakdownNode = createGenerateBreakdownNode(model, briskConfig);
   const persistProjectNode = createPersistProjectNode(db, briskConfig);
   const persistTasksNode = createPersistTasksNode(db, briskConfig);
   const logExecutionNode = createLogExecutionNode(db, briskConfig);
 
+  function routeAfterValidateInput(state: typeof BriskState.State) {
+    return state.isStepValid ? "verifyProject" : "end";
+  }
+
   function routeAfterVerify(state: typeof BriskState.State) {
+    if (state.errorCode === "WORKSPACE_NOT_FOUND") return "end";
     return state.isStepValid ? "generateBreakdown" : "end";
   }
 
   function routeAfterGenerate(state: typeof BriskState.State) {
+    if (state.errorCode === "MODEL_FAILURE") {
+      return state.retryCount < MAX_RETRIES ? "retryGenerate" : "end";
+    }
+    return state.isStepValid ? "validateBreakdown" : "end";
+  }
+
+  function routeAfterValidateBreakdown(state: typeof BriskState.State) {
+    if (state.errorCode === "INVALID_BREAKDOWN") {
+      return state.retryCount < MAX_RETRIES ? "retryGenerate" : "end";
+    }
     return state.isStepValid ? "persistProject" : "end";
   }
 
   function routeAfterPersistProject(state: typeof BriskState.State) {
+    if (state.errorCode === "DB_WRITE_FAILED") return "end";
     return state.isStepValid ? "persistTasks" : "end";
   }
 
   const workflow = new StateGraph(BriskState)
+    .addNode("validateInput", validateInputNode)
     .addNode("verifyProject", verifyProjectNode)
     .addNode("generateBreakdown", generateBreakdownNode)
+    .addNode("validateBreakdown", validateBreakdownNode)
     .addNode("persistProject", persistProjectNode)
     .addNode("persistTasks", persistTasksNode)
     .addNode("logExecution", logExecutionNode)
-    .addEdge(START, "verifyProject");
+    .addEdge(START, "validateInput");
+
+  workflow.addConditionalEdges("validateInput", routeAfterValidateInput, {
+    verifyProject: "verifyProject",
+    end: END,
+  });
 
   workflow.addConditionalEdges("verifyProject", routeAfterVerify, {
     generateBreakdown: "generateBreakdown",
@@ -59,7 +87,14 @@ export function createBriskAgent(db: BriskAgentDb) {
   });
 
   workflow.addConditionalEdges("generateBreakdown", routeAfterGenerate, {
+    validateBreakdown: "validateBreakdown",
+    retryGenerate: "generateBreakdown",
+    end: END,
+  });
+
+  workflow.addConditionalEdges("validateBreakdown", routeAfterValidateBreakdown, {
     persistProject: "persistProject",
+    retryGenerate: "generateBreakdown",
     end: END,
   });
 
