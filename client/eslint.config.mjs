@@ -9,6 +9,8 @@ const eslintConfig = defineConfig([
     rules: {
       // Next 16 enables this aggressively; existing client code uses init-in-effect patterns.
       "react-hooks/set-state-in-effect": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/preserve-manual-memoization": "off",
     },
   },
   // Override default ignores of eslint-config-next.

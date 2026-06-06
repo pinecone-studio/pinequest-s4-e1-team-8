@@ -31,7 +31,7 @@ export function DashboardWidgetsSection() {
   }, []);
 
   const onDividerPointerDown = useCallback(
-    (event: React.PointerEvent<HTMLButtonElement>) => {
+    (event: React.PointerEvent<HTMLDivElement>) => {
       event.preventDefault();
       const container = containerRef.current;
       if (!container) return;
