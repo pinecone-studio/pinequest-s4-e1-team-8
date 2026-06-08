@@ -419,10 +419,11 @@ export default function AgentWorkspacePage() {
                   </div>
                 </CardHeader>
                 <CardContent className="max-h-72 overflow-y-auto pt-4">
-                  <StreamMarkdown content={output} />
-                  {status === "running" && output.length > 0 ? (
-                    <span className="mt-2 inline-block h-4 w-0.5 animate-pulse bg-violet-400" />
-                  ) : null}
+                  <StreamMarkdown
+                    content={output}
+                    isActive={activeNode === node.id}
+                    workerLabel={node.label}
+                  />
                 </CardContent>
               </Card>
             );
