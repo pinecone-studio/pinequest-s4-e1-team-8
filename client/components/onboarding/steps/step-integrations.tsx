@@ -107,7 +107,9 @@ export function StepIntegrations({ data, onChange, onNext, onSkip }: StepIntegra
           desc="Import tasks & projects"
           logo={<AsanaMark />}
           connected={data.asanaConnected}
-          onToggle={() => onChange({ asanaConnected: !data.asanaConnected })}
+          onToggle={() => {
+            window.location.href = "/api/auth/asana?userId=user_wr";
+          }}
         />
       </div>
 
