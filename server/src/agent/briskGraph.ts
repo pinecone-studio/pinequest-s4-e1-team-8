@@ -11,9 +11,9 @@ import { createValidateInputNode } from "./nodes/validate-input.node";
 import { validateBreakdownNode } from "./nodes/validate-breakdown.node";
 import { createVerifyProjectNode } from "./nodes/verify-project.node";
 import { supervisorNode } from "./nodes/supervisor.node";
-import { onboardingWorkerNode } from "./nodes/onboarding-worker.node";
-import { metricsWorkerNode } from "./nodes/metrics-worker.node";
-import { riskWorkerNode } from "./nodes/risk-worker.node";
+import { onboardingNode } from "./nodes/onboarding.node";
+import { metricsNode } from "./nodes/metrics.node";
+import { riskNode } from "./nodes/risk.node";
 
 export type { BriskAgentRuntime };
 export { BriskState };
@@ -70,6 +70,19 @@ export function briskAgent(db: BriskAgentDb) {
     return state.isStepValid ? "persistTasks" : "end";
   }
 
+  function routeAfterSupervisor(state: typeof BriskState.State) {
+    switch (state.nextWorker) {
+      case "ONBOARDING":
+        return "onboardingWorker";
+      case "METRICS":
+        return "metricsWorker";
+      case "RISK":
+        return "riskWorker";
+      default:
+        return "end";
+    }
+  }
+
   const workflow = new StateGraph(BriskState)
     .addNode("validateInput", validateInputNode)
     .addNode("verifyProject", verifyProjectNode)
@@ -79,9 +92,9 @@ export function briskAgent(db: BriskAgentDb) {
     .addNode("persistTasks", persistTasksNode)
     .addNode("logExecution", logExecutionNode)
     .addNode("supervisor", supervisorNode)
-    .addNode("onboardingWorker", onboardingWorkerNode)
-    .addNode("metricsWorker", metricsWorkerNode)
-    .addNode("riskWorker", riskWorkerNode)
+    .addNode("onboardingWorker", onboardingNode)
+    .addNode("metricsWorker", metricsNode)
+    .addNode("riskWorker", riskNode)
     .addEdge(START, "validateInput");
 
   workflow.addConditionalEdges("validateInput", routeAfterValidateInput, {
@@ -111,8 +124,19 @@ export function briskAgent(db: BriskAgentDb) {
     end: END,
   });
 
+  workflow.addConditionalEdges("supervisor", routeAfterSupervisor, {
+    onboardingWorker: "onboardingWorker",
+    metricsWorker: "metricsWorker",
+    riskWorker: "riskWorker",
+    end: END,
+  });
+
+  workflow.addEdge("onboardingWorker", "supervisor");
+  workflow.addEdge("metricsWorker", "supervisor");
+  workflow.addEdge("riskWorker", "supervisor");
+
   workflow.addEdge("persistTasks", "logExecution");
-  workflow.addEdge("logExecution", END);
+  workflow.addEdge("logExecution", "supervisor");
 
   return workflow.compile();
 }
