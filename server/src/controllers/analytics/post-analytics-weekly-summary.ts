@@ -3,6 +3,7 @@ import { Context } from "hono";
 import { computeTaskRisks } from "../../lib/analytics/compute-task-risks";
 import { computeTaskSummary } from "../../lib/analytics/compute-task-summary";
 import { computeTaskWeekly } from "../../lib/analytics/compute-task-weekly";
+import { taskTeamKey } from "../../lib/analytics/task-team-key";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import { generateGeminiText } from "../../lib/gemini/gemini-client";
@@ -14,19 +15,26 @@ export const postAnalyticsWeeklySummary = async (
 ) => {
   const db = useDB(c);
   const workspaceId = c.req.query("workspaceId") ?? DEFAULT_WORKSPACE_ID;
+  const team = c.req.query("team")?.trim() || null;
 
   const rows = await db
     .select()
     .from(tasks)
     .where(eq(tasks.workspaceId, workspaceId));
 
-  const summary = computeTaskSummary(rows);
-  const weekly = computeTaskWeekly(rows);
-  const risks = computeTaskRisks(rows);
+  const filtered = team
+    ? rows.filter((row) => taskTeamKey(row) === team)
+    : rows;
+
+  const summary = computeTaskSummary(filtered);
+  const weekly = computeTaskWeekly(filtered);
+  const risks = computeTaskRisks(filtered);
+
+  const scope = team ? `for the ${team} team` : "for the workspace";
 
   const prompt = [
     "You are a project analytics assistant.",
-    "Write a short weekly recap in 2-3 sentences for a team dashboard.",
+    `Write a short weekly recap in 2-3 sentences ${scope}.`,
     "Be direct and actionable. Do not use markdown bullets.",
     "",
     `Task summary: ${JSON.stringify(summary)}`,

@@ -57,7 +57,7 @@ export function mapApiTaskToListItem(task: ApiTaskListItem): TaskListItem {
   return {
     id: task.id,
     source: task.source,
-    team: task.team ?? task.tool ?? "General",
+    team: task.team ?? task.title ?? task.tool ?? "General",
     title: task.title,
     tool: task.tool,
     status: normalizeTaskStatus(task.status),
