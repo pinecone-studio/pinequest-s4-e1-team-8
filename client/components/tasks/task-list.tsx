@@ -1,16 +1,26 @@
 "use client";
 
 import { TaskDetailPanel } from "@/components/tasks/task-detail-panel";
-import { EmptyTasks, TaskListSkeleton } from "@/components/tasks/task-list-states";
+import {
+  EmptyTasks,
+  TaskListSkeleton,
+  TaskListTableSkeleton,
+} from "@/components/tasks/task-list-states";
+import { TaskListView } from "@/components/tasks/task-list-view";
 import { sourceLabels, taskSources } from "@/components/tasks/task-sources";
 import { TaskBoard } from "@/components/tasks/task-board";
 import { TaskRiskAlert } from "@/components/tasks/task-risk-alert";
 import { TaskTeamFilter } from "@/components/tasks/task-team-filter";
+import {
+  TaskViewToggle,
+  type TaskViewMode,
+} from "@/components/tasks/task-view-toggle";
 import { useTaskList } from "@/components/tasks/use-task-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ListTodo, RefreshCw } from "lucide-react";
+import { useState } from "react";
 
 export function TaskList() {
   const {
@@ -30,6 +40,7 @@ export function TaskList() {
     updateTask,
     visibleTasks,
   } = useTaskList();
+  const [viewMode, setViewMode] = useState<TaskViewMode>("board");
 
   return (
     <>
@@ -81,11 +92,19 @@ export function TaskList() {
             onChange={setActiveTeam}
           />
 
+          <div className="flex justify-end">
+            <TaskViewToggle value={viewMode} onChange={setViewMode} />
+          </div>
+
           {isLoading ? (
-            <TaskListSkeleton />
+            viewMode === "board" ? (
+              <TaskListSkeleton />
+            ) : (
+              <TaskListTableSkeleton />
+            )
           ) : visibleTasks.length === 0 ? (
             <EmptyTasks source={sourceLabels[activeSource]} />
-          ) : (
+          ) : viewMode === "board" ? (
             <div className="min-h-[28rem] overflow-x-auto">
               <TaskBoard
                 tasks={visibleTasks}
@@ -95,6 +114,14 @@ export function TaskList() {
                 onUpdateTask={updateTask}
               />
             </div>
+          ) : (
+            <TaskListView
+              tasks={visibleTasks}
+              selectedTaskId={selectedTaskId}
+              onSelectTask={setSelectedTaskId}
+              onUpdateTask={updateTask}
+              onDeleteTask={deleteTask}
+            />
           )}
         </CardContent>
       </Card>
