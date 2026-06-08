@@ -4,6 +4,7 @@ LIVEKIT_API_SECRET=livekit-api-secret-placeholder
 LIVEKIT_EGRESS_WEBHOOK_URL=https://example.com/api/meeting-transcription/livekit-webhook
 CHIMEGE_API_KEY=chimege-api-key-placeholder
 CHIMEGE_BASE_URL=https://api.chimege.com/
+GROQ_API_KEY=groq-api-key-placeholder
 CLIENT_APP_URL=http://localhost:3000/
 
 # Required when recording/upload stores files in Cloudflare R2.

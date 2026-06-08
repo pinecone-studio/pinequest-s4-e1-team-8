@@ -1,6 +1,6 @@
 type MeetingApiOptions = {
   body?: unknown;
-  method?: "GET" | "POST";
+  method?: "DELETE" | "GET" | "POST";
 };
 
 const getErrorMessage = async (response: Response) => {

@@ -1,7 +1,9 @@
 export { createMeetingRoom } from "./api/create-meeting-room";
+export { deleteMeetingTranscript } from "./api/delete-meeting-transcript";
 export { generateMeetingSummary } from "./api/generate-meeting-summary";
 export { getLatestMeetingTranscript } from "./api/get-latest-meeting-transcript";
 export { getMeetingTranscript } from "./api/get-meeting-transcript";
+export { getMeetingTranscripts } from "./api/get-meeting-transcripts";
 export { joinMeetingRoom } from "./api/join-meeting-room";
 export { meetingApi } from "./api/meeting-api";
 export { MEETING_ENDPOINTS } from "./api/meeting-endpoints";
@@ -17,8 +19,10 @@ export type {
 } from "./types/meeting-request.types";
 export type {
   CreateMeetingRoomResponse,
+  DeleteMeetingTranscriptResponse,
   GenerateMeetingSummaryResponse,
   GetMeetingTranscriptResponse,
+  GetMeetingTranscriptsResponse,
   JoinMeetingRoomResponse,
   MeetingRoomTokenResponse,
   MeetingTranscriptionStatus,

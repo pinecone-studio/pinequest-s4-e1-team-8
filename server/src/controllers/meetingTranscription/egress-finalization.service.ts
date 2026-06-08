@@ -149,6 +149,7 @@ export const finalizeRecordingUrl = async ({
     transcriptionId: transcription.id,
     recordingUrl,
     summary: transcription.summary,
+    participantNames: transcription.participantNames,
   });
 
   return { status: "done" as const, skipped: false };

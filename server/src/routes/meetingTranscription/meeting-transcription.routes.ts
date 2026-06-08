@@ -1,5 +1,10 @@
 import { Hono } from "hono";
 import { postMeetingSummary } from "../../controllers/meetingTranscription/post-meeting-summary";
+import { deleteMeetingTranscript } from "../../controllers/meetingTranscription/delete-meeting-transcript";
+import {
+  getLatestMeetingTranscript,
+  getMeetingTranscripts,
+} from "../../controllers/meetingTranscription/get-meeting-transcripts";
 import { getMeetingTranscript } from "../../controllers/meetingTranscription/get-meeting-transcript";
 import { startEgress } from "../../controllers/meetingTranscription/start-egress";
 import { stopEgress } from "../../controllers/meetingTranscription/stop-egress";
@@ -11,6 +16,9 @@ meetingTranscriptionRouter.post("/start-egress", startEgress);
 meetingTranscriptionRouter.post("/stop-egress", stopEgress);
 meetingTranscriptionRouter.post("/livekit-webhook", liveKitWebhook);
 meetingTranscriptionRouter.post("/summary", postMeetingSummary);
+meetingTranscriptionRouter.get("/", getMeetingTranscripts);
+meetingTranscriptionRouter.get("/latest", getLatestMeetingTranscript);
+meetingTranscriptionRouter.delete("/:id", deleteMeetingTranscript);
 meetingTranscriptionRouter.get("/:id", getMeetingTranscript);
 
 export default meetingTranscriptionRouter;

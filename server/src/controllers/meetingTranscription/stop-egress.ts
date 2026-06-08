@@ -23,11 +23,15 @@ const getEgressErrorMessage = (egressStatus: string, error?: string) => {
 
 export const stopEgress = async (c: Context<{ Bindings: Bindings }>) => {
   try {
-    const { egressId } = await c.req.json();
+    const { egressId, participantNames } = await c.req.json();
 
     if (typeof egressId !== "string" || !egressId.trim()) {
       return c.json({ error: "egressId is required" }, 400);
     }
+
+    const savedParticipantNames = Array.isArray(participantNames)
+      ? participantNames.filter((name): name is string => typeof name === "string")
+      : null;
 
     const db = useDB(c);
     const transcription = await findByEgressId(db, egressId);
@@ -41,7 +45,7 @@ export const stopEgress = async (c: Context<{ Bindings: Bindings }>) => {
       egressId,
     });
 
-    await markEgressStopped(db, transcription.id);
+    await markEgressStopped(db, transcription.id, savedParticipantNames);
 
     const finalEgress = isCompleteEgress(egress)
       ? egress

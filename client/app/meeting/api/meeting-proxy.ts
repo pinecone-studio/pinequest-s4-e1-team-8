@@ -1,6 +1,6 @@
 type ProxyMeetingRequestOptions = {
   body?: unknown;
-  method: "GET" | "POST";
+  method: "DELETE" | "GET" | "POST";
   path: string;
 };
 
@@ -178,3 +178,6 @@ export const proxyMeetingPostRequest = async (
 
 export const proxyMeetingGetRequest = async (path: string) =>
   proxyMeetingRequest({ method: "GET", path });
+
+export const proxyMeetingDeleteRequest = async (path: string) =>
+  proxyMeetingRequest({ method: "DELETE", path });

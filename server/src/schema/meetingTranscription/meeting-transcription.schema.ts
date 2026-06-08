@@ -8,6 +8,9 @@ export const meetingTranscriptions = sqliteTable("meeting_transcriptions", {
   egressId: text("egress_id"),
   transcript: text("transcript"),
   summary: text("summary"),
+  participantNames: text("participant_names", { mode: "json" }).$type<
+    string[]
+  >(),
   errorMessage: text("error_message"),
   status: text("status", {
     enum: ["pending", "processing", "done", "failed"],

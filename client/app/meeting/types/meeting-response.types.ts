@@ -47,3 +47,11 @@ export type GetMeetingTranscriptResponse = {
   updatedAt: string | null;
   completedAt: string | null;
 };
+
+export type GetMeetingTranscriptsResponse = {
+  transcripts: GetMeetingTranscriptResponse[];
+};
+
+export type DeleteMeetingTranscriptResponse = {
+  message: string;
+};

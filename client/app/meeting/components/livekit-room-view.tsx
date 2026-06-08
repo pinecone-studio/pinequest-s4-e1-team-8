@@ -43,6 +43,7 @@ export const LivekitRoomView = ({
     error,
     leaveActiveSession,
     localParticipant,
+    participants,
     remoteParticipants,
     room,
   } = useMeetingSession();
@@ -420,6 +421,7 @@ export const LivekitRoomView = ({
             <RecordingControls
               meetingId={meetingId}
               onStatusChange={setRecordingStatus}
+              participantNames={participants.map((participant) => participant.displayName)}
               roomName={livekitRoomName}
             />
             <button
