@@ -4,7 +4,9 @@ import { fileURLToPath } from "node:url";
 
 const clientRoot = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.resolve(clientRoot, "..");
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
+const apiUrl =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "https://server-preset.danny-otgontsetseg.workers.dev";
 
 const nextConfig: NextConfig = {
   output: "standalone",

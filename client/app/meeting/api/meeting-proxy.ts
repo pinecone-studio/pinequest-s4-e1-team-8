@@ -4,7 +4,8 @@ type ProxyMeetingRequestOptions = {
   path: string;
 };
 
-const LOCAL_BACKEND_FALLBACK_URL = "http://localhost:8787";
+const DEPLOYED_BACKEND_FALLBACK_URL =
+  "https://server-preset.danny-otgontsetseg.workers.dev";
 
 const stripUnmatchedTrailingBrackets = (value: string) => {
   let normalizedValue = value;
@@ -39,18 +40,13 @@ const getBackendBaseUrls = () => {
     .filter((url): url is string => Boolean(url))
     .map(getNormalizedBaseUrl)
     .filter((url): url is string => Boolean(url));
-  const shouldPreferLocalFallback =
-    process.env.NODE_ENV !== "production" &&
-    normalizedGenericUrls.some((url) => url === LOCAL_BACKEND_FALLBACK_URL);
+  const hasConfiguredGenericUrl = normalizedGenericUrls.length > 0;
   const configuredUrls = [
     process.env.MEETING_API_URL,
     process.env.BACKEND_API_URL,
-    shouldPreferLocalFallback ? LOCAL_BACKEND_FALLBACK_URL : undefined,
     process.env.API_URL,
     process.env.NEXT_PUBLIC_API_URL,
-    process.env.NODE_ENV !== "production" && !shouldPreferLocalFallback
-      ? LOCAL_BACKEND_FALLBACK_URL
-      : undefined,
+    hasConfiguredGenericUrl ? undefined : DEPLOYED_BACKEND_FALLBACK_URL,
   ]
     .filter((url): url is string => Boolean(url))
     .map(getNormalizedBaseUrl)
@@ -58,10 +54,10 @@ const getBackendBaseUrls = () => {
   const uniqueUrls = [...new Set(configuredUrls)];
 
   if (
-    process.env.NODE_ENV !== "production" &&
-    !uniqueUrls.includes(LOCAL_BACKEND_FALLBACK_URL)
+    !hasConfiguredGenericUrl &&
+    !uniqueUrls.includes(DEPLOYED_BACKEND_FALLBACK_URL)
   ) {
-    uniqueUrls.push(LOCAL_BACKEND_FALLBACK_URL);
+    uniqueUrls.push(DEPLOYED_BACKEND_FALLBACK_URL);
   }
 
   return uniqueUrls;

@@ -26,7 +26,10 @@ export type FetchTasksParams = {
 };
 
 const getServerBaseUrl = () =>
-  (process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:8787").replace(
+  (
+    process.env.NEXT_PUBLIC_API_URL ??
+    "https://server-preset.danny-otgontsetseg.workers.dev"
+  ).replace(
     /\/$/,
     "",
   );

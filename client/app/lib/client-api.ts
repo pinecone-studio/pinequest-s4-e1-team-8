@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const serverBaseURL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
+const serverBaseURL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "https://server-preset.danny-otgontsetseg.workers.dev";
 
 /** For Client Components / the browser (`withCredentials` for cookies). */
 export const clientApi = axios.create({

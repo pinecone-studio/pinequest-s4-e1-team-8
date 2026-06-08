@@ -11,7 +11,7 @@ export const MEETING_ENDPOINTS = {
 
 export const BACKEND_MEETING_ENDPOINTS = {
   createRoom: "/api/meeting-room/create",
-  joinRoom: "/api/meeting-room/join",
+  joinRoom: "/api/meeting-room/join-room",
   startEgress: "/api/meeting-transcription/start-egress",
   stopEgress: "/api/meeting-transcription/stop-egress",
   summary: "/api/meeting-transcription/summary",

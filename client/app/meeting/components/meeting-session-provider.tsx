@@ -23,6 +23,7 @@ import type {
   LivekitUrlDiagnostics,
 } from "../utils/livekit-diagnostics";
 import { useMeetingChannelPresence } from "./meeting-channel-presence-provider";
+import { ParticipantAudio } from "./participant-audio";
 import { getParticipantDisplayName } from "./participant-tile";
 
 type ActiveMeetingSession = {
@@ -339,6 +340,15 @@ export function MeetingSessionProvider({
   return (
     <MeetingSessionContext.Provider value={value}>
       {children}
+      <div aria-hidden className="fixed size-0 overflow-hidden">
+        {remoteParticipants.map((participant) => (
+          <ParticipantAudio
+            key={participant.identity}
+            participant={participant}
+            version={participantMediaVersion}
+          />
+        ))}
+      </div>
     </MeetingSessionContext.Provider>
   );
 }

@@ -15,7 +15,7 @@ export const ParticipantVideo = memo(function ParticipantVideo({
   version,
 }: ParticipantVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const shouldDisableMirroring =
+  const shouldDisableLocalMirroring =
     participant.isLocal && source === Track.Source.Camera;
 
   useEffect(() => {
@@ -26,25 +26,34 @@ export const ParticipantVideo = memo(function ParticipantVideo({
     if (!track || !element) return;
 
     track.attach(element);
-    if (shouldDisableMirroring) {
-      element.style.transform = "none";
+    if (shouldDisableLocalMirroring) {
+      element.style.setProperty("transform", "scaleX(-1)", "important");
     }
 
     return () => {
       track.detach(element);
+      element.style.removeProperty("transform");
     };
-  }, [participant, shouldDisableMirroring, source, version]);
+  }, [participant, shouldDisableLocalMirroring, source, version]);
 
   return (
-    <video
-      autoPlay
+    <div
       className={`h-full w-full ${
-        source === Track.Source.ScreenShare ? "object-contain" : "object-cover"
+        shouldDisableLocalMirroring ? "local-video-unmirrored" : ""
       }`}
-      muted={participant.isLocal}
-      playsInline
-      ref={videoRef}
-      style={shouldDisableMirroring ? { transform: "none" } : undefined}
-    />
+    >
+      <video
+        autoPlay
+        className={`h-full w-full ${
+          source === Track.Source.ScreenShare ? "object-contain" : "object-cover"
+        }`}
+        muted={participant.isLocal}
+        playsInline
+        ref={videoRef}
+        style={
+          shouldDisableLocalMirroring ? { transform: "scaleX(-1)" } : undefined
+        }
+      />
+    </div>
   );
 });
