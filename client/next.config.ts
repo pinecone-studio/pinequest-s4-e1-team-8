@@ -21,8 +21,9 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       { source: "/analytics/:path*", destination: `${apiUrl}/analytics/:path*` },
-      { source: "/tasks", destination: `${apiUrl}/tasks` },
-      { source: "/tasks/:path*", destination: `${apiUrl}/tasks/:path*` },
+      // Must not use /tasks — conflicts with the App Router page at app/tasks/page.tsx.
+      { source: "/api/backend/tasks", destination: `${apiUrl}/tasks` },
+      { source: "/api/backend/tasks/:path*", destination: `${apiUrl}/tasks/:path*` },
       { source: "/integrations/:path*", destination: `${apiUrl}/integrations/:path*` },
       { source: "/users/:path*", destination: `${apiUrl}/users/:path*` },
     ];

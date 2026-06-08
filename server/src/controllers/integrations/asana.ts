@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { mapAsanaTaskToTask } from "../../lib/asana/map-asana-task";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
+import { ensureTaskDefaults } from "../../lib/tasks/ensure-task-defaults";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import { asanaIntegrations, tasks, users } from "../../schema/schema";
 import {
@@ -48,16 +49,12 @@ async function resolveAsanaAuth(
     let accessToken = integration.accessToken;
     const expiresAt = integration.tokenExpiresAt?.getTime() ?? 0;
     const shouldRefresh =
-      integration.refreshToken &&
-      expiresAt > 0 &&
-      expiresAt - Date.now() < 5 * 60 * 1000;
+      Boolean(integration.refreshToken) &&
+      Boolean(c.env.ASANA_CLIENT_ID) &&
+      Boolean(c.env.ASANA_CLIENT_SECRET) &&
+      (!expiresAt || expiresAt <= Date.now() + 5 * 60 * 1000);
 
-    if (
-      shouldRefresh &&
-      integration.refreshToken &&
-      c.env.ASANA_CLIENT_ID &&
-      c.env.ASANA_CLIENT_SECRET
-    ) {
+    if (shouldRefresh && integration.refreshToken) {
       const refreshed = await refreshAsanaToken(
         integration.refreshToken,
         c.env.ASANA_CLIENT_ID,
@@ -338,6 +335,8 @@ export const postAsanaSync = async (c: Context<{ Bindings: Bindings }>) => {
     );
 
     const db = useDB(c);
+    await ensureTaskDefaults(db);
+
     await db
       .delete(tasks)
       .where(

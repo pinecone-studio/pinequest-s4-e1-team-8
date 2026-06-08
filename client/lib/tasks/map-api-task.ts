@@ -54,10 +54,15 @@ function normalizePriority(priority: string): TaskPriority {
 }
 
 export function mapApiTaskToListItem(task: ApiTaskListItem): TaskListItem {
+  const team =
+    task.source === "asana"
+      ? task.tool || "Asana"
+      : task.team ?? task.title ?? task.tool ?? "General";
+
   return {
     id: task.id,
     source: task.source,
-    team: task.team ?? task.title ?? task.tool ?? "General",
+    team,
     title: task.title,
     tool: task.tool,
     status: normalizeTaskStatus(task.status),

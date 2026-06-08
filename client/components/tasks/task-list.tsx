@@ -98,11 +98,13 @@ export function TaskList() {
             ))}
           </div>
 
-          <TaskTeamFilter
-            activeTeam={activeTeam}
-            tasks={sourceTasks}
-            onChange={setActiveTeam}
-          />
+          {activeSource !== "asana" ? (
+            <TaskTeamFilter
+              activeTeam={activeTeam}
+              tasks={sourceTasks}
+              onChange={setActiveTeam}
+            />
+          ) : null}
 
           {activeSource === "asana" ? (
             <TaskAsanaConnect

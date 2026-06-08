@@ -1,6 +1,6 @@
 "use client";
 
-import { clientApi } from "@/app/lib/client-api";
+import { clientApi, TASKS_API_BASE } from "@/app/lib/client-api";
 import { createTask } from "@/components/tasks/task-factory";
 import { readStoredTasks, saveStoredTasks } from "@/components/tasks/task-storage";
 import {
@@ -48,7 +48,7 @@ export function useTaskList() {
 
     try {
       const { data } = await clientApi.get<{ tasks: ApiTaskListItem[] }>(
-        "/tasks",
+        TASKS_API_BASE,
       );
       const next = mapTasksFromApi(data.tasks);
       setTasks(next);

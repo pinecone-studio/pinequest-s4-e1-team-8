@@ -1,6 +1,6 @@
 "use client";
 
-import { clientApi } from "@/app/lib/client-api";
+import { clientApi, TASKS_API_BASE } from "@/app/lib/client-api";
 import { readStoredTasks } from "@/components/tasks/task-storage";
 import { computePulseMetrics } from "@/components/analytics/analytics-pulse-utils";
 import type { TaskListItem } from "@/components/tasks/task-types";
@@ -39,7 +39,7 @@ export function AnalyticsPulseOverview() {
 
       try {
         const { data } = await clientApi.get<{ tasks: ApiTaskListItem[] }>(
-          "/tasks",
+          TASKS_API_BASE,
         );
         nextTasks = data.tasks.map(mapApiTaskToListItem);
       } catch {
