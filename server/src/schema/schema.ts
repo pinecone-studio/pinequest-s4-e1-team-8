@@ -8,6 +8,7 @@ export * from "./task.model";
 export * from "./github-integration.model";
 export * from "./asana-integration.model";
 export * from "./ai.model";
+export * from "./report-snapshot.model";
 export * from "./meetingTranscription/meeting-transcription.schema";
 export { syncMappings, syncMappingsRelations } from "../db/schema";
 export type { SyncMapping, NewSyncMapping } from "../db/schema";
