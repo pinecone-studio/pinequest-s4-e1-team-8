@@ -1,11 +1,13 @@
 "use client";
 
+import { TaskAiInsight } from "@/components/tasks/task-ai-insight";
+import { getColumnAiInsight } from "@/components/tasks/task-ai-insight-utils";
 import { taskColumnConfig } from "@/components/tasks/task-types";
 import { cn } from "@/lib/utils";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { SortableTaskCard } from "./sortable-task-card";
 import type { BoardColumnProps } from "./types";
 
@@ -24,6 +26,14 @@ export function BoardColumn({
   const taskMap = useMemo(
     () => new Map(tasks.map((task) => [task.id, task])),
     [tasks],
+  );
+
+  const columnTasks = useMemo(
+    () =>
+      taskIds
+        .map((taskId) => taskMap.get(taskId))
+        .filter((task): task is NonNullable<typeof task> => task != null),
+    [taskIds, taskMap],
   );
 
   return (
@@ -48,18 +58,24 @@ export function BoardColumn({
         )}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          {taskIds.map((taskId) => {
+          {taskIds.map((taskId, index) => {
             const task = taskMap.get(taskId);
             if (!task) return null;
 
             return (
-              <SortableTaskCard
-                key={taskId}
-                task={task}
-                selected={selectedTaskId === taskId}
-                onSelect={onSelectTask}
-                onUpdate={onUpdateTask}
-              />
+              <Fragment key={taskId}>
+                <SortableTaskCard
+                  task={task}
+                  selected={selectedTaskId === taskId}
+                  onSelect={onSelectTask}
+                  onUpdate={onUpdateTask}
+                />
+                {index === 0 ? (
+                  <TaskAiInsight
+                    text={getColumnAiInsight(columnTasks, status)}
+                  />
+                ) : null}
+              </Fragment>
             );
           })}
         </SortableContext>

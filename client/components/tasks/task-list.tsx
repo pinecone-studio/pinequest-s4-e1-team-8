@@ -4,6 +4,7 @@ import { TaskDetailPanel } from "@/components/tasks/task-detail-panel";
 import { EmptyTasks, TaskListSkeleton } from "@/components/tasks/task-list-states";
 import { sourceLabels, taskSources } from "@/components/tasks/task-sources";
 import { TaskBoard } from "@/components/tasks/task-board";
+import { TaskRiskAlert } from "@/components/tasks/task-risk-alert";
 import { TaskTeamFilter } from "@/components/tasks/task-team-filter";
 import { useTaskList } from "@/components/tasks/use-task-list";
 import { Button } from "@/components/ui/button";
@@ -38,16 +39,19 @@ export function TaskList() {
               <ListTodo className="size-5 text-violet-400" />
               Task list
             </CardTitle>
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-lg"
-              disabled={isLoading}
-              onClick={loadTasks}
-            >
-              <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
-              Refresh
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <TaskRiskAlert onSelectTask={setSelectedTaskId} />
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-lg"
+                disabled={isLoading}
+                onClick={loadTasks}
+              >
+                <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
@@ -81,7 +85,7 @@ export function TaskList() {
           ) : visibleTasks.length === 0 ? (
             <EmptyTasks source={sourceLabels[activeSource]} />
           ) : (
-            <div className="min-h-[28rem] overflow-x-auto rounded-lg border border-border/60 p-3">
+            <div className="min-h-[28rem] overflow-x-auto">
               <TaskBoard
                 tasks={visibleTasks}
                 selectedTaskId={selectedTaskId}
