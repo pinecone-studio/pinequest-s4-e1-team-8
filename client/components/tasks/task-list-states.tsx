@@ -40,6 +40,27 @@ export function TaskListSkeleton() {
   );
 }
 
+export function TaskListTableSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-lg border border-border/60 bg-[#18191d]">
+      <div className="space-y-0">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-4 border-b border-border/40 px-4 py-4 last:border-b-0"
+          >
+            <div className="h-4 w-48 animate-pulse rounded bg-muted/60" />
+            <div className="h-5 w-20 animate-pulse rounded-full bg-muted/50" />
+            <div className="h-5 w-16 animate-pulse rounded-full bg-muted/50" />
+            <div className="h-4 w-14 animate-pulse rounded bg-muted/40" />
+            <div className="h-1.5 flex-1 animate-pulse rounded-full bg-muted/40" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function EmptyTasks({ source }: { source: string }) {
   return (
     <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/60 bg-[#18191d] px-6 text-center">
