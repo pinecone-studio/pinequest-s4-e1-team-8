@@ -18,6 +18,20 @@ type MeetingRoomFormProps = {
   selectedRoom: Pick<MeetingRoomListItem, "meetingId" | "roomName"> | null;
 };
 
+const LIVEKIT_PLACEHOLDER_HOST = ["your-project", "livekit", "cloud"].join(".");
+
+const getSafeLivekitUrl = (url: string) => {
+  if (url) {
+    try {
+      if (new URL(url).host !== LIVEKIT_PLACEHOLDER_HOST) return url;
+    } catch {
+      return url;
+    }
+  }
+
+  return process.env.NEXT_PUBLIC_LIVEKIT_URL ?? "";
+};
+
 const getClerkDisplayName = (user: ReturnType<typeof useUser>["user"]) => {
   if (!user) return "";
 
@@ -87,7 +101,11 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
           roomName: livekitRoomName,
         });
 
-        setResponse({ ...result, displayRoomName: selectedRoom.roomName });
+        setResponse({
+          ...result,
+          displayRoomName: selectedRoom.roomName,
+          url: getSafeLivekitUrl(result.url),
+        });
       } catch {
         try {
           const participantIdentity = getParticipantIdentity({
@@ -100,7 +118,11 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
             roomName: livekitRoomName,
           });
 
-          setResponse({ ...result, displayRoomName: selectedRoom.roomName });
+          setResponse({
+            ...result,
+            displayRoomName: selectedRoom.roomName,
+            url: getSafeLivekitUrl(result.url),
+          });
         } catch (caughtError) {
           setError((caughtError as Error).message);
           joinedRoomKeyRef.current = "";

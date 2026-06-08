@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   getMeetingChannelKey,
   useMeetingChannelPresence,
@@ -55,6 +55,28 @@ export const MeetingSidebarSection = () => {
   const [isSectionExpanded, setIsSectionExpanded] = useState(true);
   const [dialogState, setDialogState] = useState<ChannelDialogState>(null);
   const [channelName, setChannelName] = useState("");
+  const visibleChannels = useMemo(() => {
+    if (!isMeetingActive || !activeMeetingId || !activeRoomName) {
+      return channels;
+    }
+
+    const hasActiveRoom = channels.some(
+      (room) =>
+        room.meetingId === activeMeetingId && room.roomName === activeRoomName,
+    );
+
+    if (hasActiveRoom) return channels;
+
+    return [
+      {
+        createdAt: 0,
+        id: activeMeetingId,
+        meetingId: activeMeetingId,
+        roomName: activeRoomName,
+      },
+      ...channels,
+    ];
+  }, [activeMeetingId, activeRoomName, channels, isMeetingActive]);
 
   useEffect(() => {
     if (isMeetingActive) {
@@ -184,7 +206,7 @@ export const MeetingSidebarSection = () => {
         <div className="mt-1 space-y-0.5 pl-8">
           {/* Static voice channels only. Do not request LiveKit tokens or create
           backend rooms from this sidebar; channel clicks only navigate. */}
-          {channels.map((room) => {
+          {visibleChannels.map((room) => {
             const isRoomActive =
               isMeetingActive &&
               activeMeetingId === room.meetingId &&

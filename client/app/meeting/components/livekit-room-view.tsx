@@ -78,6 +78,7 @@ export const LivekitRoomView = ({
     screenShareParticipants.find(
       (participant) => participant.identity === focusedScreenShareIdentity,
     ) ?? null;
+  const isStreamFocused = Boolean(focusedScreenShareParticipant);
   const secondaryScreenShareParticipants = screenShareParticipants.filter(
     (participant) => participant.identity !== focusedScreenShareParticipant?.identity,
   );
@@ -209,8 +210,12 @@ export const LivekitRoomView = ({
       : `${getParticipantDisplayName(participant)}'s screen`;
 
   return (
-    <section className="grid w-full flex-1 gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-sm lg:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="flex min-h-0 flex-col gap-4 overflow-hidden">
+    <section
+      className={`grid w-full flex-1 gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-sm ${
+        isStreamFocused ? "lg:grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_340px]"
+      }`}
+    >
+      <div className="flex min-h-0 flex-col gap-3 overflow-hidden">
         <header className="flex shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h2 className="truncate text-lg font-semibold text-foreground">
@@ -246,8 +251,8 @@ export const LivekitRoomView = ({
         ) : null}
 
         {focusedScreenShareParticipant ? (
-          <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_260px]">
-            <div className="flex min-h-[320px] flex-col gap-3 xl:min-h-[520px]">
+          <div className="grid min-h-0 flex-1 gap-2 xl:grid-cols-[minmax(0,1fr)_180px]">
+            <div className="flex min-h-[420px] flex-col gap-2 sm:min-h-[560px] xl:min-h-[min(76vh,820px)]">
               <div className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">
@@ -280,7 +285,7 @@ export const LivekitRoomView = ({
               </div>
             </div>
 
-            <div className="grid min-h-0 gap-3 sm:grid-cols-2 xl:max-h-[520px] xl:grid-cols-1 xl:overflow-y-auto xl:pr-1">
+            <div className="grid min-h-0 gap-2 sm:grid-cols-2 xl:max-h-[min(76vh,820px)] xl:grid-cols-1 xl:content-start xl:overflow-y-auto xl:pr-1">
               {secondaryScreenShareParticipants.map((participant) => (
                 <ParticipantTile
                   badge="LIVE"
@@ -292,10 +297,12 @@ export const LivekitRoomView = ({
                   participant={participant}
                   showAudio={false}
                   showMicStatus={false}
+                  className="xl:min-h-[105px]"
                 />
               ))}
               {localParticipant ? (
                 <ParticipantTile
+                  className="xl:min-h-[105px]"
                   key={`${localParticipant.identity}-presenter-local`}
                   label="You"
                   participant={localParticipant}
@@ -303,6 +310,7 @@ export const LivekitRoomView = ({
               ) : null}
               {remoteCompactParticipants.map((participant) => (
                 <ParticipantTile
+                  className="xl:min-h-[105px]"
                   key={`${participant.identity}-presenter-participant`}
                   participant={participant}
                 />
@@ -455,7 +463,11 @@ export const LivekitRoomView = ({
         </div>
       </div>
 
-      <aside className="flex min-h-0 flex-col gap-4 rounded-2xl border border-border/60 bg-muted/30 p-4">
+      <aside
+        className={`min-h-0 flex-col gap-4 rounded-2xl border border-border/60 bg-muted/30 p-4 ${
+          isStreamFocused ? "hidden" : "flex"
+        }`}
+      >
         <div>
           <div className="flex items-center justify-between gap-3">
             <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">

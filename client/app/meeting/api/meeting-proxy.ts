@@ -4,17 +4,44 @@ type ProxyMeetingRequestOptions = {
   path: string;
 };
 
-const LOCAL_BACKEND_FALLBACK_URL = "http://localhost:8788";
+const LOCAL_BACKEND_FALLBACK_URL = "http://localhost:8787";
 
-const getNormalizedBaseUrl = (url: string) => url.replace(/\/$/, "");
+const stripUnmatchedTrailingBrackets = (value: string) => {
+  let normalizedValue = value;
+  const openBrackets = [...normalizedValue].filter((char) => char === "[").length;
+  let closeBrackets = [...normalizedValue].filter((char) => char === "]").length;
+
+  while (normalizedValue.endsWith("]") && closeBrackets > openBrackets) {
+    normalizedValue = normalizedValue.slice(0, -1);
+    closeBrackets -= 1;
+  }
+
+  return normalizedValue;
+};
+
+const getNormalizedBaseUrl = (url: string) => {
+  const sanitizedUrl = stripUnmatchedTrailingBrackets(url.trim()).replace(
+    /\/+$/,
+    "",
+  );
+
+  try {
+    return new URL(sanitizedUrl).toString().replace(/\/+$/, "");
+  } catch {
+    console.warn("[meeting] Ignoring invalid backend URL", { url });
+    return null;
+  }
+};
 
 const getBackendBaseUrls = () => {
   const genericUrls = [process.env.API_URL, process.env.NEXT_PUBLIC_API_URL];
+  const normalizedGenericUrls = genericUrls
+    .filter((url): url is string => Boolean(url))
+    .map(getNormalizedBaseUrl)
+    .filter((url): url is string => Boolean(url));
   const shouldPreferLocalFallback =
     process.env.NODE_ENV !== "production" &&
-    genericUrls.some(
-      (url) => getNormalizedBaseUrl(url ?? "") === "http://localhost:8787"
-    );
+    normalizedGenericUrls.some((url) => url === LOCAL_BACKEND_FALLBACK_URL);
   const configuredUrls = [
     process.env.MEETING_API_URL,
     process.env.BACKEND_API_URL,
@@ -26,7 +53,8 @@ const getBackendBaseUrls = () => {
       : undefined,
   ]
     .filter((url): url is string => Boolean(url))
-    .map(getNormalizedBaseUrl);
+    .map(getNormalizedBaseUrl)
+    .filter((url): url is string => Boolean(url));
   const uniqueUrls = [...new Set(configuredUrls)];
 
   if (
@@ -59,7 +87,8 @@ const getProxyError = (body: unknown, status: number) => {
   return `Meeting backend request failed with status ${status}.`;
 };
 
-const getTargetUrl = (baseUrl: string, path: string) => `${baseUrl}${path}`;
+const getTargetUrl = (baseUrl: string, path: string) =>
+  new URL(path, `${baseUrl}/`).toString();
 
 const logProxyFailure = ({
   body,

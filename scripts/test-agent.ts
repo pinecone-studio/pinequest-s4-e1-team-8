@@ -14,7 +14,7 @@ type BriskAgentResponse =
       code: string | null;
     };
 
-const SERVER_URL = (process.env.API_URL ?? "http://localhost:8788").replace(
+const SERVER_URL = (process.env.API_URL ?? "http://localhost:8787").replace(
   /\/$/,
   "",
 );

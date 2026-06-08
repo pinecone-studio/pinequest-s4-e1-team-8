@@ -131,6 +131,8 @@ export const useLivekitRoom = ({
       .on(RoomEvent.ConnectionStateChanged, recordState)
       .on(RoomEvent.ParticipantConnected, syncParticipants)
       .on(RoomEvent.ParticipantDisconnected, syncParticipants)
+      .on(RoomEvent.TrackPublished, syncParticipants)
+      .on(RoomEvent.TrackUnpublished, syncParticipants)
       .on(RoomEvent.TrackSubscribed, syncParticipants)
       .on(RoomEvent.TrackUnsubscribed, syncParticipants)
       .on(RoomEvent.LocalTrackPublished, syncParticipants)
