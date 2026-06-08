@@ -20,8 +20,6 @@ function clampRatio(ratio: number) {
 }
 
 export function DashboardWidgetsSection() {
-
-  
   const containerRef = useRef<HTMLDivElement>(null);
   const ratioRef = useRef(WIDGETS_LEFT_RATIO_DEFAULT);
   const [leftRatio, setLeftRatio] = useState(WIDGETS_LEFT_RATIO_DEFAULT);

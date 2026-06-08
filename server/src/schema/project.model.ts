@@ -46,6 +46,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   }),
   subTeams: many(subTeams),
   tasks: many(tasks),
+  collaborators: many(projectCollaborators),
 }));
 
 export type Project = typeof projects.$inferSelect;

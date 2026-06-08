@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: monorepoRoot,
   turbopack: {
-    // Set to monorepo root so Turbopack matches where bun.lock lives.
     root: monorepoRoot,
     resolveAlias: {
       tailwindcss: path.join(clientRoot, "node_modules/tailwindcss"),
@@ -21,8 +20,9 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       { source: "/analytics/:path*", destination: `${apiUrl}/analytics/:path*` },
-      { source: "/tasks", destination: `${apiUrl}/tasks` },
-      { source: "/tasks/:path*", destination: `${apiUrl}/tasks/:path*` },
+      // Must not use /tasks — conflicts with the App Router page at app/tasks/page.tsx.
+      { source: "/api/backend/tasks", destination: `${apiUrl}/tasks` },
+      { source: "/api/backend/tasks/:path*", destination: `${apiUrl}/tasks/:path*` },
       { source: "/integrations/:path*", destination: `${apiUrl}/integrations/:path*` },
       { source: "/users/:path*", destination: `${apiUrl}/users/:path*` },
     ];
@@ -31,6 +31,7 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+import { createRequire } from "node:module";
 
-initOpenNextCloudflareForDev();
+const requireFromClient = createRequire(path.join(clientRoot, "package.json"));
+requireFromClient("@opennextjs/cloudflare").initOpenNextCloudflareForDev();

@@ -15,7 +15,7 @@ import {
 } from "@/lib/integrations/asana";
 import { cn } from "@/lib/utils";
 import { Loader2, RefreshCw, Unplug } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const oauthErrorMessages: Record<string, string> = {
   api_not_found:
@@ -46,6 +46,93 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
   const [error, setError] = useState<string | null>(
     oauthError ? oauthErrorMessages[oauthError] ?? oauthError : null,
   );
+  const syncRequestRef = useRef(0);
+  const lastSyncedKeyRef = useRef<string | null>(null);
+
+  const syncProject = useCallback(
+    async (
+      wsGid: string,
+      projGid: string,
+      projectName: string,
+      options?: { force?: boolean },
+    ) => {
+      if (!wsGid || !projGid) return;
+
+      const syncKey = `${wsGid}:${projGid}`;
+      if (!options?.force && lastSyncedKeyRef.current === syncKey) {
+        return;
+      }
+
+      const requestId = ++syncRequestRef.current;
+      setIsSyncing(true);
+      setError(null);
+      try {
+        await selectAsanaProject({
+          workspaceGid: wsGid,
+          projectGid: projGid,
+          projectName,
+        });
+        await syncAsanaTasks();
+
+        if (requestId !== syncRequestRef.current) return;
+
+        lastSyncedKeyRef.current = syncKey;
+        setStatus((current) =>
+          current
+            ? {
+                ...current,
+                workspaceGid: wsGid,
+                projectGid: projGid,
+                projectName,
+              }
+            : current,
+        );
+        onSynced?.();
+      } catch (err) {
+        if (requestId === syncRequestRef.current) {
+          setError(extractLocalError(err, "Failed to sync Asana tasks"));
+        }
+      } finally {
+        if (requestId === syncRequestRef.current) {
+          setIsSyncing(false);
+        }
+      }
+    },
+    [onSynced],
+  );
+
+  const loadWorkspacesAndProjects = useCallback(
+    async (next: AsanaStatus) => {
+      try {
+        const nextWorkspaces = await fetchAsanaWorkspaces();
+        setWorkspaces(nextWorkspaces);
+
+        const activeWorkspace = next.workspaceGid ?? nextWorkspaces[0]?.gid ?? "";
+        setWorkspaceGid(activeWorkspace);
+
+        if (!activeWorkspace) return;
+
+        const nextProjects = await fetchAsanaProjects(activeWorkspace);
+        setProjects(nextProjects);
+
+        const activeProject = next.projectGid ?? nextProjects[0]?.gid ?? "";
+        setProjectGid(activeProject);
+
+        if (activeProject) {
+          const project = nextProjects.find((entry) => entry.gid === activeProject);
+          await syncProject(activeWorkspace, activeProject, project?.name ?? "Asana");
+        }
+      } catch (err) {
+        setError(
+          extractLocalError(
+            err,
+            "Could not load Asana workspaces. Disconnect and connect again.",
+          ),
+        );
+      }
+    },
+    [syncProject],
+  );
 
   const loadStatus = useCallback(async () => {
     setIsLoading(true);
@@ -53,35 +140,15 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
     try {
       const next = await fetchAsanaStatus();
       setStatus(next);
-
       if (next.connected) {
-        try {
-          const nextWorkspaces = await fetchAsanaWorkspaces();
-          setWorkspaces(nextWorkspaces);
-
-          const activeWorkspace = next.workspaceGid ?? nextWorkspaces[0]?.gid ?? "";
-          setWorkspaceGid(activeWorkspace);
-
-          if (activeWorkspace) {
-            const nextProjects = await fetchAsanaProjects(activeWorkspace);
-            setProjects(nextProjects);
-            setProjectGid(next.projectGid ?? nextProjects[0]?.gid ?? "");
-          }
-        } catch (err) {
-          setError(
-            extractLocalError(
-              err,
-              "Could not load Asana workspaces. Disconnect and connect again.",
-            ),
-          );
-        }
+        void loadWorkspacesAndProjects(next);
       }
     } catch (err) {
       setError(extractLocalError(err, "Failed to load Asana status"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [loadWorkspacesAndProjects]);
 
   useEffect(() => {
     void loadStatus();
@@ -97,26 +164,31 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
     try {
       const nextProjects = await fetchAsanaProjects(nextWorkspaceGid);
       setProjects(nextProjects);
-      setProjectGid(nextProjects[0]?.gid ?? "");
+
+      const firstProject = nextProjects[0]?.gid ?? "";
+      setProjectGid(firstProject);
+
+      if (firstProject) {
+        await syncProject(
+          nextWorkspaceGid,
+          firstProject,
+          nextProjects[0]?.name ?? "Asana",
+          { force: true },
+        );
+      }
     } catch (err) {
       setError(extractLocalError(err, "Failed to load projects"));
     }
   };
 
-  const handleSaveProject = async () => {
-    if (!workspaceGid || !projectGid) return;
+  const handleProjectChange = async (nextProjectGid: string) => {
+    setProjectGid(nextProjectGid);
+    if (!workspaceGid || !nextProjectGid) return;
 
-    const project = projects.find((entry) => entry.gid === projectGid);
-    try {
-      await selectAsanaProject({
-        workspaceGid,
-        projectGid,
-        projectName: project?.name ?? "Asana",
-      });
-      await loadStatus();
-    } catch (err) {
-      setError(extractLocalError(err, "Failed to save project"));
-    }
+    const project = projects.find((entry) => entry.gid === nextProjectGid);
+    await syncProject(workspaceGid, nextProjectGid, project?.name ?? "Asana", {
+      force: true,
+    });
   };
 
   const handleSync = async () => {
@@ -125,25 +197,16 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
       return;
     }
 
-    setIsSyncing(true);
-    setError(null);
-    try {
-      if (!status?.projectGid) {
-        await handleSaveProject();
-      }
-      await syncAsanaTasks();
-      onSynced?.();
-      await loadStatus();
-    } catch (err) {
-      setError(extractLocalError(err, "Failed to sync Asana tasks"));
-    } finally {
-      setIsSyncing(false);
-    }
+    const project = projects.find((entry) => entry.gid === projectGid);
+    await syncProject(workspaceGid, projectGid, project?.name ?? "Asana", {
+      force: true,
+    });
   };
 
   const handleDisconnect = async () => {
     try {
       await disconnectAsana();
+      lastSyncedKeyRef.current = null;
       setWorkspaces([]);
       setProjects([]);
       setWorkspaceGid("");
@@ -194,9 +257,11 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
             Connected as {status.asanaUserName ?? "Asana user"}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {status.projectName
-              ? `Syncing from ${status.projectName}`
-              : "Choose a project to sync tasks."}
+            {isSyncing
+              ? "Syncing tasks..."
+              : status.projectName
+                ? `Showing tasks from ${status.projectName}`
+                : "Select a project to load tasks."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -244,7 +309,7 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
           <select
             className="h-9 rounded-lg border border-border/60 bg-[#25262b] px-3 text-sm outline-none"
             value={projectGid}
-            onChange={(event) => setProjectGid(event.target.value)}
+            onChange={(event) => void handleProjectChange(event.target.value)}
           >
             <option value="">Select project</option>
             {projects.map((project) => (
@@ -254,18 +319,6 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
             ))}
           </select>
         </label>
-      </div>
-
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          className="rounded-lg"
-          disabled={!workspaceGid || !projectGid}
-          onClick={() => void handleSaveProject()}
-        >
-          Save project
-        </Button>
       </div>
 
       {error ? <p className="text-sm text-rose-400">{error}</p> : null}

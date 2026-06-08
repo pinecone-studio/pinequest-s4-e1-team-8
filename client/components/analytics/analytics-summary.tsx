@@ -8,7 +8,7 @@ import {
 } from "@/components/analytics/analytics-pulse-utils";
 import { AnalyticsTeamTimeline } from "@/components/analytics/analytics-team-timeline";
 import { AnalyticsWeekly } from "@/components/analytics/analytics-weekly";
-import { clientApi } from "@/app/lib/client-api";
+import { clientApi, TASKS_API_BASE } from "@/app/lib/client-api";
 import { readStoredTasks } from "@/components/tasks/task-storage";
 import { AnalyticsTeamSelect } from "@/components/analytics/analytics-team-select";
 import type { TaskListItem } from "@/components/tasks/task-types";
@@ -31,7 +31,7 @@ export function AnalyticsSummary() {
     setIsLoadingTasks(true);
 
     clientApi
-      .get<{ tasks: ApiTaskListItem[] }>("/tasks")
+      .get<{ tasks: ApiTaskListItem[] }>(TASKS_API_BASE)
       .then((response) => {
         if (!cancelled) {
           setTasks(response.data.tasks.map(mapApiTaskToListItem));
