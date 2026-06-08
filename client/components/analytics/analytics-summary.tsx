@@ -12,7 +12,7 @@ import { clientApi } from "@/app/lib/client-api";
 import { readStoredTasks } from "@/components/tasks/task-storage";
 import { AnalyticsTeamSelect } from "@/components/analytics/analytics-team-select";
 import type { TaskListItem } from "@/components/tasks/task-types";
-import type { AnalyticsWeekly } from "@/lib/analytics/types";
+import type { AnalyticsWeekly as AnalyticsWeeklyData } from "@/lib/analytics/types";
 import {
   mapApiTaskToListItem,
   type ApiTaskListItem,
@@ -22,7 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 export function AnalyticsSummary() {
   const [tasks, setTasks] = useState<TaskListItem[]>([]);
   const [activeTeam, setActiveTeam] = useState<string | null>(null);
-  const [weekly, setWeekly] = useState<AnalyticsWeekly | null>(null);
+  const [weekly, setWeekly] = useState<AnalyticsWeeklyData | null>(null);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [isLoadingWeekly, setIsLoadingWeekly] = useState(true);
 
@@ -64,7 +64,7 @@ export function AnalyticsSummary() {
       : "";
 
     clientApi
-      .get<{ weekly: AnalyticsWeekly }>(`/analytics/weekly${query}`)
+      .get<{ weekly: AnalyticsWeeklyData }>(`/analytics/weekly${query}`)
       .then((response) => {
         if (!cancelled) {
           setWeekly(response.data.weekly);
