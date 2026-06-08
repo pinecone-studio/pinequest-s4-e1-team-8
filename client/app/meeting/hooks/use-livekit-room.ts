@@ -5,6 +5,7 @@ import {
   Room,
   RoomEvent,
   type LocalParticipant,
+  type Participant,
   type RemoteParticipant,
 } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
@@ -35,6 +36,8 @@ export const useLivekitRoom = ({
   const [remoteParticipants, setRemoteParticipants] = useState<
     RemoteParticipant[]
   >([]);
+  const [speakingParticipantIdentities, setSpeakingParticipantIdentities] =
+    useState<string[]>([]);
   const [stateTransitions, setStateTransitions] = useState<string[]>([]);
   const [tokenDiagnostics, setTokenDiagnostics] =
     useState<LivekitTokenDiagnostics>({});
@@ -50,6 +53,7 @@ export const useLivekitRoom = ({
       setConnectionState(ConnectionState.Disconnected);
       setLocalParticipant(null);
       setRemoteParticipants([]);
+      setSpeakingParticipantIdentities([]);
       setStateTransitions([ConnectionState.Disconnected]);
       setTokenDiagnostics({});
       setUrlDiagnostics(null);
@@ -75,6 +79,14 @@ export const useLivekitRoom = ({
       if (!isActive || attemptIdRef.current !== attemptId) return;
 
       setRemoteParticipants(Array.from(activeRoom.remoteParticipants.values()));
+    };
+
+    const syncActiveSpeakers = (speakers: Participant[] = activeRoom.activeSpeakers) => {
+      if (!isActive || attemptIdRef.current !== attemptId) return;
+
+      setSpeakingParticipantIdentities(
+        speakers.map((participant) => participant.identity),
+      );
     };
 
     const recordState = (state: ConnectionState) => {
@@ -115,6 +127,7 @@ export const useLivekitRoom = ({
 
         setConnectionState(activeRoom.state);
         syncParticipants();
+        syncActiveSpeakers();
       } catch (caughtError) {
         hasActiveConnectRef.current = false;
 
@@ -148,7 +161,8 @@ export const useLivekitRoom = ({
       .on(RoomEvent.TrackSubscribed, syncParticipants)
       .on(RoomEvent.TrackUnsubscribed, syncParticipants)
       .on(RoomEvent.LocalTrackPublished, syncParticipants)
-      .on(RoomEvent.LocalTrackUnpublished, syncParticipants);
+      .on(RoomEvent.LocalTrackUnpublished, syncParticipants)
+      .on(RoomEvent.ActiveSpeakersChanged, syncActiveSpeakers);
 
     void connectRoom();
 
@@ -165,6 +179,7 @@ export const useLivekitRoom = ({
     setConnectionState(ConnectionState.Disconnected);
     setLocalParticipant(null);
     setRemoteParticipants([]);
+    setSpeakingParticipantIdentities([]);
   };
 
   return {
@@ -174,6 +189,7 @@ export const useLivekitRoom = ({
     localParticipant,
     remoteParticipants,
     room,
+    speakingParticipantIdentities,
     stateTransitions,
     tokenDiagnostics,
     urlDiagnostics,

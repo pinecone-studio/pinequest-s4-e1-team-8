@@ -190,15 +190,31 @@ export const MeetingSidebarSection = () => {
 
                       return (
                         <div
-                          className="flex min-w-0 items-center gap-2 rounded-[10px] px-2 py-1 text-[11px] text-[#8e8e93]"
+                          className={cn(
+                            "flex min-w-0 items-center gap-2 rounded-[10px] px-2 py-1 text-[11px] text-[#8e8e93] transition-colors",
+                            participant.isSpeaking &&
+                              "bg-emerald-500/10 text-emerald-100 ring-1 ring-emerald-400/20",
+                          )}
                           key={participant.identity}
                         >
-                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-semibold text-violet-100 ring-1 ring-violet-400/20">
+                          <span
+                            className={cn(
+                              "flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-semibold text-violet-100 ring-1 ring-violet-400/20 transition-colors",
+                              participant.isSpeaking &&
+                                "bg-emerald-500/20 text-emerald-100 ring-emerald-400/50",
+                            )}
+                          >
                             {initial}
                           </span>
                           <span className="min-w-0 flex-1 truncate">
                             {participant.displayName}
                           </span>
+                          {participant.isSpeaking ? (
+                            <span
+                              aria-label="Speaking"
+                              className="size-2 shrink-0 rounded-full bg-emerald-400"
+                            />
+                          ) : null}
                           {participant.isLocal ? (
                             <span className="shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-emerald-200">
                               You

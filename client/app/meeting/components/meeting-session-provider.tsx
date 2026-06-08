@@ -33,6 +33,7 @@ export type MeetingSessionParticipant = {
   identity: string;
   isLocal: boolean;
   isScreenSharing: boolean;
+  isSpeaking: boolean;
 };
 
 type StartMeetingSessionInput = ActiveMeetingSession;
@@ -76,6 +77,7 @@ export function MeetingSessionProvider({
     localParticipant,
     remoteParticipants,
     room,
+    speakingParticipantIdentities,
     stateTransitions,
     tokenDiagnostics,
     urlDiagnostics,
@@ -108,9 +110,17 @@ export function MeetingSessionProvider({
             identity: participant.identity,
             isLocal: participant.isLocal,
             isScreenSharing: participant.isScreenShareEnabled,
+            isSpeaking: speakingParticipantIdentities.includes(
+              participant.identity,
+            ),
           }))
         : [],
-    [activeSession, localParticipant, remoteParticipants],
+    [
+      activeSession,
+      localParticipant,
+      remoteParticipants,
+      speakingParticipantIdentities,
+    ],
   );
 
   useEffect(() => {
