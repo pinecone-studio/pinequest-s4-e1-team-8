@@ -13,6 +13,7 @@ import mappingsRoutes from "./routes/mappings/mappings.routes";
 import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";
 import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-transcription.routes";
 import initializeProjectRoutes from "./routes/projects/initialize";
+import reportStreamRoutes from "./routes/reports/stream";
 import taskRoutes from "./routes/tasks/task.routes";
 import userRoutes from "./routes/users/user.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
@@ -61,5 +62,6 @@ app.route("/api/agent", agentRoutes);
 app.route("/api/agent/stream", agentStreamRoutes);
 app.route("/api/run-agent", runAgentRoutes);
 app.route("/api/projects/initialize", initializeProjectRoutes);
+app.route("/api/reports/stream", reportStreamRoutes);
 
 export default app;
