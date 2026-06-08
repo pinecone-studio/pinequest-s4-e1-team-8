@@ -5,6 +5,7 @@ import {
   Room,
   RoomEvent,
   type LocalParticipant,
+  type Participant,
   type RemoteParticipant,
 } from "livekit-client";
 import { useEffect, useRef, useState } from "react";
@@ -18,8 +19,8 @@ import {
 } from "../utils/livekit-diagnostics";
 
 type UseLivekitRoomOptions = {
-  livekitUrl: string;
-  token: string;
+  livekitUrl?: string;
+  token?: string;
 };
 
 export const useLivekitRoom = ({
@@ -35,6 +36,9 @@ export const useLivekitRoom = ({
   const [remoteParticipants, setRemoteParticipants] = useState<
     RemoteParticipant[]
   >([]);
+  const [speakingParticipantIdentities, setSpeakingParticipantIdentities] =
+    useState<string[]>([]);
+  const [participantMediaVersion, setParticipantMediaVersion] = useState(0);
   const [stateTransitions, setStateTransitions] = useState<string[]>([]);
   const [tokenDiagnostics, setTokenDiagnostics] =
     useState<LivekitTokenDiagnostics>({});
@@ -45,6 +49,20 @@ export const useLivekitRoom = ({
   const hasActiveConnectRef = useRef(false);
 
   useEffect(() => {
+    if (!livekitUrl || !token) {
+      setRoom(null);
+      setConnectionState(ConnectionState.Disconnected);
+      setLocalParticipant(null);
+      setRemoteParticipants([]);
+      setSpeakingParticipantIdentities([]);
+      setParticipantMediaVersion(0);
+      setStateTransitions([ConnectionState.Disconnected]);
+      setTokenDiagnostics({});
+      setUrlDiagnostics(null);
+      setError("");
+      return;
+    }
+
     let isActive = true;
     const attemptId = attemptIdRef.current + 1;
     const activeRoom = new Room();
@@ -63,6 +81,19 @@ export const useLivekitRoom = ({
       if (!isActive || attemptIdRef.current !== attemptId) return;
 
       setRemoteParticipants(Array.from(activeRoom.remoteParticipants.values()));
+    };
+
+    const syncParticipantMedia = () => {
+      syncParticipants();
+      setParticipantMediaVersion((version) => version + 1);
+    };
+
+    const syncActiveSpeakers = (speakers: Participant[] = activeRoom.activeSpeakers) => {
+      if (!isActive || attemptIdRef.current !== attemptId) return;
+
+      setSpeakingParticipantIdentities(
+        speakers.map((participant) => participant.identity),
+      );
     };
 
     const recordState = (state: ConnectionState) => {
@@ -103,6 +134,7 @@ export const useLivekitRoom = ({
 
         setConnectionState(activeRoom.state);
         syncParticipants();
+        syncActiveSpeakers();
       } catch (caughtError) {
         hasActiveConnectRef.current = false;
 
@@ -131,12 +163,15 @@ export const useLivekitRoom = ({
       .on(RoomEvent.ConnectionStateChanged, recordState)
       .on(RoomEvent.ParticipantConnected, syncParticipants)
       .on(RoomEvent.ParticipantDisconnected, syncParticipants)
-      .on(RoomEvent.TrackPublished, syncParticipants)
-      .on(RoomEvent.TrackUnpublished, syncParticipants)
-      .on(RoomEvent.TrackSubscribed, syncParticipants)
-      .on(RoomEvent.TrackUnsubscribed, syncParticipants)
-      .on(RoomEvent.LocalTrackPublished, syncParticipants)
-      .on(RoomEvent.LocalTrackUnpublished, syncParticipants);
+      .on(RoomEvent.TrackPublished, syncParticipantMedia)
+      .on(RoomEvent.TrackUnpublished, syncParticipantMedia)
+      .on(RoomEvent.TrackSubscribed, syncParticipantMedia)
+      .on(RoomEvent.TrackUnsubscribed, syncParticipantMedia)
+      .on(RoomEvent.TrackMuted, syncParticipantMedia)
+      .on(RoomEvent.TrackUnmuted, syncParticipantMedia)
+      .on(RoomEvent.LocalTrackPublished, syncParticipantMedia)
+      .on(RoomEvent.LocalTrackUnpublished, syncParticipantMedia)
+      .on(RoomEvent.ActiveSpeakersChanged, syncActiveSpeakers);
 
     void connectRoom();
 
@@ -153,6 +188,8 @@ export const useLivekitRoom = ({
     setConnectionState(ConnectionState.Disconnected);
     setLocalParticipant(null);
     setRemoteParticipants([]);
+    setSpeakingParticipantIdentities([]);
+    setParticipantMediaVersion((version) => version + 1);
   };
 
   return {
@@ -160,8 +197,10 @@ export const useLivekitRoom = ({
     error,
     leaveRoom,
     localParticipant,
+    participantMediaVersion,
     remoteParticipants,
     room,
+    speakingParticipantIdentities,
     stateTransitions,
     tokenDiagnostics,
     urlDiagnostics,

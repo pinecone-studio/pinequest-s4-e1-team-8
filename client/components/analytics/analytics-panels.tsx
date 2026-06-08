@@ -11,7 +11,7 @@ export function AnalyticsPanels() {
   const [panel, setPanel] = useState<AnalyticsPanel>("risks");
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       <ToggleGroup
         value={[panel]}
         onValueChange={(next) => {
