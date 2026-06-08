@@ -6,5 +6,6 @@ const meetingRoomRouter = new Hono();
 
 meetingRoomRouter.post("/create", postCreateRoom);
 meetingRoomRouter.post("/join", postJoinRoom);
+meetingRoomRouter.post("/join-room", postJoinRoom);
 
 export default meetingRoomRouter;

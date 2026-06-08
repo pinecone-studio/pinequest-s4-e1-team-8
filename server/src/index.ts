@@ -16,23 +16,27 @@ import userRoutes from "./routes/users/user.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
 
 const app = new Hono<{ Bindings: Bindings }>();
-
+const DEPLOYED_CLIENT_ORIGIN =
+  "https://brisk-client.danny-otgontsetseg.workers.dev";
 const LOCAL_ORIGIN = "http://localhost:3000";
+
+const getAllowedOrigins = (env: Bindings) =>
+  [LOCAL_ORIGIN, env.FRONTEND_URL, env.CLIENT_APP_URL, DEPLOYED_CLIENT_ORIGIN]
+    .filter((origin): origin is string => Boolean(origin))
+    .map((origin) => origin.replace(/\/$/, ""));
 
 app.use(
   "*",
   cors({
     origin: (origin, c) => {
       const normalize = (value: string) => value.replace(/\/$/, "");
-      const envOrigin = (c.env as Bindings).FRONTEND_URL;
-      const allowed = [
-        LOCAL_ORIGIN,
-        ...(envOrigin ? [normalize(envOrigin)] : []),
-      ];
+      const allowedOrigins = getAllowedOrigins(c.env as Bindings);
       if (!origin) {
         return LOCAL_ORIGIN;
       }
-      return allowed.includes(normalize(origin)) ? origin : LOCAL_ORIGIN;
+      return allowedOrigins.includes(normalize(origin))
+        ? origin
+        : allowedOrigins[0];
     },
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

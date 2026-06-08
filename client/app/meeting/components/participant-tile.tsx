@@ -4,15 +4,14 @@ import {
   ParticipantEvent,
   Track,
   type Participant,
-  type RemoteParticipant,
 } from "livekit-client";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useParticipantTrackVersion } from "../hooks/use-participant-version";
-import { ParticipantAudio } from "./participant-audio";
 import { ParticipantVideo } from "./participant-video";
 
 type ParticipantTileProps = {
+  avatarUrl?: string;
   badge?: string;
   badgeTone?: "default" | "live";
   className?: string;
@@ -21,7 +20,6 @@ type ParticipantTileProps = {
   mediaSource?: Track.Source.Camera | Track.Source.ScreenShare;
   onClick?: () => void;
   participant: Participant;
-  showAudio?: boolean;
   showMicStatus?: boolean;
   variant?: "active" | "compact";
 };
@@ -36,6 +34,7 @@ export const getParticipantDisplayName = (
 };
 
 export const ParticipantTile = ({
+  avatarUrl,
   badge,
   badgeTone = "default",
   className,
@@ -44,15 +43,10 @@ export const ParticipantTile = ({
   mediaSource = Track.Source.Camera,
   onClick,
   participant,
-  showAudio = true,
   showMicStatus = true,
   variant = "compact",
 }: ParticipantTileProps) => {
   const [isSpeaking, setIsSpeaking] = useState(participant.isSpeaking);
-  const audioVersion = useParticipantTrackVersion(
-    participant,
-    Track.Source.Microphone,
-  );
   const videoVersion = useParticipantTrackVersion(participant, mediaSource);
   const displayName = label ?? getParticipantDisplayName(participant);
   const isActive = variant === "active";
@@ -115,18 +109,32 @@ export const ParticipantTile = ({
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-5 text-center">
-            <div
-              className={cn(
-                "flex shrink-0 items-center justify-center rounded-full bg-violet-500/15 font-semibold text-violet-100 ring-1 ring-violet-400/20 transition-[box-shadow]",
-                isActivelySpeaking &&
-                  "shadow-[0_0_0_2px_rgba(167,139,250,0.58),0_0_24px_rgba(124,58,237,0.3)]",
-                isActive
-                  ? "size-24 text-3xl"
-                  : "size-14 text-xl",
-              )}
-            >
-              {(displayName ?? "U").slice(0, 1).toUpperCase()}
-            </div>
+            {avatarUrl ? (
+              <div
+                aria-label={displayName}
+                className={cn(
+                  "shrink-0 rounded-full bg-cover bg-center ring-1 ring-violet-400/20 transition-[box-shadow]",
+                  isActivelySpeaking &&
+                    "shadow-[0_0_0_2px_rgba(167,139,250,0.58),0_0_24px_rgba(124,58,237,0.3)]",
+                  isActive ? "size-24" : "size-14",
+                )}
+                role="img"
+                style={{ backgroundImage: `url(${avatarUrl})` }}
+              />
+            ) : (
+              <div
+                className={cn(
+                  "flex shrink-0 items-center justify-center rounded-full bg-violet-500/15 font-semibold text-violet-100 ring-1 ring-violet-400/20 transition-[box-shadow]",
+                  isActivelySpeaking &&
+                    "shadow-[0_0_0_2px_rgba(167,139,250,0.58),0_0_24px_rgba(124,58,237,0.3)]",
+                  isActive
+                    ? "size-24 text-3xl"
+                    : "size-14 text-xl",
+                )}
+              >
+                {(displayName ?? "U").slice(0, 1).toUpperCase()}
+              </div>
+            )}
             <p
               className={cn(
                 "max-w-full truncate font-medium text-foreground",
@@ -178,12 +186,6 @@ export const ParticipantTile = ({
           </span>
         ) : null}
       </div>
-      {showAudio && !participant.isLocal ? (
-        <ParticipantAudio
-          participant={participant as RemoteParticipant}
-          version={audioVersion}
-        />
-      ) : null}
     </article>
   );
 };

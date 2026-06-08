@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useMeetingSession } from "./meeting-session-provider";
+import { MeetingChat } from "./meeting-chat";
 import {
   getParticipantDisplayName,
   ParticipantTile,
@@ -56,6 +57,15 @@ export const LivekitRoomView = ({
       ...remoteParticipants,
     ],
     [localParticipant, remoteParticipants],
+  );
+  const participantAvatarUrls = useMemo(
+    () =>
+      new Map(
+        participants
+          .filter((participant) => participant.avatarUrl)
+          .map((participant) => [participant.identity, participant.avatarUrl]),
+      ),
+    [participants],
   );
   const localScreenShareEnabled = Boolean(localParticipant?.isScreenShareEnabled);
   const screenShareParticipants = useMemo(
@@ -222,41 +232,42 @@ export const LivekitRoomView = ({
     participant.isLocal ? "You" : getParticipantDisplayName(participant);
 
   return (
-    <section className="flex min-h-[calc(100vh-3rem)] w-full flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f14] text-white shadow-2xl shadow-black/30">
-      <header className="flex shrink-0 flex-col gap-3 border-b border-white/[0.08] bg-white/[0.025] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <h2 className="truncate text-base font-semibold tracking-tight">
-            {roomName}
-          </h2>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-400">
-            {isConnected ? (
-              <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
-            ) : null}
-            {connectionLabel}
-            <span className="text-zinc-600">/</span>
-            ID {meetingId}
-          </p>
-        </div>
+    <div className="flex min-h-[calc(100vh-3rem)] w-full flex-1 gap-4">
+      <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f14] text-white shadow-2xl shadow-black/30">
+        <header className="flex shrink-0 flex-col gap-3 border-b border-white/[0.08] bg-white/[0.025] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-semibold tracking-tight">
+              {roomName}
+            </h2>
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-400">
+              {isConnected ? (
+                <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
+              ) : null}
+              {connectionLabel}
+              <span className="text-zinc-600">/</span>
+              ID {meetingId}
+            </p>
+          </div>
 
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-zinc-300">
-            <Users className="size-3.5 text-violet-300" />
-            {participantCount}
-          </span>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${recordingBadgeClassName}`}
-          >
-            <Radio className="size-3.5" />
-            {recordingLabel}
-          </span>
-          {screenShareParticipants.length ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-100">
-              <ScreenShare className="size-3.5" />
-              Screen share live
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-zinc-300">
+              <Users className="size-3.5 text-violet-300" />
+              {participantCount}
             </span>
-          ) : null}
-        </div>
-      </header>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${recordingBadgeClassName}`}
+            >
+              <Radio className="size-3.5" />
+              {recordingLabel}
+            </span>
+            {screenShareParticipants.length ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-100">
+                <ScreenShare className="size-3.5" />
+                Screen share live
+              </span>
+            ) : null}
+          </div>
+        </header>
 
       {isConnecting ? (
         <p className="mx-4 mt-4 rounded-xl border border-violet-300/20 bg-violet-500/10 p-3 text-sm text-violet-100">
@@ -302,6 +313,7 @@ export const LivekitRoomView = ({
             <div className="flex min-h-[360px] flex-1 items-center justify-center overflow-hidden rounded-3xl border border-white/[0.08] bg-[#14141b] p-2 shadow-inner shadow-black/20">
               {stageParticipant ? (
                 <ParticipantTile
+                  avatarUrl={participantAvatarUrls.get(stageParticipant.identity)}
                   badge={stageMode === "screen" ? "LIVE" : undefined}
                   badgeTone="live"
                   className={`w-full ${
@@ -324,7 +336,6 @@ export const LivekitRoomView = ({
                       : Track.Source.Camera
                   }
                   participant={stageParticipant}
-                  showAudio={stageMode !== "screen"}
                   showMicStatus={stageMode !== "screen"}
                   variant="active"
                 />
@@ -339,6 +350,7 @@ export const LivekitRoomView = ({
               <div className="grid max-h-40 shrink-0 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {thumbnailParticipants.map((participant) => (
                   <ParticipantTile
+                    avatarUrl={participantAvatarUrls.get(participant.identity)}
                     className="!min-h-[96px] border-white/[0.08] bg-white/[0.035]"
                     isFocused={
                       stageMode === "camera" &&
@@ -436,5 +448,11 @@ export const LivekitRoomView = ({
         </div>
       </div>
     </section>
+      <MeetingChat
+        connectionState={connectionState}
+        participants={participants}
+        room={room}
+      />
+    </div>
   );
 };

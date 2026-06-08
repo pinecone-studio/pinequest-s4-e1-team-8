@@ -135,3 +135,10 @@
     @apply min-h-full bg-background font-sans text-foreground;
   }
 }
+
+@layer components {
+  .local-video-unmirrored,
+  .local-video-unmirrored video {
+    transform: scaleX(-1) !important;
+  }
+}
