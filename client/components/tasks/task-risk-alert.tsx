@@ -14,10 +14,10 @@ const levelStyles: Record<RiskLevel, string> = {
 };
 
 type TaskRiskAlertProps = {
-  onSelectTask?: (taskId: string) => void;
+  onFocusTask?: (taskId: string) => void;
 };
 
-export function TaskRiskAlert({ onSelectTask }: TaskRiskAlertProps) {
+export function TaskRiskAlert({ onFocusTask }: TaskRiskAlertProps) {
   const { risks, isLoading, error, refetch } = useAnalyticsRisks();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -50,7 +50,7 @@ export function TaskRiskAlert({ onSelectTask }: TaskRiskAlertProps) {
   }, [open]);
 
   const handleSelect = (item: AnalyticsRiskItem) => {
-    onSelectTask?.(item.id);
+    onFocusTask?.(item.id);
     setOpen(false);
   };
 

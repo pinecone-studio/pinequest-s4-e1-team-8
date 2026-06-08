@@ -18,6 +18,7 @@ export function TaskList() {
     activeTeam,
     addTaskToColumn,
     deleteTask,
+    focusTask,
     isLoading,
     loadTasks,
     selectedTask,
@@ -40,7 +41,7 @@ export function TaskList() {
               Task list
             </CardTitle>
             <div className="flex flex-wrap items-center gap-2">
-              <TaskRiskAlert onSelectTask={setSelectedTaskId} />
+              <TaskRiskAlert onFocusTask={focusTask} />
               <Button
                 type="button"
                 variant="outline"

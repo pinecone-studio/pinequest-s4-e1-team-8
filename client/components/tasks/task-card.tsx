@@ -43,6 +43,7 @@ export function TaskCard({
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(task.title);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
 
   const members = task.members ?? [];
   const primaryMember = members[0];
@@ -59,6 +60,12 @@ export function TaskCard({
       inputRef.current?.select();
     }
   }, [isEditing]);
+
+  useEffect(() => {
+    if (selected && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [selected]);
 
   const saveTitle = () => {
     const nextTitle = draftTitle.trim();
@@ -80,6 +87,8 @@ export function TaskCard({
 
   return (
     <article
+      ref={cardRef}
+      data-task-id={task.id}
       className={cn(
         "group relative w-full rounded-lg border bg-card text-card-foreground shadow-sm transition-colors dark:bg-[#1f2024]",
         "hover:border-violet-400/50",
