@@ -17,7 +17,11 @@ function parseRiskAnalysis(value: GeminiRiskResponse): RiskAnalysis {
   if (!isStringArray(value.threats) || !isStringArray(value.mitigationStrategies)) {
     throw new Error("Unexpected risk analysis response shape");
   }
-  return { threats: value.threats, mitigationStrategies: value.mitigationStrategies };
+  return {
+    timelineBottlenecks: value.threats,
+    riskAssessments: value.mitigationStrategies,
+    blockers: value.threats,
+  };
 }
 
 function extractProjectDescription(messages: BaseMessage[]): string {
