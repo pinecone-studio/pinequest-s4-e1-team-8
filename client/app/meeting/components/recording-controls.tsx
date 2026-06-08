@@ -13,6 +13,7 @@ import {
 type RecordingControlsProps = {
   meetingId: string;
   onStatusChange?: (status: RecordingStatus) => void;
+  participantNames?: string[];
   roomName: string;
 };
 
@@ -21,6 +22,7 @@ export type RecordingStatus = "active" | "not-started" | "ready";
 export const RecordingControls = ({
   meetingId,
   onStatusChange,
+  participantNames,
   roomName,
 }: RecordingControlsProps) => {
   const [recording, setRecording] =
@@ -52,7 +54,12 @@ export const RecordingControls = ({
     setIsLoading(true);
 
     try {
-      setRecording(await stopMeetingEgress({ egressId: recording.egressId }));
+      setRecording(
+        await stopMeetingEgress({
+          egressId: recording.egressId,
+          participantNames,
+        })
+      );
       setHasStopped(true);
     } catch (caughtError) {
       setError((caughtError as Error).message);

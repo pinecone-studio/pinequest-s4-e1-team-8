@@ -16,6 +16,7 @@ export type StartMeetingEgressRequest = {
 
 export type StopMeetingEgressRequest = {
   egressId: string;
+  participantNames?: string[];
 };
 
 export type GetMeetingTranscriptRequest = {

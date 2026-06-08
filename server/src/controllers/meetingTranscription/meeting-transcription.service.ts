@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { meetingTranscriptions } from "../../schema/meetingTranscription/meeting-transcription.schema";
 import { transcribeAudio } from "./chimege-client";
+import { generateGroqSummary } from "../../lib/groq/groq-client";
 import { downloadRecordingFromR2 } from "./r2-recording-download.service";
 import type { Bindings } from "../../lib/common/types";
 import type { MeetingTranscriptionDb } from "../../lib/meetingTypes/meeting-transcription.types";
@@ -61,10 +62,15 @@ export const findByEgressId = async (
 export const markEgressStopped = async (
   db: MeetingTranscriptionDb,
   transcriptionId: string,
+  participantNames?: string[] | null,
 ) => {
   await db
     .update(meetingTranscriptions)
-    .set({ status: "processing", errorMessage: null })
+    .set({
+      status: "processing",
+      errorMessage: null,
+      ...(participantNames ? { participantNames } : {}),
+    })
     .where(eq(meetingTranscriptions.id, transcriptionId));
 };
 
@@ -85,12 +91,14 @@ export const transcribeRecording = async ({
   transcriptionId,
   recordingUrl,
   summary,
+  participantNames,
 }: {
   db: MeetingTranscriptionDb;
   env: Bindings;
   transcriptionId: string;
   recordingUrl: string;
   summary?: string | null;
+  participantNames?: string[] | null;
 }) => {
   try {
     await db
@@ -112,18 +120,21 @@ export const transcribeRecording = async ({
       },
     );
 
+    const finalSummary =
+      summary ?? (await generateGroqSummary(env, transcript, participantNames));
+
     await db
       .update(meetingTranscriptions)
       .set({
         transcript,
-        summary,
+        summary: finalSummary,
         status: "done",
         errorMessage: null,
         completedAt: new Date(),
       })
       .where(eq(meetingTranscriptions.id, transcriptionId));
 
-    return { transcript, summary };
+    return { transcript, summary: finalSummary };
   } catch (error) {
     await markFailed(db, transcriptionId, (error as Error).message);
     throw error;

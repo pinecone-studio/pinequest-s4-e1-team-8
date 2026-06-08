@@ -1,0 +1,1 @@
+ALTER TABLE `meeting_transcriptions` ADD `participant_names` text;
