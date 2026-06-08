@@ -1,4 +1,5 @@
 import { END, START, StateGraph } from "@langchain/langgraph";
+import { metricsWorkerNode } from "./nodes/metrics";
 import { onboardingWorkerNode } from "./nodes/onboarding";
 import { SupervisorGraphState } from "./state";
 
@@ -8,10 +9,6 @@ export const METRICS_WORKER_NODE = "metrics_worker";
 export const RISK_WORKER_NODE = "risk_worker";
 
 async function supervisorNode(_state: typeof SupervisorGraphState.State) {
-  return {};
-}
-
-async function metricsWorkerNode(_state: typeof SupervisorGraphState.State) {
   return {};
 }
 
