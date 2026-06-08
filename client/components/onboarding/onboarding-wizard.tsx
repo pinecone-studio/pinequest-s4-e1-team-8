@@ -32,7 +32,9 @@ function OnboardingWizardContent() {
         </span>
       </div>
 
-      <div className="w-full max-w-[480px] rounded-2xl border border-white/10 bg-[#1a1b1f] p-[28px_30px_30px] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)]">
+      <div
+        className={`w-full rounded-2xl border border-white/10 bg-[#1a1b1f] p-[28px_30px_30px] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)] ${step === 3 ? "max-w-[640px]" : "max-w-[480px]"}`}
+      >
         <StepHeader step={step} />
 
         {step === 0 ? <StepProjectSetup /> : null}

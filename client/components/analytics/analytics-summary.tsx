@@ -24,7 +24,6 @@ export function AnalyticsSummary() {
   const [activeTeam, setActiveTeam] = useState<string | null>(null);
   const [weekly, setWeekly] = useState<AnalyticsWeeklyData | null>(null);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
-  const [isLoadingWeekly, setIsLoadingWeekly] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,8 +56,6 @@ export function AnalyticsSummary() {
   useEffect(() => {
     let cancelled = false;
 
-    setIsLoadingWeekly(true);
-
     const query = activeTeam
       ? `?team=${encodeURIComponent(activeTeam)}`
       : "";
@@ -73,11 +70,6 @@ export function AnalyticsSummary() {
       .catch(() => {
         if (!cancelled) {
           setWeekly(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoadingWeekly(false);
         }
       });
 
