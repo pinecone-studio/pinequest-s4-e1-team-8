@@ -15,7 +15,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { joinMeetingRoom } from "../api/join-meeting-room";
 import type { MeetingRoomTokenResponse } from "../types/meeting-response.types";
 import { useLivekitRoom } from "../hooks/use-livekit-room";
 import type {
@@ -27,7 +26,6 @@ import { getParticipantDisplayName } from "./participant-tile";
 
 type ActiveMeetingSession = {
   meetingId: string;
-  participantName: string;
   response: MeetingRoomTokenResponse;
 };
 
@@ -64,72 +62,6 @@ type MeetingSessionContextValue = {
 const MeetingSessionContext =
   createContext<MeetingSessionContextValue | null>(null);
 
-const MEETING_SESSION_STORAGE_KEY = "active-meeting-session";
-const LIVEKIT_PLACEHOLDER_HOST = ["your-project", "livekit", "cloud"].join(".");
-
-type StoredMeetingSession = {
-  meetingId: string;
-  participantName: string;
-  roomName: string;
-};
-
-const getSafeLivekitUrl = (url: string) => {
-  if (url) {
-    try {
-      if (new URL(url).host !== LIVEKIT_PLACEHOLDER_HOST) return url;
-    } catch {
-      return url;
-    }
-  }
-
-  return process.env.NEXT_PUBLIC_LIVEKIT_URL ?? "";
-};
-
-const readStoredMeetingSession = () => {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const rawValue = window.sessionStorage.getItem(MEETING_SESSION_STORAGE_KEY);
-    if (!rawValue) return null;
-
-    const parsed = JSON.parse(rawValue) as Partial<StoredMeetingSession>;
-
-    if (
-      typeof parsed.meetingId !== "string" ||
-      typeof parsed.participantName !== "string" ||
-      typeof parsed.roomName !== "string" ||
-      !parsed.meetingId.trim() ||
-      !parsed.participantName.trim() ||
-      !parsed.roomName.trim()
-    ) {
-      return null;
-    }
-
-    return {
-      meetingId: parsed.meetingId,
-      participantName: parsed.participantName,
-      roomName: parsed.roomName,
-    };
-  } catch {
-    return null;
-  }
-};
-
-const writeStoredMeetingSession = (session: StoredMeetingSession) => {
-  if (typeof window === "undefined") return;
-
-  window.sessionStorage.setItem(
-    MEETING_SESSION_STORAGE_KEY,
-    JSON.stringify(session),
-  );
-};
-
-const clearStoredMeetingSession = () => {
-  if (typeof window === "undefined") return;
-
-  window.sessionStorage.removeItem(MEETING_SESSION_STORAGE_KEY);
-};
-
 export function MeetingSessionProvider({
   children,
 }: {
@@ -138,7 +70,6 @@ export function MeetingSessionProvider({
   const { user } = useUser();
   const [activeSession, setActiveSession] =
     useState<ActiveMeetingSession | null>(null);
-  const [hasAttemptedRestore, setHasAttemptedRestore] = useState(false);
   const localAvatarUrl = user?.imageUrl || undefined;
   const {
     clearJoinedChannel,
@@ -244,11 +175,6 @@ export function MeetingSessionProvider({
   const startMeetingSession = useCallback(
     (session: StartMeetingSessionInput) => {
       setActiveSession(session);
-      writeStoredMeetingSession({
-        meetingId: session.meetingId,
-        participantName: session.participantName,
-        roomName: session.response.displayRoomName ?? session.response.roomName,
-      });
     },
     [],
   );
@@ -256,50 +182,8 @@ export function MeetingSessionProvider({
   const leaveActiveSession = useCallback(async () => {
     await leaveRoom();
     setActiveSession(null);
-    clearStoredMeetingSession();
     clearJoinedChannel();
   }, [clearJoinedChannel, leaveRoom]);
-
-  useEffect(() => {
-    if (hasAttemptedRestore || activeSession) return;
-
-    setHasAttemptedRestore(true);
-
-    const storedSession = readStoredMeetingSession();
-    if (!storedSession) return;
-
-    let isActive = true;
-
-    const restoreMeetingSession = async () => {
-      try {
-        const response = await joinMeetingRoom({
-          participantName: storedSession.participantName,
-          roomName: storedSession.meetingId,
-        });
-
-        if (!isActive) return;
-
-        startMeetingSession({
-          meetingId: storedSession.meetingId,
-          participantName: storedSession.participantName,
-          response: {
-            ...response,
-            displayRoomName: storedSession.roomName,
-            url: getSafeLivekitUrl(response.url),
-          },
-        });
-      } catch (caughtError) {
-        console.warn("[meeting] Could not restore meeting session", caughtError);
-        clearStoredMeetingSession();
-      }
-    };
-
-    void restoreMeetingSession();
-
-    return () => {
-      isActive = false;
-    };
-  }, [activeSession, hasAttemptedRestore, startMeetingSession]);
 
   const value = useMemo(
     () => ({
