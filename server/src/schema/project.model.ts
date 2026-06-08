@@ -3,6 +3,7 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { workspaces } from "./workspace.model";
 import { subTeams } from "./sub-team.model";
 import { tasks } from "./task.model";
+import { projectCollaborators } from "./project-collaborator.model";
 import { users } from "./user.model";
 
 export const projects = sqliteTable("projects", {

@@ -48,17 +48,24 @@ async function resolveAsanaAuth(
 
     let accessToken = integration.accessToken;
     const expiresAt = integration.tokenExpiresAt?.getTime() ?? 0;
+    const asanaClientId = c.env.ASANA_CLIENT_ID;
+    const asanaClientSecret = c.env.ASANA_CLIENT_SECRET;
     const shouldRefresh =
       Boolean(integration.refreshToken) &&
-      Boolean(c.env.ASANA_CLIENT_ID) &&
-      Boolean(c.env.ASANA_CLIENT_SECRET) &&
+      Boolean(asanaClientId) &&
+      Boolean(asanaClientSecret) &&
       (!expiresAt || expiresAt <= Date.now() + 5 * 60 * 1000);
 
-    if (shouldRefresh && integration.refreshToken) {
+    if (
+      shouldRefresh &&
+      integration.refreshToken &&
+      asanaClientId &&
+      asanaClientSecret
+    ) {
       const refreshed = await refreshAsanaToken(
         integration.refreshToken,
-        c.env.ASANA_CLIENT_ID,
-        c.env.ASANA_CLIENT_SECRET,
+        asanaClientId,
+        asanaClientSecret,
       );
 
       accessToken = refreshed.access_token;
