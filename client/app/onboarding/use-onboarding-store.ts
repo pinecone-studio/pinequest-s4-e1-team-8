@@ -1,8 +1,11 @@
 "use client";
 
 import type { OnboardingData } from "@/components/onboarding/onboarding-types";
+import type { MilestoneDraft } from "@/lib/onboarding/parse-milestone-drafts";
 import { createProjectId } from "@/lib/onboarding-utils";
 import { DEFAULT_WORKSPACE_ID } from "@/lib/workspace-defaults";
+
+export type { MilestoneDraft };
 import {
   createContext,
   createElement,
@@ -37,6 +40,10 @@ export type OnboardingStep3 = {
   isAsanaDisconnected: boolean;
 };
 
+export type OnboardingStep4 = {
+  milestoneDrafts: MilestoneDraft[];
+};
+
 type OnboardingStoreState = {
   step: number;
   projectId: string;
@@ -45,6 +52,7 @@ type OnboardingStoreState = {
   step1: OnboardingStep1;
   step2: OnboardingStep2;
   step3: OnboardingStep3;
+  step4: OnboardingStep4;
 };
 
 type OnboardingStoreContextValue = OnboardingStoreState & {
@@ -54,6 +62,7 @@ type OnboardingStoreContextValue = OnboardingStoreState & {
   toggleGithubConnection: () => void;
   toggleAsanaConnection: () => void;
   setAiGoals: (aiGoals: string) => void;
+  setMilestoneDrafts: (milestoneDrafts: MilestoneDraft[]) => void;
   canAdvanceFromStep1: boolean;
   advanceFromStep1: () => boolean;
   advanceFromStep2: () => void;
@@ -71,7 +80,8 @@ type OnboardingStoreAction =
   | { type: "TOGGLE_GITHUB" }
   | { type: "TOGGLE_ASANA" }
   | { type: "SKIP_STEP3" }
-  | { type: "SET_AI_GOALS"; aiGoals: string };
+  | { type: "SET_AI_GOALS"; aiGoals: string }
+  | { type: "SET_MILESTONE_DRAFTS"; milestoneDrafts: MilestoneDraft[] };
 
 const INITIAL_STATE: OnboardingStoreState = {
   step: 0,
@@ -91,6 +101,9 @@ const INITIAL_STATE: OnboardingStoreState = {
     asanaConnected: false,
     isGithubDisconnected: false,
     isAsanaDisconnected: false,
+  },
+  step4: {
+    milestoneDrafts: [],
   },
 };
 
@@ -168,6 +181,11 @@ function onboardingReducer(
       };
     case "SET_AI_GOALS":
       return { ...state, aiGoals: action.aiGoals };
+    case "SET_MILESTONE_DRAFTS":
+      return {
+        ...state,
+        step4: { milestoneDrafts: action.milestoneDrafts },
+      };
     default:
       return state;
   }
@@ -225,6 +243,10 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_AI_GOALS", aiGoals });
   }, []);
 
+  const setMilestoneDrafts = useCallback((milestoneDrafts: MilestoneDraft[]) => {
+    dispatch({ type: "SET_MILESTONE_DRAFTS", milestoneDrafts });
+  }, []);
+
   const setStep = useCallback((step: number) => {
     dispatch({ type: "SET_STEP", step });
   }, []);
@@ -258,6 +280,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       toggleGithubConnection,
       toggleAsanaConnection,
       setAiGoals,
+      setMilestoneDrafts,
       canAdvanceFromStep1,
       advanceFromStep1,
       advanceFromStep2,
@@ -274,6 +297,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       toggleGithubConnection,
       toggleAsanaConnection,
       setAiGoals,
+      setMilestoneDrafts,
       canAdvanceFromStep1,
       advanceFromStep1,
       advanceFromStep2,
