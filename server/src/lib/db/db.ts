@@ -8,7 +8,6 @@ export const getDrizzleDb = (d1: D1Database) => {
   return drizzle(d1, { schema });
 };
 
-// call db to use db derectly into the controller functions
 export const useDB = (c: Context<{ Bindings: Bindings }>) => {
   return drizzle(c.env.DB, { schema });
 };
