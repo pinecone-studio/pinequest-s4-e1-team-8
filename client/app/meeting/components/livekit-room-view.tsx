@@ -13,8 +13,7 @@ import {
   VideoOff,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useMeetingChannelPresence } from "./meeting-channel-presence-provider";
-import { useLivekitRoom } from "../hooks/use-livekit-room";
+import { useMeetingSession } from "./meeting-session-provider";
 import {
   getParticipantDisplayName,
   ParticipantTile,
@@ -22,35 +21,26 @@ import {
 import { RecordingControls } from "./recording-controls";
 
 type LivekitRoomViewProps = {
-  livekitUrl: string;
   livekitRoomName: string;
   meetingId: string;
   onLeave: () => void;
   roomName: string;
-  token: string;
 };
 
 export const LivekitRoomView = ({
-  livekitUrl,
   livekitRoomName,
   meetingId,
   onLeave,
   roomName,
-  token,
 }: LivekitRoomViewProps) => {
-  const {
-    clearJoinedChannel,
-    setJoinedChannel,
-    setJoinedChannelParticipants,
-  } = useMeetingChannelPresence();
   const {
     connectionState,
     error,
-    leaveRoom,
+    leaveActiveSession,
     localParticipant,
     remoteParticipants,
     room,
-  } = useLivekitRoom({ livekitUrl, token });
+  } = useMeetingSession();
   const isConnecting = connectionState === ConnectionState.Connecting;
   const isConnected = connectionState === ConnectionState.Connected;
   const participantCount = (localParticipant ? 1 : 0) + remoteParticipants.length;
@@ -91,16 +81,6 @@ export const LivekitRoomView = ({
         : "Disconnected";
 
   useEffect(() => {
-    if (connectionState !== ConnectionState.Connected) return;
-
-    setJoinedChannel({ meetingId, roomName });
-
-    return () => {
-      clearJoinedChannel();
-    };
-  }, [clearJoinedChannel, connectionState, meetingId, roomName, setJoinedChannel]);
-
-  useEffect(() => {
     if (
       focusedScreenShareIdentity &&
       !screenShareParticipants.some(
@@ -110,29 +90,6 @@ export const LivekitRoomView = ({
       setFocusedScreenShareIdentity(null);
     }
   }, [focusedScreenShareIdentity, screenShareParticipantKey, screenShareParticipants]);
-
-  useEffect(() => {
-    const participants = [
-      ...(localParticipant ? [localParticipant] : []),
-      ...remoteParticipants,
-    ];
-
-    setJoinedChannelParticipants(
-      participants.map((participant) => ({
-        displayName: participant.isLocal
-          ? "You"
-          : getParticipantDisplayName(participant),
-        identity: participant.identity,
-        isLocal: participant.isLocal,
-        isScreenSharing: participant.isScreenShareEnabled,
-      })),
-    );
-  }, [
-    localParticipant,
-    localScreenShareEnabled,
-    remoteParticipants,
-    setJoinedChannelParticipants,
-  ]);
 
   // LiveKit mutates localParticipant in place — subscribe to track events so
   // the control bar re-renders when mic/camera state actually changes.
@@ -158,8 +115,7 @@ export const LivekitRoomView = ({
   }, [localParticipant]);
 
   const handleLeave = async () => {
-    await leaveRoom();
-    clearJoinedChannel();
+    await leaveActiveSession();
     onLeave();
   };
 

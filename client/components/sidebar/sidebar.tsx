@@ -1,5 +1,6 @@
 "use client";
 
+import { ActiveMeetingReturnCard } from "@/app/meeting/components/active-meeting-return-card";
 import { SidebarAddProject } from "@/components/sidebar/sidebar-add-project";
 import { SidebarAuth } from "@/components/sidebar/sidebar-auth";
 import { SidebarCollapseTrigger } from "@/components/sidebar/sidebar-collapse-trigger";
@@ -60,6 +61,8 @@ const DashboardSidebarInner = () => {
           collapsed ? "px-2" : "px-4",
         )}
       >
+        <ActiveMeetingReturnCard />
+
         {!collapsed && (
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b73]">
             Onboarding

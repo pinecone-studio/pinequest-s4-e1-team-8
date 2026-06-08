@@ -18,8 +18,8 @@ import {
 } from "../utils/livekit-diagnostics";
 
 type UseLivekitRoomOptions = {
-  livekitUrl: string;
-  token: string;
+  livekitUrl?: string;
+  token?: string;
 };
 
 export const useLivekitRoom = ({
@@ -45,6 +45,18 @@ export const useLivekitRoom = ({
   const hasActiveConnectRef = useRef(false);
 
   useEffect(() => {
+    if (!livekitUrl || !token) {
+      setRoom(null);
+      setConnectionState(ConnectionState.Disconnected);
+      setLocalParticipant(null);
+      setRemoteParticipants([]);
+      setStateTransitions([ConnectionState.Disconnected]);
+      setTokenDiagnostics({});
+      setUrlDiagnostics(null);
+      setError("");
+      return;
+    }
+
     let isActive = true;
     const attemptId = attemptIdRef.current + 1;
     const activeRoom = new Room();
