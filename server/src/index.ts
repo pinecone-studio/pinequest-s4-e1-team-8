@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 
 import type { Bindings } from "./lib/common/types";
 import agentRoutes from "./routes/agent/agent.routes";
+import agentStreamRoutes from "./routes/agent";
 import runAgentRoutes from "./routes/agent/run-agent.routes";
 import analyticsRoutes from "./routes/analytics/analytics.routes";
 import githubRoutes from "./routes/integrations/github.routes";
@@ -36,6 +37,7 @@ app.route("/api/meeting-room", meetingRoomRouter);
 app.route("/api/webhooks", webhookRoutes);
 app.route("/api/mappings", mappingsRoutes);
 app.route("/api/agent", agentRoutes);
+app.route("/api/agent/stream", agentStreamRoutes);
 app.route("/api/run-agent", runAgentRoutes);
 
 export default app;
