@@ -1,6 +1,6 @@
 "use client";
 
-import type { OnboardingData } from "../onboarding-types";
+import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
 import { useBriskAgent } from "@/hooks/useBriskAgent";
 
 function LoadingAnimation() {
@@ -40,22 +40,22 @@ function LoadingAnimation() {
 }
 
 interface StepAiTasksProps {
-  data: OnboardingData;
-  onChange: (patch: Partial<OnboardingData>) => void;
   onFinish: () => void;
 }
 
-export function StepAiTasks({ data, onChange, onFinish }: StepAiTasksProps) {
+export function StepAiTasks({ onFinish }: StepAiTasksProps) {
+  const { aiGoals, setAiGoals, projectId, workspaceId, step1 } =
+    useOnboardingStore();
   const { run, isLoading, error } = useBriskAgent();
-  const isValid = data.aiGoals.trim().length > 4;
+  const isValid = aiGoals.trim().length > 4;
 
   const generate = async () => {
     const response = await run({
-      projectId: data.projectId,
-      workspaceId: data.workspaceId,
-      projectName: data.projectName,
-      projectDescription: data.description,
-      inputMessage: data.aiGoals.trim(),
+      projectId,
+      workspaceId,
+      projectName: step1.projectName,
+      projectDescription: step1.description,
+      inputMessage: aiGoals.trim(),
     });
 
     if (response.success) {
@@ -96,8 +96,8 @@ export function StepAiTasks({ data, onChange, onFinish }: StepAiTasksProps) {
       <textarea
         className="w-full resize-none rounded-lg border border-white/10 bg-[#121318] px-3.5 py-3 text-sm leading-snug text-white placeholder:text-[#5c5c66] transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
         rows={5}
-        value={data.aiGoals}
-        onChange={(e) => onChange({ aiGoals: e.target.value })}
+        value={aiGoals}
+        onChange={(event) => setAiGoals(event.target.value)}
         placeholder="e.g. I need to launch a v1 web app with auth, a dashboard, and Stripe billing within 6 weeks, but I don't know how to break it down for my team…"
       />
       <p className="mt-2 text-[12.5px] leading-relaxed text-[#6b6b73]">

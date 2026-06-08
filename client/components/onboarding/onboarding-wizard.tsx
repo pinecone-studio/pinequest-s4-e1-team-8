@@ -1,41 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import {
+  OnboardingStoreProvider,
+  useOnboardingStore,
+} from "@/app/onboarding/use-onboarding-store";
 import { useRouter } from "next/navigation";
+import { saveOnboardingData } from "@/lib/onboarding-storage";
 import { StepHeader } from "./step-header";
 import { StepProjectSetup } from "./steps/step-project-setup";
 import { StepInviteTeam } from "./steps/step-invite-team";
 import { StepIntegrations } from "./steps/step-integrations";
 import { StepAiTasks } from "./steps/step-ai-tasks";
-import { saveOnboardingData } from "@/lib/onboarding-storage";
-import { createProjectId } from "@/lib/onboarding-utils";
-import { DEFAULT_WORKSPACE_ID } from "@/lib/workspace-defaults";
-import type { OnboardingData } from "./onboarding-types";
 
-const INITIAL_DATA: OnboardingData = {
-  projectId: createProjectId(),
-  workspaceId: DEFAULT_WORKSPACE_ID,
-  projectName: "",
-  description: "",
-  timezone: "(GMT+00:00) UTC",
-  members: [],
-  githubConnected: false,
-  asanaConnected: false,
-  aiGoals: "",
-};
-
-export function OnboardingWizard() {
+function OnboardingWizardContent() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState<OnboardingData>(INITIAL_DATA);
-
-  const patch = (partial: Partial<OnboardingData>) =>
-    setData((d) => ({ ...d, ...partial }));
-
-  const next = () => setStep((s) => Math.min(3, s + 1));
+  const { step, toOnboardingData } = useOnboardingStore();
 
   const finish = () => {
-    saveOnboardingData(data);
+    saveOnboardingData(toOnboardingData());
     router.push("/dashboard");
   };
 
@@ -50,23 +32,13 @@ export function OnboardingWizard() {
         </span>
       </div>
 
-      <div
-        className="w-full max-w-[480px] rounded-2xl border border-white/10 bg-[#1a1b1f] p-[28px_30px_30px] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)]"
-      >
+      <div className="w-full max-w-[480px] rounded-2xl border border-white/10 bg-[#1a1b1f] p-[28px_30px_30px] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)]">
         <StepHeader step={step} />
 
-        {step === 0 && (
-          <StepProjectSetup data={data} onChange={patch} onNext={next} />
-        )}
-        {step === 1 && (
-          <StepInviteTeam data={data} onChange={patch} onNext={next} onSkip={next} />
-        )}
-        {step === 2 && (
-          <StepIntegrations data={data} onChange={patch} onNext={next} onSkip={next} />
-        )}
-        {step === 3 && (
-          <StepAiTasks data={data} onChange={patch} onFinish={finish} />
-        )}
+        {step === 0 ? <StepProjectSetup /> : null}
+        {step === 1 ? <StepInviteTeam /> : null}
+        {step === 2 ? <StepIntegrations /> : null}
+        {step === 3 ? <StepAiTasks onFinish={finish} /> : null}
       </div>
 
       <button
@@ -76,5 +48,13 @@ export function OnboardingWizard() {
         Skip onboarding →
       </button>
     </div>
+  );
+}
+
+export function OnboardingWizard() {
+  return (
+    <OnboardingStoreProvider>
+      <OnboardingWizardContent />
+    </OnboardingStoreProvider>
   );
 }

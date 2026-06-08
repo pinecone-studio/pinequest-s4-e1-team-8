@@ -11,6 +11,6 @@
     "skipLibCheck": true,
     "types": ["bun"]
   },
-  "include": ["index.ts"],
-  "exclude": ["node_modules", "client", "server", "scripts"]
+  "include": ["scripts/**/*.ts"],
+  "exclude": ["node_modules", "client", "server"]
 }

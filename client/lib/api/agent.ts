@@ -50,10 +50,16 @@ const extractErrorMessage = async (response: Response): Promise<string> => {
 
 export const runBriskAgent = async (
   params: RunBriskAgentParams,
+  authToken?: string | null,
 ): Promise<BriskAgentResponse> => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+  }
+
   const response = await fetch(`${getServerBaseUrl()}/api/run-agent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     credentials: "include",
     body: JSON.stringify({
       projectId: params.projectId,

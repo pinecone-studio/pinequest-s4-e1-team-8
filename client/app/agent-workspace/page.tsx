@@ -16,7 +16,6 @@ import {
   AlertTriangle,
   BarChart3,
   CheckCircle2,
-  Circle,
   GitPullRequest,
   Loader2,
   Sparkles,
@@ -40,7 +39,7 @@ type WorkerNode = {
   icon: typeof UserPlus;
 };
 
-type WorkerStatus = "pending" | "active" | "complete";
+type WorkerStatus = "pending" | "running" | "done";
 
 const WORKER_NODES: WorkerNode[] = [
   {
@@ -79,39 +78,35 @@ function getWorkerStatus(
   nodeId: WorkerNodeId,
   activeNode: string | null,
   nodeOutputs: Record<string, string>,
-  isComplete: boolean,
 ): WorkerStatus {
   if (activeNode === nodeId) {
-    return "active";
+    return "running";
   }
 
-  const output = nodeOutputs[nodeId];
-  if (output && output.length > 0) {
-    return "complete";
-  }
-
-  if (isComplete && output && output.length > 0) {
-    return "complete";
+  if ((nodeOutputs[nodeId] ?? "").length > 0) {
+    return "done";
   }
 
   return "pending";
 }
 
-function statusBadgeVariant(status: WorkerStatus): "default" | "secondary" | "outline" {
-  if (status === "active") {
+function statusBadgeVariant(
+  status: WorkerStatus,
+): "default" | "secondary" | "outline" {
+  if (status === "running") {
     return "default";
   }
-  if (status === "complete") {
+  if (status === "done") {
     return "secondary";
   }
   return "outline";
 }
 
 function statusLabel(status: WorkerStatus): string {
-  if (status === "active") {
+  if (status === "running") {
     return "Running";
   }
-  if (status === "complete") {
+  if (status === "done") {
     return "Done";
   }
   return "Pending";
@@ -162,187 +157,224 @@ export default function AgentWorkspacePage() {
   }, [abort]);
 
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-[#0f0f11] text-white">
-      <header className="shrink-0 border-b border-white/[0.06] px-6 py-5">
+    <div className="flex min-h-full flex-1 flex-col bg-[#0a0a0c] text-white">
+      <header className="shrink-0 border-b border-white/6 px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-5 text-violet-400" />
-              <h1 className="text-xl font-semibold tracking-tight">
-                Agent Workspace
-              </h1>
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/15 ring-1 ring-violet-500/25">
+                <Sparkles className="size-4 text-violet-300" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight">
+                  Agent Workspace
+                </h1>
+                <p className="text-sm text-[#8b8b95]">
+                  Multi-agent orchestration viewport
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-[#8b8b95]">
-              Stream multi-agent pipeline output in real time
-            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {isLoading ? (
-              <Badge variant="default" className="gap-1.5 bg-violet-600">
-                <Loader2 className="size-3 animate-spin" />
-                Streaming
+              <Badge
+                variant="default"
+                className="h-7 gap-1.5 rounded-lg bg-violet-600 px-3 text-xs"
+              >
+                <Loader2 className="size-3.5 animate-spin" />
+                Pipeline Active
               </Badge>
-            ) : isComplete ? (
-              <Badge variant="secondary" className="gap-1.5">
-                <CheckCircle2 className="size-3" />
-                Complete
+            ) : null}
+            {isComplete ? (
+              <Badge
+                variant="secondary"
+                className="h-7 gap-1.5 rounded-lg bg-emerald-500/15 px-3 text-xs text-emerald-300"
+              >
+                <CheckCircle2 className="size-3.5" />
+                Orchestration Complete
               </Badge>
-            ) : (
-              <Badge variant="outline">Idle</Badge>
-            )}
+            ) : null}
+            {!isLoading && !isComplete ? (
+              <Badge
+                variant="outline"
+                className="h-7 rounded-lg border-white/12 px-3 text-xs text-[#8b8b95]"
+              >
+                Awaiting Input
+              </Badge>
+            ) : null}
           </div>
         </div>
       </header>
 
-      <section className="flex flex-1 flex-col gap-6 px-6 py-6">
-        <Card className="border-white/[0.06] bg-[#16161a] text-white ring-white/[0.06]">
-          <CardHeader className="border-b border-white/[0.06]">
-            <CardTitle className="text-base text-white">Prompt</CardTitle>
-            <CardDescription className="text-[#8b8b95]">
-              Describe the task for the supervisor agent pipeline
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4">
-            <textarea
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder="e.g. Analyze our sprint metrics, identify delivery risks, and draft a PR plus follow-up issues for the auth refactor."
-              rows={4}
-              disabled={isLoading}
-              className="w-full resize-y rounded-xl border border-white/[0.08] bg-[#0f0f11] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-[#5c5c66] focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-60"
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                onClick={handleRun}
-                disabled={isLoading || prompt.trim().length === 0}
-                className="gap-2 rounded-xl bg-violet-600 hover:bg-violet-700"
-              >
-                {isLoading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Sparkles className="size-4" />
-                )}
-                {isLoading ? "Running pipeline…" : "Run pipeline"}
-              </Button>
+      <div className="sticky top-0 z-20 border-b border-white/6 bg-[#0a0a0c]/90 px-6 py-5 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-white">Command Center</p>
+              <p className="text-xs text-[#8b8b95]">
+                Direct the supervisor agent pipeline
+              </p>
+            </div>
+            <span className="text-xs tabular-nums text-[#6b6b73]">
+              {pipelineProgress}% routed
+            </span>
+          </div>
+          <textarea
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+            placeholder="Describe the orchestration task — metrics review, risk scan, PR draft, and issue generation."
+            rows={3}
+            disabled={isLoading}
+            className="w-full resize-none rounded-2xl border border-white/8 bg-[#121216] px-4 py-3.5 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-all placeholder:text-[#5c5c66] focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              onClick={handleRun}
+              disabled={isLoading || prompt.trim().length === 0}
+              className="h-10 gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 text-sm font-medium shadow-lg shadow-violet-900/30 hover:from-violet-500 hover:to-fuchsia-500"
+            >
               {isLoading ? (
-                <Button
-                  variant="outline"
-                  onClick={handleStop}
-                  className="gap-2 rounded-xl border-white/[0.12] bg-transparent text-white hover:bg-white/[0.06]"
-                >
-                  <Square className="size-4" />
-                  Stop
-                </Button>
-              ) : null}
-              {error ? (
-                <p className="text-sm text-red-400">{error}</p>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Sparkles className="size-4" />
+              )}
+              Run Agent Orchestration
+            </Button>
+            {isLoading ? (
+              <Button
+                variant="outline"
+                onClick={handleStop}
+                className="h-10 gap-2 rounded-xl border-red-500/30 bg-red-500/5 px-5 text-sm text-red-300 hover:bg-red-500/10 hover:text-red-200"
+              >
+                <Square className="size-3.5 fill-current" />
+                Stop Execution
+              </Button>
+            ) : null}
+            {error ? (
+              <p className="text-sm text-red-400">{error}</p>
+            ) : null}
+          </div>
+        </div>
+      </div>
 
-        <Card className="border-white/[0.06] bg-[#16161a] text-white ring-white/[0.06]">
-          <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <CardTitle className="text-base text-white">
-                  Pipeline tracker
-                </CardTitle>
-                <CardDescription className="text-[#8b8b95]">
-                  Five specialized workers orchestrated by the supervisor
-                </CardDescription>
-              </div>
-              <span className="text-xs tabular-nums text-[#8b8b95]">
-                {pipelineProgress}%
-              </span>
+      <section className="shrink-0 border-b border-white/6 px-6 py-6">
+        <div className="mx-auto w-full max-w-6xl space-y-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-medium text-white">
+                Pipeline Timeline
+              </h2>
+              <p className="text-xs text-[#8b8b95]">
+                Five specialized worker stages
+              </p>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-white/6">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-violet-600 to-sky-500 transition-all duration-500 ease-out"
+                className="h-full rounded-full bg-linear-to-r from-violet-600 to-cyan-500 transition-all duration-500 ease-out"
                 style={{ width: `${pipelineProgress}%` }}
               />
             </div>
-            <ol className="grid gap-3 md:grid-cols-5">
-              {WORKER_NODES.map((node, index) => {
-                const status = getWorkerStatus(
-                  node.id,
-                  activeNode,
-                  nodeOutputs,
-                  isComplete,
-                );
-                const Icon = node.icon;
+          </div>
 
-                return (
-                  <li key={node.id} className="relative">
-                    {index < WORKER_NODES.length - 1 ? (
-                      <span
-                        aria-hidden
-                        className="absolute top-7 right-0 hidden h-px w-4 translate-x-full bg-white/[0.12] md:block"
-                      />
-                    ) : null}
-                    <div
+          <ol className="relative flex flex-col gap-4 md:flex-row md:items-stretch md:gap-0">
+            {WORKER_NODES.map((node, index) => {
+              const status = getWorkerStatus(
+                node.id,
+                activeNode,
+                nodeOutputs,
+              );
+              const Icon = node.icon;
+              const isLast = index === WORKER_NODES.length - 1;
+
+              return (
+                <li
+                  key={node.id}
+                  className={cn(
+                    "relative flex flex-1 flex-col",
+                    !isLast && "md:pr-4",
+                  )}
+                >
+                  {!isLast ? (
+                    <span
+                      aria-hidden
                       className={cn(
-                        "flex h-full flex-col gap-3 rounded-xl border p-3 transition-all duration-300",
-                        status === "active" &&
-                          "border-violet-500/60 bg-violet-500/10 shadow-[0_0_24px_rgba(139,92,246,0.15)]",
-                        status === "complete" &&
-                          "border-emerald-500/30 bg-emerald-500/5",
-                        status === "pending" &&
-                          "border-white/[0.06] bg-[#0f0f11]/60",
+                        "absolute top-6 right-0 z-0 hidden h-px w-full translate-x-1/2 md:block",
+                        status === "done"
+                          ? "bg-emerald-500/40"
+                          : "bg-white/10",
                       )}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div
-                          className={cn(
-                            "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                            status === "active" && "bg-violet-500/20 text-violet-300",
-                            status === "complete" && "bg-emerald-500/15 text-emerald-300",
-                            status === "pending" && "bg-white/[0.04] text-[#8b8b95]",
-                          )}
-                        >
-                          {status === "active" ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : status === "complete" ? (
-                            <CheckCircle2 className="size-4" />
-                          ) : (
-                            <Icon className="size-4" />
-                          )}
-                        </div>
-                        <Badge variant={statusBadgeVariant(status)}>
-                          {statusLabel(status)}
-                        </Badge>
+                      style={{ width: "calc(100% - 3rem)", left: "calc(50% + 1.5rem)" }}
+                    />
+                  ) : null}
+                  <div
+                    className={cn(
+                      "relative z-10 flex h-full flex-col gap-3 rounded-2xl border p-4 transition-all duration-300",
+                      status === "running" &&
+                        "animate-pulse border-violet-500/70 bg-violet-500/10 shadow-[0_0_32px_rgba(139,92,246,0.2)] ring-1 ring-violet-400/40",
+                      status === "done" &&
+                        "border-emerald-500/35 bg-emerald-500/5",
+                      status === "pending" &&
+                        "border-white/6 bg-[#121216]/80",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div
+                        className={cn(
+                          "flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset transition-colors",
+                          status === "running" &&
+                            "bg-violet-500/20 text-violet-200 ring-violet-500/30",
+                          status === "done" &&
+                            "bg-emerald-500/15 text-emerald-300 ring-emerald-500/25",
+                          status === "pending" &&
+                            "bg-white/4 text-[#8b8b95] ring-white/6",
+                        )}
+                      >
+                        {status === "running" ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : status === "done" ? (
+                          <CheckCircle2 className="size-4" />
+                        ) : (
+                          <Icon className="size-4" />
+                        )}
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-white">
-                          {node.label}
-                        </p>
-                        <p className="text-xs leading-relaxed text-[#8b8b95]">
-                          {node.description}
-                        </p>
-                      </div>
-                      {status === "active" ? (
-                        <div className="flex items-center gap-1.5 text-xs text-violet-300">
-                          <Circle className="size-2 fill-current animate-pulse" />
-                          Active worker
-                        </div>
-                      ) : null}
+                      <Badge
+                        variant={statusBadgeVariant(status)}
+                        className={cn(
+                          "rounded-lg text-[10px] uppercase tracking-wide",
+                          status === "running" && "bg-violet-600",
+                          status === "done" &&
+                            "bg-emerald-500/15 text-emerald-300",
+                        )}
+                      >
+                        {statusLabel(status)}
+                      </Badge>
                     </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </CardContent>
-        </Card>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-white">
+                        {node.label}
+                      </p>
+                      <p className="text-[11px] leading-relaxed text-[#8b8b95]">
+                        {node.description}
+                      </p>
+                    </div>
+                    <p className="mt-auto font-mono text-[10px] text-[#5c5c66]">
+                      {node.id}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </section>
 
-        <div className="grid gap-4 xl:grid-cols-2">
+      <section className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="mx-auto grid w-full max-w-6xl gap-4 xl:grid-cols-2">
           {WORKER_NODES.map((node) => {
             const status = getWorkerStatus(
               node.id,
               activeNode,
               nodeOutputs,
-              isComplete,
             );
             const output = nodeOutputs[node.id] ?? "";
             const Icon = node.icon;
@@ -351,19 +383,23 @@ export default function AgentWorkspacePage() {
               <Card
                 key={node.id}
                 className={cn(
-                  "border-white/[0.06] bg-[#16161a] text-white ring-white/[0.06] transition-all duration-300",
-                  status === "active" && "ring-1 ring-violet-500/40",
+                  "border-white/6 bg-[#121216] text-white ring-white/6 transition-all duration-300",
+                  status === "running" &&
+                    "ring-1 ring-violet-500/40 shadow-[0_0_24px_rgba(139,92,246,0.08)]",
                 )}
               >
-                <CardHeader className="border-b border-white/[0.06]">
+                <CardHeader className="border-b border-white/6">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
                           "flex size-8 items-center justify-center rounded-lg",
-                          status === "active" && "bg-violet-500/20 text-violet-300",
-                          status === "complete" && "bg-emerald-500/15 text-emerald-300",
-                          status === "pending" && "bg-white/[0.04] text-[#8b8b95]",
+                          status === "running" &&
+                            "bg-violet-500/20 text-violet-300",
+                          status === "done" &&
+                            "bg-emerald-500/15 text-emerald-300",
+                          status === "pending" &&
+                            "bg-white/4 text-[#8b8b95]",
                         )}
                       >
                         <Icon className="size-4" />
@@ -382,11 +418,12 @@ export default function AgentWorkspacePage() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="max-h-80 overflow-y-auto pt-4">
-                  <StreamMarkdown content={output} />
-                  {status === "active" && output.length > 0 ? (
-                    <span className="mt-2 inline-block h-4 w-0.5 animate-pulse bg-violet-400" />
-                  ) : null}
+                <CardContent className="max-h-72 overflow-y-auto pt-4">
+                  <StreamMarkdown
+                    content={output}
+                    isActive={activeNode === node.id}
+                    workerLabel={node.label}
+                  />
                 </CardContent>
               </Card>
             );

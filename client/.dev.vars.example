@@ -1,0 +1,7 @@
+NEXTJS_ENV=production
+NEXT_PUBLIC_API_URL=https://server-preset.danny-otgontsetseg.workers.dev
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+CLERK_SECRET_KEY=sk_test_your_key_here
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+API_URL=https://server-preset.danny-otgontsetseg.workers.dev

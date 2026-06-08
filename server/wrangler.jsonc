@@ -16,8 +16,8 @@
   "vars": {
     "LIVEKIT_URL": "wss://brisk-505qgdpu.livekit.cloud",
     "CLERK_PUBLISHABLE_KEY": "pk_test_c2VsZWN0ZWQtbXV0dC0zMS5jbGVyay5hY2NvdW50cy5kZXYk",
-    "CLIENT_APP_URL": "https://brisk-pm.vercel.app/",
-    "FRONTEND_URL": "https://brisk-pm.vercel.app/",
+    "CLIENT_APP_URL": "https://brisk-client.danny-otgontsetseg.workers.dev",
+    "FRONTEND_URL": "https://brisk-client.danny-otgontsetseg.workers.dev",
   },
   "env": {
     "production": {

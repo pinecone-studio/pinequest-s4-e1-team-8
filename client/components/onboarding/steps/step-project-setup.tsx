@@ -1,7 +1,7 @@
 "use client";
 
+import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
 import { ArrowRight } from "lucide-react";
-import type { OnboardingData } from "../onboarding-types";
 
 const TIMEZONES = [
   "(GMT-08:00) Pacific Time",
@@ -17,14 +17,9 @@ const TIMEZONES = [
 const inputClassName =
   "w-full rounded-lg border border-white/10 bg-[#121318] text-sm text-white placeholder:text-[#5c5c66] transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20";
 
-interface StepProjectSetupProps {
-  data: OnboardingData;
-  onChange: (patch: Partial<OnboardingData>) => void;
-  onNext: () => void;
-}
-
-export function StepProjectSetup({ data, onChange, onNext }: StepProjectSetupProps) {
-  const isValid = data.projectName.trim().length > 1;
+export function StepProjectSetup() {
+  const { step1, patchStep1, canAdvanceFromStep1, advanceFromStep1 } =
+    useOnboardingStore();
 
   return (
     <>
@@ -45,8 +40,10 @@ export function StepProjectSetup({ data, onChange, onNext }: StepProjectSetupPro
           <input
             className={`${inputClassName} h-11 px-3.5`}
             placeholder="e.g. Atlas Platform"
-            value={data.projectName}
-            onChange={(e) => onChange({ projectName: e.target.value })}
+            value={step1.projectName}
+            onChange={(event) =>
+              patchStep1({ projectName: event.target.value })
+            }
             autoFocus
           />
         </div>
@@ -60,8 +57,10 @@ export function StepProjectSetup({ data, onChange, onNext }: StepProjectSetupPro
             className={`${inputClassName} resize-none px-3.5 py-3 leading-snug`}
             rows={3}
             placeholder="What is this project about?"
-            value={data.description}
-            onChange={(e) => onChange({ description: e.target.value })}
+            value={step1.description}
+            onChange={(event) =>
+              patchStep1({ description: event.target.value })
+            }
           />
         </div>
 
@@ -72,12 +71,14 @@ export function StepProjectSetup({ data, onChange, onNext }: StepProjectSetupPro
           <div className="relative">
             <select
               className={`${inputClassName} h-11 cursor-pointer appearance-none pl-3.5 pr-9`}
-              value={data.timezone}
-              onChange={(e) => onChange({ timezone: e.target.value })}
+              value={step1.timezone}
+              onChange={(event) =>
+                patchStep1({ timezone: event.target.value })
+              }
             >
-              {TIMEZONES.map((tz) => (
-                <option key={tz} className="bg-[#1a1b1f] text-white">
-                  {tz}
+              {TIMEZONES.map((timezone) => (
+                <option key={timezone} className="bg-[#1a1b1f] text-white">
+                  {timezone}
                 </option>
               ))}
             </select>
@@ -103,8 +104,8 @@ export function StepProjectSetup({ data, onChange, onNext }: StepProjectSetupPro
       <div className="mt-7">
         <button
           className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-violet-600 text-sm font-semibold text-white transition-colors hover:bg-violet-500 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45"
-          disabled={!isValid}
-          onClick={onNext}
+          disabled={!canAdvanceFromStep1}
+          onClick={advanceFromStep1}
         >
           Create Project
           <ArrowRight size={17} />

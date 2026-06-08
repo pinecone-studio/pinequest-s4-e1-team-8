@@ -5,6 +5,7 @@ import { MeetingSessionProvider } from "@/app/meeting/components/meeting-session
 import { DashboardSidebar } from "@/components/sidebar/sidebar";
 import { UserSync } from "@/components/user-sync";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
+import { usePathname } from "next/navigation";
 
 const AuthSetup = () => {
   useClientApiAuth();
@@ -12,13 +13,16 @@ const AuthSetup = () => {
 };
 
 export const AppShell = ({ children }: { children: React.ReactNode }) => {
+  const pathname = usePathname();
+  const hideSidebar = pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+
   return (
     <MeetingChannelPresenceProvider>
       <MeetingSessionProvider>
         <div className="flex min-h-screen bg-[#121212]">
           <AuthSetup />
           <UserSync />
-          <DashboardSidebar />
+          {hideSidebar ? null : <DashboardSidebar />}
           <main className="flex min-w-0 flex-1 flex-col">{children}</main>
         </div>
       </MeetingSessionProvider>

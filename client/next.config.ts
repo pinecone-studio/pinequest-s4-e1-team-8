@@ -7,6 +7,8 @@ const monorepoRoot = path.resolve(clientRoot, "..");
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+  outputFileTracingRoot: clientRoot,
   turbopack: {
     // Set to monorepo root so Turbopack matches where bun.lock lives.
     // Without this, Turbopack auto-detects the root from the lock file
@@ -30,3 +32,7 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+initOpenNextCloudflareForDev();

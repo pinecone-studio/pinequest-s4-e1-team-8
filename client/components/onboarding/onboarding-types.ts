@@ -1,4 +1,4 @@
-export type TeamRole = "Manager" | "Developer" | "Viewer";
+export type TeamRole = "Manager" | "Developer" | "Designer";
 
 export interface TeamMember {
   email: string;
@@ -15,6 +15,8 @@ export interface OnboardingData {
   members: TeamMember[];
   githubConnected: boolean;
   asanaConnected: boolean;
+  isGithubDisconnected: boolean;
+  isAsanaDisconnected: boolean;
   aiGoals: string;
 }
 

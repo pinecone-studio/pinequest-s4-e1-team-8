@@ -1,105 +1,102 @@
+import { createClerkClient, verifyToken } from "@clerk/backend";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
 import type { Context } from "hono";
+import { nanoid } from "nanoid";
 import type { Bindings } from "../common/types";
+import { users } from "../../schema/schema";
+import * as schema from "../../schema/schema";
 
-type JwkKey = {
-  kty: string;
-  kid?: string;
-  n?: string;
-  e?: string;
-  alg?: string;
-  use?: string;
-  [k: string]: unknown;
-};
-
-type ClerkJwtPayload = {
-  sub: string;
-  iss: string;
-  iat: number;
-  exp: number;
-  azp?: string;
-  [key: string]: unknown;
-};
-
-function getJwksUrl(publishableKey: string): string {
-  const instanceId = publishableKey.replace(/^pk_(test|live)_/, "");
-  const domain = atob(instanceId).replace(/\.$/, "");
-  return `https://${domain}/.well-known/jwks.json`;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyCryptoKey = any;
-
-async function importPublicKey(jwk: JwkKey): Promise<CryptoKey> {
-  const subtle = crypto.subtle as AnyCryptoKey;
-  return subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, [
-    "verify",
-  ]) as Promise<CryptoKey>;
-}
-
-function base64UrlDecode(input: string): Uint8Array {
-  const padded = input.replace(/-/g, "+").replace(/_/g, "/");
-  const binary = atob(padded);
-  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
-}
-
-export async function verifyClerkJwt(
-  token: string,
-  publishableKey: string,
-): Promise<ClerkJwtPayload | null> {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-
-    const [headerB64, payloadB64, sigB64] = parts;
-    const header = JSON.parse(atob(headerB64.replace(/-/g, "+").replace(/_/g, "/"))) as {
-      kid?: string;
-    };
-
-    const jwksUrl = getJwksUrl(publishableKey);
-    const jwksResponse = await fetch(jwksUrl);
-    if (!jwksResponse.ok) return null;
-
-    const jwks = (await jwksResponse.json()) as { keys: JwkKey[] };
-    const jwk = header.kid
-      ? jwks.keys.find((k) => k.kid === header.kid)
-      : jwks.keys[0];
-
-    if (!jwk) return null;
-
-    const key = await importPublicKey(jwk);
-    const signedData = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
-    const signature = base64UrlDecode(sigB64);
-
-    const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signedData);
-    if (!valid) return null;
-
-    const payload = JSON.parse(
-      atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/")),
-    ) as ClerkJwtPayload;
-
-    if (payload.exp < Math.floor(Date.now() / 1000)) return null;
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
+const AUTHORIZED_PARTIES = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://brisk-pm.vercel.app",
+];
 
 export function extractBearerToken(c: Context<{ Bindings: Bindings }>): string | null {
   const auth = c.req.header("Authorization");
-  if (!auth?.startsWith("Bearer ")) return null;
+  if (!auth?.startsWith("Bearer ")) {
+    return null;
+  }
   return auth.slice(7);
+}
+
+async function ensureUserRecord(
+  clerkUserId: string,
+  secretKey: string,
+  db: ReturnType<typeof drizzle<typeof schema>>,
+): Promise<string | null> {
+  const [existing] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.clerkId, clerkUserId))
+    .limit(1);
+
+  if (existing) {
+    return existing.id;
+  }
+
+  const clerk = createClerkClient({ secretKey });
+  const clerkUser = await clerk.users.getUser(clerkUserId);
+  const email = clerkUser.emailAddresses[0]?.emailAddress?.trim();
+  const name =
+    clerkUser.fullName?.trim() ||
+    clerkUser.firstName?.trim() ||
+    clerkUser.username?.trim() ||
+    email;
+
+  if (!email || !name) {
+    return null;
+  }
+
+  const [created] = await db
+    .insert(users)
+    .values({
+      id: `user_${nanoid(10)}`,
+      clerkId: clerkUserId,
+      email,
+      name,
+      avatarUrl: clerkUser.imageUrl ?? null,
+    })
+    .returning({ id: users.id });
+
+  return created?.id ?? null;
+}
+
+export async function resolveAuthenticatedUserId(
+  c: Context<{ Bindings: Bindings }>,
+): Promise<string | null> {
+  const token = extractBearerToken(c);
+  if (!token) {
+    return null;
+  }
+
+  const secretKey = c.env.CLERK_SECRET_KEY;
+  if (!secretKey) {
+    return null;
+  }
+
+  let clerkUserId: string | undefined;
+  try {
+    const payload = await verifyToken(token, {
+      secretKey,
+      authorizedParties: AUTHORIZED_PARTIES,
+    });
+    clerkUserId = payload.sub;
+  } catch {
+    return null;
+  }
+
+  if (!clerkUserId) {
+    return null;
+  }
+
+  const db = drizzle(c.env.DB, { schema });
+  return ensureUserRecord(clerkUserId, secretKey, db);
 }
 
 export async function getAuthenticatedUserId(
   c: Context<{ Bindings: Bindings }>,
 ): Promise<string | null> {
-  const token = extractBearerToken(c);
-  if (!token) return null;
-
-  const publishableKey = c.env.CLERK_PUBLISHABLE_KEY;
-  if (!publishableKey) return null;
-
-  const payload = await verifyClerkJwt(token, publishableKey);
-  return payload?.sub ?? null;
+  return resolveAuthenticatedUserId(c);
 }

@@ -17,11 +17,23 @@ import webhookRoutes from "./routes/webhooks/webhook.routes";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+const LOCAL_ORIGIN = "http://localhost:3000";
+
 app.use(
   "*",
   cors({
-    origin: (_, c) =>
-      (c.env as Bindings).FRONTEND_URL ?? "http://localhost:3000",
+    origin: (origin, c) => {
+      const normalize = (value: string) => value.replace(/\/$/, "");
+      const envOrigin = (c.env as Bindings).FRONTEND_URL;
+      const allowed = [
+        LOCAL_ORIGIN,
+        ...(envOrigin ? [normalize(envOrigin)] : []),
+      ];
+      if (!origin) {
+        return LOCAL_ORIGIN;
+      }
+      return allowed.includes(normalize(origin)) ? origin : LOCAL_ORIGIN;
+    },
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,

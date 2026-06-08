@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "brisk-client",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-04-16",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "account_id": "a60e9697809a342d3482149cd0ac135e",
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "brisk-client",
+    },
+  ],
+}
