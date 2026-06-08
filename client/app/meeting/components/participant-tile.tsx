@@ -5,6 +5,7 @@ import {
   Track,
   type Participant,
 } from "livekit-client";
+import { Mic, MicOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useParticipantTrackVersion } from "../hooks/use-participant-version";
@@ -176,13 +177,28 @@ export const ParticipantTile = ({
         ) : null}
         {showMicStatus ? (
           <span
-            className={`w-20 shrink-0 rounded-full px-3 py-1 text-center text-xs font-medium backdrop-blur ${
+            aria-label={
+              participant.isMicrophoneEnabled
+                ? "Microphone on"
+                : "Microphone muted"
+            }
+            className={cn(
+              "inline-flex size-7 shrink-0 items-center justify-center rounded-full backdrop-blur",
               participant.isMicrophoneEnabled
                 ? "bg-violet-400/15 text-violet-100"
-                : "bg-red-400/15 text-red-100"
-            }`}
+                : "bg-red-400/15 text-red-100",
+            )}
+            title={
+              participant.isMicrophoneEnabled
+                ? "Microphone on"
+                : "Microphone muted"
+            }
           >
-            {participant.isMicrophoneEnabled ? "Mic on" : "Muted"}
+            {participant.isMicrophoneEnabled ? (
+              <Mic className="size-3.5" />
+            ) : (
+              <MicOff className="size-3.5" />
+            )}
           </span>
         ) : null}
       </div>

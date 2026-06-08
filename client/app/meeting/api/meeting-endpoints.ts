@@ -1,6 +1,8 @@
 export const MEETING_ENDPOINTS = {
   createRoom: "/meeting/api/createRoom",
   joinRoom: "/meeting/api/joinRoom",
+  roomParticipants: (roomName: string) =>
+    `/meeting/api/room/${encodeURIComponent(roomName)}/participants`,
   startEgress: "/meeting/api/startEgress",
   stopEgress: "/meeting/api/stopEgress",
   summary: "/meeting/api/summary",
@@ -12,6 +14,8 @@ export const MEETING_ENDPOINTS = {
 export const BACKEND_MEETING_ENDPOINTS = {
   createRoom: "/api/meeting-room/create",
   joinRoom: "/api/meeting-room/join-room",
+  roomParticipants: (roomName: string) =>
+    `/api/meeting-room/${encodeURIComponent(roomName)}/participants`,
   startEgress: "/api/meeting-transcription/start-egress",
   stopEgress: "/api/meeting-transcription/stop-egress",
   summary: "/api/meeting-transcription/summary",

@@ -6,8 +6,8 @@ type MeetingPageContentProps = {
 };
 
 export const MeetingPageContent = ({ selectedRoom }: MeetingPageContentProps) => (
-  <main className="flex min-h-screen flex-col bg-[#121214] px-4 py-6 text-foreground sm:px-6 lg:px-8">
-    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col">
+  <main className="flex h-screen min-h-0 flex-col overflow-hidden bg-[#121214] px-4 py-6 text-foreground sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-1 min-h-0 flex-col overflow-hidden">
       <MeetingRoomForm selectedRoom={selectedRoom} />
     </div>
   </main>
