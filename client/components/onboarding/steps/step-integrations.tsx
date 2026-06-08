@@ -1,6 +1,7 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
+import { getAsanaConnectUrl } from "@/lib/integrations/asana";
 import { Check, ArrowRight } from "lucide-react";
 
 function GithubMark() {
@@ -88,6 +89,14 @@ export function StepIntegrations() {
     skipStep3,
   } = useOnboardingStore();
 
+  const handleAsanaToggle = () => {
+    if (step3.asanaConnected) {
+      toggleAsanaConnection();
+      return;
+    }
+    window.location.href = getAsanaConnectUrl();
+  };
+
   return (
     <>
       <div className="mb-6">
@@ -111,10 +120,8 @@ export function StepIntegrations() {
           name="Asana"
           desc="Import tasks & projects"
           logo={<AsanaMark />}
-          connected={data.asanaConnected}
-          onToggle={() => {
-            window.location.href = "/api/auth/asana?userId=user_wr";
-          }}
+          connected={step3.asanaConnected}
+          onToggle={handleAsanaToggle}
         />
       </div>
 
