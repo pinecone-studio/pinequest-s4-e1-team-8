@@ -7,6 +7,7 @@ import {
   Activity,
   BarChart3,
   CalendarDays,
+  FileText,
   Inbox,
   LayoutDashboard,
   LayoutGrid,
@@ -18,12 +19,14 @@ import { usePathname } from "next/navigation";
 
 type NavItem =
   | (typeof sidebarNavItems)[number]
-  | (typeof sidebarWorkflowItems)[number];
+  | (typeof sidebarWorkflowItems)[number]
+  | { label: "Meeting Summaries"; href: "/meeting-summaries" };
 
 const navIcons = {
   Dashboard: LayoutDashboard,
   Tasks: ListTodo,
   Analytics: BarChart3,
+  "Meeting Summaries": FileText,
   "Project Board": LayoutGrid,
   Schedule: CalendarDays,
   Activities: Activity,

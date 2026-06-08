@@ -1,60 +1,29 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/components/sidebar/sidebar-context";
 import { cn } from "@/lib/utils";
-import {
-  ChevronDown,
-  ChevronRight,
-  Headphones,
-  MoreHorizontal,
-  Plus,
-  Volume2,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Headphones, Volume2 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   getMeetingChannelKey,
   useMeetingChannelPresence,
 } from "./meeting-channel-presence-provider";
 import { useMeetingChannels } from "../hooks/use-meeting-channels";
-import type { MeetingRoomListItem } from "../types/meeting-room.types";
 import { getMeetingRoomHref } from "../utils/meeting-room-url";
 
-type ChannelDialogState =
-  | {
-      mode: "create";
-      room?: never;
-    }
-  | {
-      mode: "rename";
-      room: MeetingRoomListItem;
-    }
-  | null;
-
 export const MeetingSidebarSection = () => {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isSignedIn } = useUser();
   const { collapsed } = useSidebar();
   const { joinedChannelKey, joinedChannelParticipants } =
     useMeetingChannelPresence();
-  const { channels, createChannel, deleteChannel, renameChannel } =
-    useMeetingChannels();
+  const { channels } = useMeetingChannels();
   const activeMeetingId = searchParams.get("meetingId");
   const activeRoomName = searchParams.get("roomName");
   const isMeetingActive = pathname === "/meeting";
   const [isSectionExpanded, setIsSectionExpanded] = useState(true);
-  const [dialogState, setDialogState] = useState<ChannelDialogState>(null);
-  const [channelName, setChannelName] = useState("");
   const visibleChannels = useMemo(() => {
     if (!isMeetingActive || !activeMeetingId || !activeRoomName) {
       return channels;
@@ -83,65 +52,6 @@ export const MeetingSidebarSection = () => {
       setIsSectionExpanded(true);
     }
   }, [isMeetingActive]);
-
-  const closeDialog = () => {
-    setDialogState(null);
-    setChannelName("");
-  };
-
-  const openCreateDialog = () => {
-    // TODO: Gate channel creation by workspace admin/owner permissions.
-    setDialogState({ mode: "create" });
-    setChannelName("");
-  };
-
-  const openRenameDialog = (room: MeetingRoomListItem) => {
-    // TODO: Gate channel rename by workspace admin/owner permissions.
-    setDialogState({ mode: "rename", room });
-    setChannelName(room.roomName);
-  };
-
-  const handleDeleteChannel = (room: MeetingRoomListItem) => {
-    // TODO: Gate channel deletion by workspace admin/owner permissions.
-    deleteChannel(room.id);
-
-    if (
-      isMeetingActive &&
-      activeMeetingId === room.meetingId &&
-      activeRoomName === room.roomName
-    ) {
-      router.push("/meeting");
-    }
-  };
-
-  const handleDialogSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!channelName.trim() || !dialogState) return;
-
-    if (dialogState.mode === "create") {
-      createChannel(channelName);
-      closeDialog();
-      return;
-    }
-
-    renameChannel(dialogState.room.id, channelName);
-
-    if (
-      isMeetingActive &&
-      activeMeetingId === dialogState.room.meetingId &&
-      activeRoomName === dialogState.room.roomName
-    ) {
-      router.replace(
-        getMeetingRoomHref({
-          ...dialogState.room,
-          roomName: channelName.trim(),
-        }),
-      );
-    }
-
-    closeDialog();
-  };
 
   return (
     <li>
@@ -189,16 +99,6 @@ export const MeetingSidebarSection = () => {
               <ChevronRight className="size-3 shrink-0 text-[#6b6b73]/60" />
             )}
           </button>
-          {isSignedIn ? (
-            <button
-              aria-label="Create meeting channel"
-              className="ml-1 flex size-7 shrink-0 items-center justify-center rounded-xl text-[#6b6b73] opacity-0 transition hover:bg-white/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-violet-500/40 group-hover/meeting:opacity-100 focus-visible:opacity-100"
-              onClick={openCreateDialog}
-              type="button"
-            >
-              <Plus className="size-3.5" />
-            </button>
-          ) : null}
         </div>
       )}
 
@@ -256,33 +156,6 @@ export const MeetingSidebarSection = () => {
                       />
                     ) : null}
                   </Link>
-                  {isSignedIn ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        aria-label={`${room.roomName} channel actions`}
-                        className="flex size-7 shrink-0 items-center justify-center rounded-xl text-[#6b6b73] opacity-0 transition hover:bg-white/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-violet-500/40 group-hover/channel:opacity-100 data-[popup-open]:opacity-100"
-                      >
-                        <MoreHorizontal className="size-4" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        className="w-36 border border-white/10 bg-[#1b1b20] text-[#dedee6]"
-                      >
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => openRenameDialog(room)}
-                        >
-                          Rename channel
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer text-red-200 focus:text-red-100"
-                          onClick={() => handleDeleteChannel(room)}
-                        >
-                          Delete channel
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : null}
                 </div>
                 {shouldShowMembers ? (
                   <div className="mt-1 space-y-0.5 pl-3">
@@ -316,48 +189,6 @@ export const MeetingSidebarSection = () => {
           })}
         </div>
       )}
-
-      {dialogState ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4">
-          <form
-            className="w-full max-w-sm space-y-4 rounded-2xl border border-white/10 bg-[#17151f] p-5 shadow-2xl shadow-black/40"
-            onSubmit={handleDialogSubmit}
-          >
-            <div>
-              <h2 className="text-base font-semibold text-white">
-                {dialogState.mode === "create"
-                  ? "Create meeting channel"
-                  : "Rename meeting channel"}
-              </h2>
-            </div>
-            <label className="block space-y-1 text-sm font-medium text-zinc-300">
-              <span>Channel name</span>
-              <input
-                autoFocus
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-violet-400"
-                onChange={(event) => setChannelName(event.target.value)}
-                value={channelName}
-              />
-            </label>
-            <div className="flex justify-end gap-2">
-              <button
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                onClick={closeDialog}
-                type="button"
-              >
-                Cancel
-              </button>
-              <button
-                className="rounded-2xl bg-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-950/40 transition hover:bg-violet-400 disabled:opacity-60"
-                disabled={!channelName.trim()}
-                type="submit"
-              >
-                {dialogState.mode === "create" ? "Create" : "Rename"}
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
     </li>
   );
 };

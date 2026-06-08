@@ -8,8 +8,14 @@ import { sidebarNavItems, sidebarWorkflowItems } from "@/lib/dashboard/data";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
 
+const meetingSummaryNavItem = {
+  href: "/meeting-summaries",
+  label: "Meeting Summaries",
+} as const;
+
 export const SidebarNav = () => {
   const { collapsed } = useSidebar();
+  const overviewNavItems = [...sidebarNavItems, meetingSummaryNavItem];
 
   return (
     <nav
@@ -24,7 +30,7 @@ export const SidebarNav = () => {
         </p>
       )}
       <ul className="space-y-0.5">
-        {sidebarNavItems.map((item) => (
+        {overviewNavItems.map((item) => (
           <li key={item.label}>
             <SidebarNavItem item={item} />
             {!collapsed && "expandable" in item && item.expandable && (

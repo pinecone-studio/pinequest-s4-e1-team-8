@@ -1,6 +1,7 @@
 "use client";
 
 import { useMeetingTranscript } from "../hooks/use-meeting-transcript";
+import { MeetingSummaryCard } from "./meeting-summary-card";
 
 type TranscriptPanelProps = {
   transcriptionId?: string;
@@ -48,16 +49,7 @@ export const TranscriptPanel = ({ transcriptionId }: TranscriptPanelProps) => {
           </p>
         </div>
       ) : null}
-      {transcript?.summary ? (
-        <div className="space-y-1">
-          <h4 className="text-xs font-medium uppercase text-zinc-500">
-            AI summary
-          </h4>
-          <p className="max-h-40 overflow-auto whitespace-pre-wrap text-sm text-zinc-200">
-            {transcript.summary}
-          </p>
-        </div>
-      ) : null}
+      <MeetingSummaryCard summary={transcript?.summary} />
     </section>
   );
 };
