@@ -1,5 +1,6 @@
 "use client";
 
+import { syncClerkUser } from "@/lib/api/users";
 import { useUser } from "@clerk/nextjs";
 import { useEffect, useRef } from "react";
 
@@ -8,24 +9,30 @@ export function UserSync() {
   const syncedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!isLoaded || !user) return;
-    if (syncedRef.current === user.id) return;
+    if (!isLoaded || !user) {
+      return;
+    }
+
+    if (syncedRef.current === user.id) {
+      return;
+    }
+
+    const email = user.primaryEmailAddress?.emailAddress?.trim();
+    const name = user.fullName?.trim() || user.firstName?.trim() || email;
+    if (!email || !name) {
+      return;
+    }
+
     syncedRef.current = user.id;
 
-    const email = user.primaryEmailAddress?.emailAddress ?? "";
-    const name = user.fullName ?? user.firstName ?? email;
-
-    fetch("/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: user.id,
-        clerkId: user.id,
-        name,
-        email,
-        avatarUrl: user.imageUrl ?? null,
-      }),
-    }).catch(() => {});
+    syncClerkUser({
+      clerkId: user.id,
+      email,
+      name,
+      avatarUrl: user.imageUrl ?? null,
+    }).catch(() => {
+      syncedRef.current = null;
+    });
   }, [isLoaded, user]);
 
   return null;

@@ -6,9 +6,13 @@ import {
   type BriskErrorCode,
   type RunBriskAgentParams,
 } from "@/lib/api/agent";
+import { syncClerkUser } from "@/lib/api/users";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useCallback, useState } from "react";
 
 export function useBriskAgent() {
+  const { getToken, isSignedIn } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<BriskErrorCode | null>(null);
@@ -21,7 +25,29 @@ export function useBriskAgent() {
       setErrorCode(null);
 
       try {
-        const response = await runBriskAgent(params);
+        if (!isSignedIn || !userLoaded || !user) {
+          throw new Error("You must be signed in to generate project tasks.");
+        }
+
+        const email = user.primaryEmailAddress?.emailAddress?.trim();
+        const name = user.fullName?.trim() || user.firstName?.trim() || email;
+        if (!email || !name) {
+          throw new Error("Your Clerk profile is missing a name or email.");
+        }
+
+        await syncClerkUser({
+          clerkId: user.id,
+          email,
+          name,
+          avatarUrl: user.imageUrl ?? null,
+        });
+
+        const token = await getToken({ skipCache: true });
+        if (!token) {
+          throw new Error("Unable to obtain an authentication token.");
+        }
+
+        const response = await runBriskAgent(params, token);
 
         if (!response.success) {
           const message =
@@ -41,7 +67,7 @@ export function useBriskAgent() {
         setIsLoading(false);
       }
     },
-    [],
+    [getToken, isSignedIn, user, userLoaded],
   );
 
   return { run, isLoading, error, errorCode, result };

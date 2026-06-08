@@ -13,7 +13,20 @@ export function readOnboardingData(): OnboardingData | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as OnboardingData;
+    const parsed = JSON.parse(raw) as Partial<OnboardingData>;
+    return {
+      projectId: parsed.projectId ?? "",
+      workspaceId: parsed.workspaceId ?? "",
+      projectName: parsed.projectName ?? "",
+      description: parsed.description ?? "",
+      timezone: parsed.timezone ?? "(GMT+00:00) UTC",
+      members: parsed.members ?? [],
+      githubConnected: parsed.githubConnected ?? false,
+      asanaConnected: parsed.asanaConnected ?? false,
+      isGithubDisconnected: parsed.isGithubDisconnected ?? false,
+      isAsanaDisconnected: parsed.isAsanaDisconnected ?? false,
+      aiGoals: parsed.aiGoals ?? "",
+    };
   } catch {
     return null;
   }

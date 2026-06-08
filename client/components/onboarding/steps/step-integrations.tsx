@@ -1,7 +1,7 @@
 "use client";
 
+import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
 import { Check, ArrowRight } from "lucide-react";
-import type { OnboardingData } from "../onboarding-types";
 
 function GithubMark() {
   return (
@@ -29,7 +29,13 @@ interface IntegrationCardProps {
   onToggle: () => void;
 }
 
-function IntegrationCard({ name, desc, logo, connected, onToggle }: IntegrationCardProps) {
+function IntegrationCard({
+  name,
+  desc,
+  logo,
+  connected,
+  onToggle,
+}: IntegrationCardProps) {
   return (
     <div
       className="flex flex-1 flex-col gap-3 rounded-xl border p-4 transition-[border-color,background]"
@@ -73,14 +79,15 @@ function IntegrationCard({ name, desc, logo, connected, onToggle }: IntegrationC
   );
 }
 
-interface StepIntegrationsProps {
-  data: OnboardingData;
-  onChange: (patch: Partial<OnboardingData>) => void;
-  onNext: () => void;
-  onSkip: () => void;
-}
+export function StepIntegrations() {
+  const {
+    step3,
+    toggleGithubConnection,
+    toggleAsanaConnection,
+    advanceFromStep3,
+    skipStep3,
+  } = useOnboardingStore();
 
-export function StepIntegrations({ data, onChange, onNext, onSkip }: StepIntegrationsProps) {
   return (
     <>
       <div className="mb-6">
@@ -97,31 +104,29 @@ export function StepIntegrations({ data, onChange, onNext, onSkip }: StepIntegra
           name="GitHub"
           desc="Sync commits, PRs & issues"
           logo={<GithubMark />}
-          connected={data.githubConnected}
-          onToggle={() => {
-            window.location.href = "/workflow";
-          }}
+          connected={step3.githubConnected}
+          onToggle={toggleGithubConnection}
         />
         <IntegrationCard
           name="Asana"
           desc="Import tasks & projects"
           logo={<AsanaMark />}
-          connected={data.asanaConnected}
-          onToggle={() => onChange({ asanaConnected: !data.asanaConnected })}
+          connected={step3.asanaConnected}
+          onToggle={toggleAsanaConnection}
         />
       </div>
 
       <div className="mt-7 flex items-center">
         <button
           className="flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
-          onClick={onNext}
+          onClick={advanceFromStep3}
         >
           Continue
           <ArrowRight size={17} />
         </button>
         <button
           className="ml-auto px-1.5 text-[13.5px] font-medium text-[#8e8e93] transition-colors hover:text-violet-400"
-          onClick={onSkip}
+          onClick={skipStep3}
         >
           Skip for now
         </button>

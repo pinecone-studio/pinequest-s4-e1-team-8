@@ -1,5 +1,7 @@
 "use client";
 
+import { buildBackendAuthHeaders } from "@/lib/api/backend-auth";
+import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const getServerBaseUrl = () =>
@@ -65,6 +67,7 @@ function parseSSEEvent(rawEvent: string): ParsedSSEEvent {
 }
 
 export function useAgentStream() {
+  const { getToken } = useAuth();
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [nodeOutputs, setNodeOutputs] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -124,9 +127,11 @@ export function useAgentStream() {
       setIsLoading(true);
 
       try {
+        const headers = await buildBackendAuthHeaders(getToken);
         const response = await fetch(`${getServerBaseUrl()}/api/agent/stream/run`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
+          credentials: "include",
           body: JSON.stringify({ prompt }),
           signal: controller.signal,
         });
@@ -179,7 +184,7 @@ export function useAgentStream() {
         abortControllerRef.current = null;
       }
     },
-    [handleNodeEvent],
+    [getToken, handleNodeEvent],
   );
 
   return { stream, activeNode, nodeOutputs, isLoading, isComplete, abort };
