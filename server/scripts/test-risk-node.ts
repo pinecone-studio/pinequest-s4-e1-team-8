@@ -13,6 +13,7 @@ async function runTest() {
       onboardingComplete: true,
       metricsAnalyzed: true,
       risksIdentified: false,
+      prGenerated: false,
     },
   };
 
