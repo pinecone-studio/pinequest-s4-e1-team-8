@@ -1,5 +1,6 @@
 "use client";
 
+import { clientApi } from "@/app/lib/client-api";
 import { createTask } from "@/components/tasks/task-factory";
 import { readStoredTasks, saveStoredTasks } from "@/components/tasks/task-storage";
 import {
@@ -9,7 +10,15 @@ import {
   type TaskStatus,
   type TaskUpdate,
 } from "@/components/tasks/task-types";
+import {
+  mapApiTaskToListItem,
+  type ApiTaskListItem,
+} from "@/lib/tasks/map-api-task";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+function mapTasksFromApi(records: ApiTaskListItem[]): TaskListItem[] {
+  return records.map(mapApiTaskToListItem);
+}
 
 export function useTaskList() {
   const [tasks, setTasks] = useState<TaskListItem[]>([]);
@@ -34,30 +43,54 @@ export function useTaskList() {
     [selectedTaskId, tasks],
   );
 
-  const loadTasks = useCallback(() => {
+  const loadTasks = useCallback(async (): Promise<TaskListItem[]> => {
     setIsLoading(true);
 
-    window.setTimeout(() => {
-      setTasks(readStoredTasks() ?? []);
+    try {
+      const { data } = await clientApi.get<{ tasks: ApiTaskListItem[] }>(
+        "/tasks",
+      );
+      const next = mapTasksFromApi(data.tasks);
+      setTasks(next);
+      return next;
+    } catch {
+      const fallback = readStoredTasks() ?? [];
+      setTasks(fallback);
+      return fallback;
+    } finally {
       setIsLoading(false);
-    }, 300);
+    }
   }, []);
 
   useEffect(() => {
-    loadTasks();
+    void loadTasks();
   }, [loadTasks]);
 
   useEffect(() => {
-    if (!isLoading) {
-      saveStoredTasks(tasks);
-    }
-  }, [isLoading, tasks]);
-
-  useEffect(() => {
-    if (selectedTaskId && !tasks.some((task) => task.id === selectedTaskId)) {
+    if (!isLoading && selectedTaskId && !tasks.some((task) => task.id === selectedTaskId)) {
       setSelectedTaskId(null);
     }
-  }, [selectedTaskId, tasks]);
+  }, [isLoading, selectedTaskId, tasks]);
+
+  const focusTask = useCallback(
+    async (taskId: string) => {
+      const applyFocus = (list: TaskListItem[]) => {
+        const task = list.find((entry) => entry.id === taskId);
+        if (!task) return false;
+
+        setActiveSource(task.source);
+        setActiveTeam(null);
+        setSelectedTaskId(taskId);
+        return true;
+      };
+
+      if (applyFocus(tasks)) return;
+
+      const refreshed = await loadTasks();
+      applyFocus(refreshed);
+    },
+    [loadTasks, tasks],
+  );
 
   const updateTask = useCallback((taskId: string, update: TaskUpdate) => {
     setTasks((current) => {
@@ -103,6 +136,7 @@ export function useTaskList() {
     activeTeam,
     addTaskToColumn,
     deleteTask,
+    focusTask,
     isLoading,
     loadTasks,
     selectedTask,
