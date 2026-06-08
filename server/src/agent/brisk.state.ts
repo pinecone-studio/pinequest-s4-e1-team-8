@@ -12,20 +12,18 @@ export type BriskErrorCode =
 export type NextWorker = "SUPERVISOR" | "ONBOARDING" | "METRICS" | "RISK" | "FINALIZE";
 
 export type OnboardingPlan = {
-  features: string[];
-  dashboardStrategy: string;
+  steps: string[];
+  estimatedHours: number;
 };
 
 export type MetricsReport = {
-  projectAnalytics: Record<string, number>;
-  milestoneVelocity: number;
-  progressEstimates: Record<string, number>;
+  kpis: string[];
+  targetMetrics: string;
 };
 
 export type RiskAnalysis = {
-  timelineBottlenecks: string[];
-  riskAssessments: string[];
-  blockers: string[];
+  threats: string[];
+  mitigationStrategies: string[];
 };
 
 export const BriskState = Annotation.Root({
