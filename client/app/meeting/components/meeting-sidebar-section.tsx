@@ -2,39 +2,65 @@
 
 import { useSidebar } from "@/components/sidebar/sidebar-context";
 import { cn } from "@/lib/utils";
+import { ConnectionState } from "livekit-client";
 import { ChevronDown, ChevronRight, Headphones, Volume2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import {
-  getMeetingChannelKey,
-  useMeetingChannelPresence,
-} from "./meeting-channel-presence-provider";
 import { useMeetingChannels } from "../hooks/use-meeting-channels";
 import { getMeetingRoomHref } from "../utils/meeting-room-url";
+import { useMeetingSession } from "./meeting-session-provider";
 
 export const MeetingSidebarSection = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { collapsed } = useSidebar();
-  const { joinedChannelKey, joinedChannelParticipants } =
-    useMeetingChannelPresence();
+  const {
+    activeSession,
+    activeSessionRoomName,
+    connectionState,
+    participants,
+  } = useMeetingSession();
   const { channels } = useMeetingChannels();
   const activeMeetingId = searchParams.get("meetingId");
   const activeRoomName = searchParams.get("roomName");
   const isMeetingActive = pathname === "/meeting";
+  const isSessionConnected = connectionState === ConnectionState.Connected;
+  const connectedRoomKey =
+    activeSession && activeSessionRoomName
+      ? `${activeSession.meetingId}:${activeSessionRoomName}`
+      : "";
   const [isSectionExpanded, setIsSectionExpanded] = useState(true);
   const visibleChannels = useMemo(() => {
+    const activeSessionRoom =
+      activeSession && activeSessionRoomName
+        ? {
+            createdAt: 0,
+            id: activeSession.meetingId,
+            meetingId: activeSession.meetingId,
+            roomName: activeSessionRoomName,
+          }
+        : null;
+    const channelsWithSession =
+      activeSessionRoom &&
+      !channels.some(
+        (room) =>
+          room.meetingId === activeSessionRoom.meetingId &&
+          room.roomName === activeSessionRoom.roomName,
+      )
+        ? [activeSessionRoom, ...channels]
+        : channels;
+
     if (!isMeetingActive || !activeMeetingId || !activeRoomName) {
-      return channels;
+      return channelsWithSession;
     }
 
-    const hasActiveRoom = channels.some(
+    const hasActiveRoom = channelsWithSession.some(
       (room) =>
         room.meetingId === activeMeetingId && room.roomName === activeRoomName,
     );
 
-    if (hasActiveRoom) return channels;
+    if (hasActiveRoom) return channelsWithSession;
 
     return [
       {
@@ -43,15 +69,22 @@ export const MeetingSidebarSection = () => {
         meetingId: activeMeetingId,
         roomName: activeRoomName,
       },
-      ...channels,
+      ...channelsWithSession,
     ];
-  }, [activeMeetingId, activeRoomName, channels, isMeetingActive]);
+  }, [
+    activeMeetingId,
+    activeRoomName,
+    activeSession,
+    activeSessionRoomName,
+    channels,
+    isMeetingActive,
+  ]);
 
   useEffect(() => {
-    if (isMeetingActive) {
+    if (isMeetingActive || activeSession) {
       setIsSectionExpanded(true);
     }
-  }, [isMeetingActive]);
+  }, [activeSession, isMeetingActive]);
 
   return (
     <li>
@@ -107,18 +140,13 @@ export const MeetingSidebarSection = () => {
           {/* Static voice channels only. Do not request LiveKit tokens or create
           backend rooms from this sidebar; channel clicks only navigate. */}
           {visibleChannels.map((room) => {
+            const roomKey = `${room.meetingId}:${room.roomName}`;
             const isRoomActive =
               isMeetingActive &&
               activeMeetingId === room.meetingId &&
               activeRoomName === room.roomName;
-            const isCurrentUserInside =
-              joinedChannelKey === getMeetingChannelKey(room);
-            const shouldShowMembers = isRoomActive && isCurrentUserInside;
-            const hasLiveStream =
-              isCurrentUserInside &&
-              joinedChannelParticipants.some(
-                (participant) => participant.isScreenSharing,
-              );
+            const isConnectedRoom = connectedRoomKey === roomKey;
+            const shouldShowMembers = isConnectedRoom && participants.length > 0;
 
             return (
               <div
@@ -132,6 +160,8 @@ export const MeetingSidebarSection = () => {
                       isRoomActive
                         ? "bg-violet-500/15 text-[#dedee6] ring-1 ring-violet-500/25"
                         : "text-[#6b6b73] hover:bg-white/[0.04] hover:text-[#a0a0aa]",
+                      isConnectedRoom &&
+                        "bg-violet-500/10 text-[#dedee6] ring-1 ring-emerald-400/20",
                     )}
                     href={getMeetingRoomHref(room)}
                   >
@@ -144,22 +174,17 @@ export const MeetingSidebarSection = () => {
                     <span className="min-w-0 flex-1 truncate">
                       {room.roomName}
                     </span>
-                    {hasLiveStream ? (
-                      <span className="shrink-0 rounded bg-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-white">
-                        LIVE
+                    {isConnectedRoom && isSessionConnected ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-emerald-200 ring-1 ring-emerald-400/20">
+                        <span className="size-1.5 rounded-full bg-emerald-400" />
+                        LIVE ({participants.length})
                       </span>
-                    ) : null}
-                    {isCurrentUserInside ? (
-                      <span
-                        aria-label="You are in this channel"
-                        className="size-1.5 shrink-0 rounded-full bg-emerald-400"
-                      />
                     ) : null}
                   </Link>
                 </div>
                 {shouldShowMembers ? (
                   <div className="mt-1 space-y-0.5 pl-3">
-                    {joinedChannelParticipants.map((participant) => {
+                    {participants.map((participant) => {
                       const initial =
                         participant.displayName.slice(0, 1).toUpperCase() || "U";
 
@@ -174,9 +199,9 @@ export const MeetingSidebarSection = () => {
                           <span className="min-w-0 flex-1 truncate">
                             {participant.displayName}
                           </span>
-                          {participant.isScreenSharing ? (
-                            <span className="shrink-0 rounded bg-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-white">
-                              LIVE
+                          {participant.isLocal ? (
+                            <span className="shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-emerald-200">
+                              You
                             </span>
                           ) : null}
                         </div>

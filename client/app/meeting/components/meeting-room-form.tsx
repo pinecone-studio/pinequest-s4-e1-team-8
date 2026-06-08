@@ -2,15 +2,15 @@
 
 import { useUser } from "@clerk/nextjs";
 import { Headphones } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createMeetingRoom,
   joinMeetingRoom,
-  type MeetingRoomTokenResponse,
 } from "../index";
 import type { MeetingRoomListItem } from "../types/meeting-room.types";
 import { ConnectedMeetingPanel } from "./connected-meeting-panel";
 import { FormField } from "./form-field";
+import { useMeetingSession } from "./meeting-session-provider";
 
 type MeetingJoinStatus = "idle" | "joining";
 
@@ -65,21 +65,21 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
     ? authenticatedName || "User"
     : "";
   const [manualDisplayName, setManualDisplayName] = useState("");
-  const [response, setResponse] = useState<MeetingRoomTokenResponse | null>(
-    null
-  );
   const [joinStatus, setJoinStatus] = useState<MeetingJoinStatus>("idle");
   const [error, setError] = useState("");
+  const { activeSession, startMeetingSession } = useMeetingSession();
   const selectedRoomKey = selectedRoom
     ? `${selectedRoom.meetingId}:${selectedRoom.roomName}`
     : "";
+  const activeSessionRoomKey = activeSession
+    ? `${activeSession.meetingId}:${
+        activeSession.response.displayRoomName ?? activeSession.response.roomName
+      }`
+    : "";
   const displayName = resolvedDisplayName || manualDisplayName.trim();
   const requiresDisplayName = isLoaded && !isSignedIn && !manualDisplayName.trim();
-  const joinedRoomKeyRef = useRef("");
 
   useEffect(() => {
-    joinedRoomKeyRef.current = "";
-    setResponse(null);
     setError("");
   }, [selectedRoom, selectedRoomKey]);
 
@@ -101,10 +101,13 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
           roomName: livekitRoomName,
         });
 
-        setResponse({
-          ...result,
-          displayRoomName: selectedRoom.roomName,
-          url: getSafeLivekitUrl(result.url),
+        startMeetingSession({
+          meetingId: selectedRoom.meetingId,
+          response: {
+            ...result,
+            displayRoomName: selectedRoom.roomName,
+            url: getSafeLivekitUrl(result.url),
+          },
         });
       } catch {
         try {
@@ -118,21 +121,33 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
             roomName: livekitRoomName,
           });
 
-          setResponse({
-            ...result,
-            displayRoomName: selectedRoom.roomName,
-            url: getSafeLivekitUrl(result.url),
+          startMeetingSession({
+            meetingId: selectedRoom.meetingId,
+            response: {
+              ...result,
+              displayRoomName: selectedRoom.roomName,
+              url: getSafeLivekitUrl(result.url),
+            },
           });
         } catch (caughtError) {
           setError((caughtError as Error).message);
-          joinedRoomKeyRef.current = "";
         }
       } finally {
         setJoinStatus("idle");
       }
     },
-    [selectedRoom, user],
+    [selectedRoom, startMeetingSession, user],
   );
+
+  if (activeSession && (!selectedRoom || selectedRoomKey === activeSessionRoomKey)) {
+    return (
+      <ConnectedMeetingPanel
+        meetingId={activeSession.meetingId}
+        onLeave={() => undefined}
+        response={activeSession.response}
+      />
+    );
+  }
 
   if (!selectedRoom) {
     return (
@@ -149,19 +164,6 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
           </p>
         </div>
       </section>
-    );
-  }
-
-  if (response) {
-    return (
-      <ConnectedMeetingPanel
-        meetingId={selectedRoom.meetingId}
-        onLeave={() => {
-          setResponse(null);
-          joinedRoomKeyRef.current = "";
-        }}
-        response={response}
-      />
     );
   }
 
