@@ -1,22 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Radio } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   startMeetingEgress,
   stopMeetingEgress,
   type StartMeetingEgressResponse,
   type StopMeetingEgressResponse,
 } from "../index";
-import { RecordingActionButton } from "./recording-action-button";
-import { TranscriptPanel } from "./transcript-panel";
 
 type RecordingControlsProps = {
   meetingId: string;
+  onStatusChange?: (status: RecordingStatus) => void;
   roomName: string;
 };
 
+export type RecordingStatus = "active" | "not-started" | "ready";
+
 export const RecordingControls = ({
   meetingId,
+  onStatusChange,
   roomName,
 }: RecordingControlsProps) => {
   const [recording, setRecording] =
@@ -58,42 +62,77 @@ export const RecordingControls = ({
   };
 
   const isRecordingActive = Boolean(recording?.egressId) && !hasStopped;
-  const status = hasStopped ? "stopped" : recording?.status ?? "not started";
+  const recordingStatus: RecordingStatus = isRecordingActive
+    ? "active"
+    : hasStopped
+      ? "ready"
+      : "not-started";
+  const statusConfig = isRecordingActive
+    ? {
+        className:
+          "border-red-400/30 bg-red-500/15 text-red-100 shadow-[0_0_24px_rgba(239,68,68,0.16)]",
+        dotClassName: "bg-red-400",
+        label: "Recording in progress",
+      }
+    : hasStopped
+      ? {
+          className: "border-emerald-400/30 bg-emerald-500/15 text-emerald-100",
+          dotClassName: "bg-emerald-400",
+          label: "Recording ready",
+        }
+      : {
+          className: "border-white/10 bg-white/[0.05] text-zinc-300",
+          dotClassName: "bg-zinc-500",
+          label: "Recording not started",
+        };
+  const controlLabel = isRecordingActive
+    ? isLoading
+      ? "Stopping..."
+      : "Recording"
+    : isLoading
+      ? "Starting..."
+      : hasStopped
+        ? "Ready"
+        : "Record";
+
+  useEffect(() => {
+    onStatusChange?.(recordingStatus);
+  }, [onStatusChange, recordingStatus]);
 
   return (
-    <section className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-white">Recording</h3>
-          <p className="text-xs text-zinc-400">{status}</p>
-        </div>
-        <RecordingActionButton
-          isLoading={isLoading}
-          isRecordingActive={isRecordingActive}
-          isStopped={hasStopped}
-          onStart={() => void handleStartRecording()}
-          onStop={() => void handleStopRecording()}
+    <>
+      <button
+        className={cn(
+          "inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl px-4 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60",
+          isRecordingActive
+            ? "bg-red-500/20 text-red-100 hover:bg-red-500/30"
+            : hasStopped
+              ? "bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/20"
+              : "bg-white/[0.08] text-white hover:bg-white/[0.12]",
+        )}
+        disabled={isLoading || hasStopped}
+        onClick={() =>
+          void (isRecordingActive ? handleStopRecording() : handleStartRecording())
+        }
+        title={statusConfig.label}
+        type="button"
+      >
+        <Radio className="size-4" />
+        <span
+          className={cn(
+            "size-1.5 rounded-full",
+            isRecordingActive && "animate-pulse",
+            statusConfig.dotClassName,
+          )}
         />
-      </div>
+        <span className="hidden sm:inline">{controlLabel}</span>
+      </button>
 
       {error ? (
-        <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+        <p className="basis-full rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
           {error}
         </p>
       ) : null}
-      {recording ? (
-        <dl className="grid gap-2 text-xs text-zinc-400">
-          <div>
-            <dt className="font-medium text-zinc-200">Egress ID</dt>
-            <dd className="break-all">{recording.egressId}</dd>
-          </div>
-          <div>
-            <dt className="font-medium text-zinc-200">Transcription ID</dt>
-            <dd className="break-all">{recording.transcriptionId}</dd>
-          </div>
-        </dl>
-      ) : null}
-      <TranscriptPanel transcriptionId={recording?.transcriptionId} />
-    </section>
+    </>
   );
 };

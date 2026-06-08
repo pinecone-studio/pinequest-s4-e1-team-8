@@ -1,6 +1,11 @@
 "use client";
 
-import { ConnectionState, ParticipantEvent, Track } from "livekit-client";
+import {
+  ConnectionState,
+  ParticipantEvent,
+  Track,
+  type Participant,
+} from "livekit-client";
 import {
   Mic,
   MicOff,
@@ -18,7 +23,7 @@ import {
   getParticipantDisplayName,
   ParticipantTile,
 } from "./participant-tile";
-import { RecordingControls } from "./recording-controls";
+import { RecordingControls, type RecordingStatus } from "./recording-controls";
 
 type LivekitRoomViewProps = {
   livekitRoomName: string;
@@ -44,7 +49,13 @@ export const LivekitRoomView = ({
   const isConnecting = connectionState === ConnectionState.Connecting;
   const isConnected = connectionState === ConnectionState.Connected;
   const participantCount = (localParticipant ? 1 : 0) + remoteParticipants.length;
-  const remoteCompactParticipants = remoteParticipants.slice(0, 4);
+  const allParticipants = useMemo(
+    () => [
+      ...(localParticipant ? [localParticipant] : []),
+      ...remoteParticipants,
+    ],
+    [localParticipant, remoteParticipants],
+  );
   const localScreenShareEnabled = Boolean(localParticipant?.isScreenShareEnabled);
   const screenShareParticipants = useMemo(
     () => [
@@ -61,6 +72,11 @@ export const LivekitRoomView = ({
   const [focusedScreenShareIdentity, setFocusedScreenShareIdentity] = useState<
     string | null
   >(null);
+  const [focusedParticipantIdentity, setFocusedParticipantIdentity] = useState<
+    string | null
+  >(null);
+  const [recordingStatus, setRecordingStatus] =
+    useState<RecordingStatus>("not-started");
   const screenShareParticipantKey = screenShareParticipants
     .map((participant) => participant.identity)
     .join("|");
@@ -68,10 +84,35 @@ export const LivekitRoomView = ({
     screenShareParticipants.find(
       (participant) => participant.identity === focusedScreenShareIdentity,
     ) ?? null;
-  const isStreamFocused = Boolean(focusedScreenShareParticipant);
-  const secondaryScreenShareParticipants = screenShareParticipants.filter(
-    (participant) => participant.identity !== focusedScreenShareParticipant?.identity,
-  );
+  const focusedParticipant =
+    allParticipants.find(
+      (participant) => participant.identity === focusedParticipantIdentity,
+    ) ??
+    remoteParticipants[0] ??
+    localParticipant ??
+    null;
+  const stageParticipant = focusedScreenShareParticipant ?? focusedParticipant;
+  const stageMode = focusedScreenShareParticipant ? "screen" : "camera";
+  const shouldShowThumbnails =
+    participantCount > 1 || screenShareParticipants.length > 0;
+  const thumbnailParticipants =
+    stageMode === "screen"
+      ? allParticipants
+      : allParticipants.filter(
+          (participant) => participant.identity !== stageParticipant?.identity,
+        );
+  const recordingLabel =
+    recordingStatus === "active"
+      ? "Recording"
+      : recordingStatus === "ready"
+        ? "Recording ready"
+        : "Not recording";
+  const recordingBadgeClassName =
+    recordingStatus === "active"
+      ? "border-red-400/30 bg-red-500/15 text-red-100"
+      : recordingStatus === "ready"
+        ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-100"
+        : "border-white/10 bg-white/[0.05] text-zinc-300";
   const connectionLabel = isConnecting
     ? "Connecting..."
     : isConnected
@@ -90,6 +131,17 @@ export const LivekitRoomView = ({
       setFocusedScreenShareIdentity(null);
     }
   }, [focusedScreenShareIdentity, screenShareParticipantKey, screenShareParticipants]);
+
+  useEffect(() => {
+    if (
+      focusedParticipantIdentity &&
+      !allParticipants.some(
+        (participant) => participant.identity === focusedParticipantIdentity,
+      )
+    ) {
+      setFocusedParticipantIdentity(null);
+    }
+  }, [allParticipants, focusedParticipantIdentity]);
 
   // LiveKit mutates localParticipant in place — subscribe to track events so
   // the control bar re-renders when mic/camera state actually changes.
@@ -165,303 +217,222 @@ export const LivekitRoomView = ({
       ? "Your screen"
       : `${getParticipantDisplayName(participant)}'s screen`;
 
+  const getParticipantLabel = (participant: Participant) =>
+    participant.isLocal ? "You" : getParticipantDisplayName(participant);
+
   return (
-    <section
-      className={`grid w-full flex-1 gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-sm ${
-        isStreamFocused ? "lg:grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_340px]"
-      }`}
-    >
-      <div className="flex min-h-0 flex-col gap-3 overflow-hidden">
-        <header className="flex shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <h2 className="truncate text-lg font-semibold text-foreground">
-              {roomName}
-            </h2>
-            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              {isConnected && (
-                <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
-              )}
-              {connectionLabel}
-            </p>
-          </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-200">
-              <Radio className="h-3.5 w-3.5" />
-              Recording ready
-            </span>
-            <span className="max-w-full truncate rounded-full border border-border/60 bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
-              ID {meetingId}
-            </span>
-          </div>
-        </header>
-
-        {isConnecting ? (
-          <p className="rounded-xl border border-violet-300/20 bg-violet-500/10 p-3 text-sm text-violet-100">
-            Connecting...
+    <section className="flex min-h-[calc(100vh-3rem)] w-full flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f14] text-white shadow-2xl shadow-black/30">
+      <header className="flex shrink-0 flex-col gap-3 border-b border-white/[0.08] bg-white/[0.025] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h2 className="truncate text-base font-semibold tracking-tight">
+            {roomName}
+          </h2>
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-400">
+            {isConnected ? (
+              <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
+            ) : null}
+            {connectionLabel}
+            <span className="text-zinc-600">/</span>
+            ID {meetingId}
           </p>
-        ) : null}
-        {error ? (
-          <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
-            {error}
-          </div>
-        ) : null}
+        </div>
 
-        {focusedScreenShareParticipant ? (
-          <div className="grid min-h-0 flex-1 gap-2 xl:grid-cols-[minmax(0,1fr)_180px]">
-            <div className="flex min-h-[420px] flex-col gap-2 sm:min-h-[560px] xl:min-h-[min(76vh,820px)]">
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {getScreenShareLabel(focusedScreenShareParticipant)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Stream view</p>
-                </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-zinc-300">
+            <Users className="size-3.5 text-violet-300" />
+            {participantCount}
+          </span>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${recordingBadgeClassName}`}
+          >
+            <Radio className="size-3.5" />
+            {recordingLabel}
+          </span>
+          {screenShareParticipants.length ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-100">
+              <ScreenShare className="size-3.5" />
+              Screen share live
+            </span>
+          ) : null}
+        </div>
+      </header>
+
+      {isConnecting ? (
+        <p className="mx-4 mt-4 rounded-xl border border-violet-300/20 bg-violet-500/10 p-3 text-sm text-violet-100">
+          Connecting...
+        </p>
+      ) : null}
+      {error ? (
+        <div className="mx-4 mt-4 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
+          {screenShareParticipants.length ? (
+            <div className="flex shrink-0 gap-2 overflow-x-auto rounded-2xl border border-white/[0.08] bg-white/[0.025] p-2">
+              {screenShareParticipants.map((participant) => (
                 <button
-                  className="shrink-0 rounded-lg border border-border/60 bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-secondary focus-visible:ring-2 focus-visible:ring-violet-500/40"
-                  onClick={() => setFocusedScreenShareIdentity(null)}
+                  className={`flex min-w-44 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition ${
+                    focusedScreenShareParticipant?.identity === participant.identity
+                      ? "border-red-300/40 bg-red-500/15 text-red-100"
+                      : "border-white/10 bg-white/[0.035] text-zinc-300 hover:bg-white/[0.06]"
+                  }`}
+                  key={`${participant.identity}-screen-share-chip`}
+                  onClick={() => setFocusedScreenShareIdentity(participant.identity)}
                   type="button"
                 >
-                  Exit stream view
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-semibold">
+                      {getScreenShareLabel(participant)}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-[0.1em] text-red-200">
+                      Live screen
+                    </span>
+                  </span>
+                  <ScreenShare className="size-4 shrink-0" />
                 </button>
-              </div>
-              <div className="min-h-0 flex-1">
+              ))}
+            </div>
+          ) : null}
+
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
+            <div className="flex min-h-[360px] flex-1 items-center justify-center overflow-hidden rounded-3xl border border-white/[0.08] bg-[#14141b] p-2 shadow-inner shadow-black/20">
+              {stageParticipant ? (
                 <ParticipantTile
-                  badge="LIVE"
+                  badge={stageMode === "screen" ? "LIVE" : undefined}
                   badgeTone="live"
-                  className="h-full"
+                  className={`w-full ${
+                    stageMode === "screen"
+                      ? "h-full min-h-[360px]"
+                      : participantCount === 1
+                        ? "h-full max-h-[min(72vh,820px)] max-w-[min(100%,1120px)]"
+                        : "h-full min-h-[360px]"
+                  }`}
                   isFocused
-                  key={`${focusedScreenShareParticipant.identity}-screen-share-focused`}
-                  label={getScreenShareLabel(focusedScreenShareParticipant)}
-                  mediaSource={Track.Source.ScreenShare}
-                  participant={focusedScreenShareParticipant}
-                  showAudio={false}
-                  showMicStatus={false}
+                  key={`${stageParticipant.identity}-${stageMode}-stage`}
+                  label={
+                    stageMode === "screen"
+                      ? getScreenShareLabel(stageParticipant)
+                      : getParticipantLabel(stageParticipant)
+                  }
+                  mediaSource={
+                    stageMode === "screen"
+                      ? Track.Source.ScreenShare
+                      : Track.Source.Camera
+                  }
+                  participant={stageParticipant}
+                  showAudio={stageMode !== "screen"}
+                  showMicStatus={stageMode !== "screen"}
                   variant="active"
                 />
-              </div>
+              ) : (
+                <div className="flex min-h-[280px] items-center justify-center text-sm text-zinc-500">
+                  Waiting for local participant...
+                </div>
+              )}
             </div>
 
-            <div className="grid min-h-0 gap-2 sm:grid-cols-2 xl:max-h-[min(76vh,820px)] xl:grid-cols-1 xl:content-start xl:overflow-y-auto xl:pr-1">
-              {secondaryScreenShareParticipants.map((participant) => (
-                <ParticipantTile
-                  badge="LIVE"
-                  badgeTone="live"
-                  key={`${participant.identity}-screen-share-secondary`}
-                  label={getScreenShareLabel(participant)}
-                  mediaSource={Track.Source.ScreenShare}
-                  onClick={() => setFocusedScreenShareIdentity(participant.identity)}
-                  participant={participant}
-                  showAudio={false}
-                  showMicStatus={false}
-                  className="xl:min-h-[105px]"
-                />
-              ))}
-              {localParticipant ? (
-                <ParticipantTile
-                  className="xl:min-h-[105px]"
-                  key={`${localParticipant.identity}-presenter-local`}
-                  label="You"
-                  participant={localParticipant}
-                />
-              ) : null}
-              {remoteCompactParticipants.map((participant) => (
-                <ParticipantTile
-                  className="xl:min-h-[105px]"
-                  key={`${participant.identity}-presenter-participant`}
-                  participant={participant}
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            {screenShareParticipants.length > 0 ? (
-              <div className="grid gap-3 md:grid-cols-2">
-                {screenShareParticipants.map((participant) => (
-                  <div
-                    className="grid gap-3 rounded-2xl border border-border/60 bg-muted/30 p-3 shadow-sm"
-                    key={`${participant.identity}-screen-share-preview`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {getScreenShareLabel(participant)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Screen share is live
-                        </p>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
-                        LIVE
-                      </span>
-                    </div>
-                    <div className="h-[180px] overflow-hidden rounded-xl sm:h-[220px]">
-                      <ParticipantTile
-                        badge="LIVE"
-                        badgeTone="live"
-                        className="h-full !min-h-0"
-                        label={getScreenShareLabel(participant)}
-                        mediaSource={Track.Source.ScreenShare}
-                        participant={participant}
-                        showAudio={false}
-                        showMicStatus={false}
-                      />
-                    </div>
-                    <button
-                      className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 focus-visible:ring-2 focus-visible:ring-violet-500/40"
-                      onClick={() =>
-                        setFocusedScreenShareIdentity(participant.identity)
-                      }
-                      type="button"
-                    >
-                      Watch Stream
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {remoteCompactParticipants.length > 0 ? (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {remoteCompactParticipants.map((participant) => (
+            {shouldShowThumbnails && thumbnailParticipants.length ? (
+              <div className="grid max-h-40 shrink-0 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {thumbnailParticipants.map((participant) => (
                   <ParticipantTile
-                    key={participant.identity}
+                    className="!min-h-[96px] border-white/[0.08] bg-white/[0.035]"
+                    isFocused={
+                      stageMode === "camera" &&
+                      focusedParticipant?.identity === participant.identity
+                    }
+                    key={`${participant.identity}-thumbnail`}
+                    label={getParticipantLabel(participant)}
+                    onClick={() => {
+                      setFocusedScreenShareIdentity(null);
+                      setFocusedParticipantIdentity(participant.identity);
+                    }}
                     participant={participant}
+                    variant="compact"
                   />
                 ))}
               </div>
             ) : null}
-          </>
-        )}
-
-        {!focusedScreenShareParticipant ? (
-          <div className="min-h-0 flex-1">
-            {localParticipant ? (
-              <ParticipantTile
-                label="You"
-                participant={localParticipant}
-                variant="active"
-              />
-            ) : (
-              <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-border/60 bg-muted/30 text-sm text-muted-foreground">
-                Waiting for local participant...
-              </div>
-            )}
           </div>
-        ) : null}
 
-        <div className="flex shrink-0 items-center justify-center gap-3 rounded-xl border border-border/60 bg-muted/30 p-3">
-          <button
-            className={`inline-flex size-12 shrink-0 items-center justify-center rounded-xl transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${
-              localParticipant?.isMicrophoneEnabled
-                ? "bg-secondary text-foreground hover:bg-secondary/80"
-                : "bg-red-500/20 text-red-100 hover:bg-red-500/30"
-            }`}
-            disabled={!localParticipant || Boolean(pendingMediaToggle)}
-            onClick={() => void toggleMicrophone()}
-            title={
-              localParticipant?.isMicrophoneEnabled
-                ? "Mute microphone"
-                : "Unmute microphone"
-            }
-            type="button"
-          >
-            {localParticipant?.isMicrophoneEnabled ? (
-              <Mic className="h-5 w-5" />
-            ) : (
-              <MicOff className="h-5 w-5" />
-            )}
-          </button>
-          <button
-            className={`inline-flex size-12 shrink-0 items-center justify-center rounded-xl transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${
-              localParticipant?.isCameraEnabled
-                ? "bg-secondary text-foreground hover:bg-secondary/80"
-                : "bg-red-500/20 text-red-100 hover:bg-red-500/30"
-            }`}
-            disabled={!localParticipant || Boolean(pendingMediaToggle)}
-            onClick={() => void toggleCamera()}
-            title={
-              localParticipant?.isCameraEnabled ? "Turn camera off" : "Turn camera on"
-            }
-            type="button"
-          >
-            {localParticipant?.isCameraEnabled ? (
-              <Video className="h-5 w-5" />
-            ) : (
-              <VideoOff className="h-5 w-5" />
-            )}
-          </button>
-          <button
-            className={`inline-flex size-12 shrink-0 items-center justify-center rounded-xl transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${
-              isScreenSharing
-                ? "bg-violet-500/25 text-violet-100 hover:bg-violet-500/35"
-                : "bg-secondary text-foreground hover:bg-secondary/80"
-            }`}
-            disabled={!localParticipant || Boolean(pendingMediaToggle)}
-            onClick={() => void toggleScreenShare()}
-            title={isScreenSharing ? "Stop screen sharing" : "Share screen"}
-            type="button"
-          >
-            {isScreenSharing ? (
-              <ScreenShareOff className="h-5 w-5" />
-            ) : (
-              <ScreenShare className="h-5 w-5" />
-            )}
-          </button>
-          <button
-            className="inline-flex h-12 shrink-0 items-center gap-2 rounded-xl bg-red-500 px-5 text-sm font-semibold text-white shadow-lg shadow-red-950/30 transition hover:bg-red-400 focus-visible:ring-2 focus-visible:ring-red-400/40"
-            onClick={() => void handleLeave()}
-            type="button"
-          >
-            <PhoneOff className="h-5 w-5" />
-            Leave
-          </button>
+          <div className="flex shrink-0 flex-wrap items-center justify-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3">
+            <button
+              className={`inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${
+                localParticipant?.isMicrophoneEnabled
+                  ? "bg-white/[0.08] text-white hover:bg-white/[0.12]"
+                  : "bg-red-500/20 text-red-100 hover:bg-red-500/30"
+              }`}
+              disabled={!localParticipant || Boolean(pendingMediaToggle)}
+              onClick={() => void toggleMicrophone()}
+              title={
+                localParticipant?.isMicrophoneEnabled
+                  ? "Mute microphone"
+                  : "Unmute microphone"
+              }
+              type="button"
+            >
+              {localParticipant?.isMicrophoneEnabled ? (
+                <Mic className="h-5 w-5" />
+              ) : (
+                <MicOff className="h-5 w-5" />
+              )}
+            </button>
+            <button
+              className={`inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${
+                localParticipant?.isCameraEnabled
+                  ? "bg-white/[0.08] text-white hover:bg-white/[0.12]"
+                  : "bg-red-500/20 text-red-100 hover:bg-red-500/30"
+              }`}
+              disabled={!localParticipant || Boolean(pendingMediaToggle)}
+              onClick={() => void toggleCamera()}
+              title={
+                localParticipant?.isCameraEnabled
+                  ? "Turn camera off"
+                  : "Turn camera on"
+              }
+              type="button"
+            >
+              {localParticipant?.isCameraEnabled ? (
+                <Video className="h-5 w-5" />
+              ) : (
+                <VideoOff className="h-5 w-5" />
+              )}
+            </button>
+            <button
+              className={`inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${
+                isScreenSharing
+                  ? "bg-violet-500/25 text-violet-100 hover:bg-violet-500/35"
+                  : "bg-white/[0.08] text-white hover:bg-white/[0.12]"
+              }`}
+              disabled={!localParticipant || Boolean(pendingMediaToggle)}
+              onClick={() => void toggleScreenShare()}
+              title={isScreenSharing ? "Stop screen sharing" : "Share screen"}
+              type="button"
+            >
+              {isScreenSharing ? (
+                <ScreenShareOff className="h-5 w-5" />
+              ) : (
+                <ScreenShare className="h-5 w-5" />
+              )}
+            </button>
+            <RecordingControls
+              meetingId={meetingId}
+              onStatusChange={setRecordingStatus}
+              roomName={livekitRoomName}
+            />
+            <button
+              className="inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl bg-red-500 px-5 text-sm font-semibold text-white shadow-lg shadow-red-950/30 transition hover:bg-red-400 focus-visible:ring-2 focus-visible:ring-red-400/40"
+              onClick={() => void handleLeave()}
+              type="button"
+            >
+              <PhoneOff className="h-5 w-5" />
+              Leave
+            </button>
+          </div>
         </div>
       </div>
-
-      <aside
-        className={`min-h-0 flex-col gap-4 rounded-2xl border border-border/60 bg-muted/30 p-4 ${
-          isStreamFocused ? "hidden" : "flex"
-        }`}
-      >
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Users className="h-4 w-4 text-violet-400" />
-              Participants
-            </h3>
-            <span className="rounded-full bg-secondary px-2 py-1 text-xs text-muted-foreground">
-              {participantCount}
-            </span>
-          </div>
-          <div className="mt-3 space-y-2">
-            {localParticipant ? (
-              <div className="flex items-center justify-between gap-3 rounded-xl bg-background px-3 py-2 text-sm text-foreground">
-                <span className="min-w-0 truncate">You</span>
-                <span className="shrink-0 text-xs text-violet-300">Host</span>
-              </div>
-            ) : null}
-            {remoteParticipants.map((participant) => (
-              <div
-                className="flex items-center justify-between gap-3 rounded-xl bg-background px-3 py-2 text-sm text-foreground"
-                key={participant.identity}
-              >
-                <span className="min-w-0 truncate">
-                  {getParticipantDisplayName(participant)}
-                </span>
-                <span className="w-14 shrink-0 text-right text-xs text-muted-foreground">
-                  {participant.isMicrophoneEnabled ? "Mic on" : "Muted"}
-                </span>
-              </div>
-            ))}
-            {!participantCount ? (
-              <p className="text-sm text-muted-foreground">No participants yet.</p>
-            ) : null}
-          </div>
-        </div>
-
-        <RecordingControls meetingId={meetingId} roomName={livekitRoomName} />
-      </aside>
     </section>
   );
 };

@@ -15,6 +15,8 @@ export const ParticipantVideo = memo(function ParticipantVideo({
   version,
 }: ParticipantVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const shouldDisableMirroring =
+    participant.isLocal && source === Track.Source.Camera;
 
   useEffect(() => {
     const publication = participant.getTrackPublication(source);
@@ -24,11 +26,14 @@ export const ParticipantVideo = memo(function ParticipantVideo({
     if (!track || !element) return;
 
     track.attach(element);
+    if (shouldDisableMirroring) {
+      element.style.transform = "none";
+    }
 
     return () => {
       track.detach(element);
     };
-  }, [participant, source, version]);
+  }, [participant, shouldDisableMirroring, source, version]);
 
   return (
     <video
@@ -39,6 +44,7 @@ export const ParticipantVideo = memo(function ParticipantVideo({
       muted={participant.isLocal}
       playsInline
       ref={videoRef}
+      style={shouldDisableMirroring ? { transform: "none" } : undefined}
     />
   );
 });
