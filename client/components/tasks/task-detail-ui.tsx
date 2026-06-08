@@ -51,11 +51,19 @@ export function PillBadge({
   );
 }
 
-export const detailSelectClass =
-  "h-8 rounded-md border-0 bg-transparent px-0 text-sm outline-none focus:ring-0";
+export const detailFieldClass =
+  "rounded-lg border border-border/60 bg-[#25262b] text-sm outline-none transition-colors focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20";
 
-export const detailTextareaClass =
-  "mt-4 min-h-28 w-full resize-none rounded-md border-0 bg-transparent px-0 py-2 text-sm leading-relaxed outline-none placeholder:text-muted-foreground focus:ring-0";
+export const detailInputClass = cn(detailFieldClass, "h-9 px-3");
 
-export const detailTitleClass =
-  "mb-8 w-full border-0 bg-transparent text-[1.75rem] font-semibold leading-tight tracking-tight outline-none placeholder:text-muted-foreground";
+export const detailSelectClass = cn(detailInputClass, "appearance-none pr-8");
+
+export const detailTextareaClass = cn(
+  detailFieldClass,
+  "min-h-28 w-full resize-y px-3 py-2 leading-relaxed placeholder:text-muted-foreground",
+);
+
+export const detailTitleClass = cn(
+  detailFieldClass,
+  "mb-8 w-full px-4 py-3 text-[1.75rem] font-semibold leading-tight tracking-tight placeholder:text-muted-foreground",
+);

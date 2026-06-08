@@ -4,6 +4,7 @@ import { TaskCard } from "@/components/tasks/task-card";
 import { cn } from "@/lib/utils";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useState } from "react";
 import type { SortableTaskCardProps } from "./types";
 
 export function SortableTaskCard({
@@ -12,6 +13,8 @@ export function SortableTaskCard({
   onSelect,
   onUpdate,
 }: SortableTaskCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
+
   const {
     attributes,
     listeners,
@@ -22,6 +25,7 @@ export function SortableTaskCard({
   } = useSortable({
     id: task.id,
     data: { type: "task", status: task.status },
+    disabled: isEditing,
   });
 
   return (
@@ -33,13 +37,14 @@ export function SortableTaskCard({
       }}
       className={cn("touch-none", isDragging && "opacity-40")}
       {...attributes}
-      {...listeners}
+      {...(isEditing ? {} : listeners)}
     >
       <TaskCard
         task={task}
         selected={selected}
         onSelect={onSelect}
         onUpdate={onUpdate}
+        onEditingChange={setIsEditing}
       />
     </div>
   );

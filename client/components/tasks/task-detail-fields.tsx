@@ -11,9 +11,9 @@ import {
 import { normalizeMemberInitials } from "@/lib/tasks/map-api-task";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { CalendarDays, ChevronDown, X } from "lucide-react";
+import { TaskDueDatePicker } from "@/components/tasks/task-due-date-picker";
+import { ChevronDown, X } from "lucide-react";
 import {
-  formatDueDateShort,
   formatOption,
   getSectionLabel,
   getStatusLabel,
@@ -21,6 +21,7 @@ import {
   priorityStyles,
 } from "./task-detail-utils";
 import {
+  detailInputClass,
   detailSelectClass,
   PillBadge,
   PropertyRow,
@@ -39,16 +40,21 @@ export function TaskDetailFields({ task, onUpdate }: TaskDetailFieldsProps) {
   return (
     <div className="space-y-1 border-b border-border/50 pb-8">
       <PropertyRow label="Assignee">
-        <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border/60 bg-[#25262b] py-1 pr-2 pl-1">
+        <div
+          className={cn(
+            detailInputClass,
+            "inline-flex h-9 max-w-xs items-center gap-2 pr-2",
+          )}
+        >
           <Avatar className="size-6">
             <AvatarFallback className="bg-violet-500 text-[10px] text-white">
               {assignee.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <span className="truncate text-sm">{assignee}</span>
+          <span className="min-w-0 flex-1 truncate">{assignee}</span>
           <button
             type="button"
-            className="grid size-5 place-items-center rounded-full text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+            className="grid size-5 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted/40 hover:text-foreground"
             aria-label="Remove assignee"
           >
             <X className="size-3" />
@@ -57,53 +63,38 @@ export function TaskDetailFields({ task, onUpdate }: TaskDetailFieldsProps) {
       </PropertyRow>
 
       <PropertyRow label="Due date">
-        <div className="inline-flex items-center gap-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-[#25262b] py-1 pr-2 pl-2">
-            <CalendarDays className="size-3.5 text-muted-foreground" />
-            <input
-              className="w-28 border-0 bg-transparent text-sm outline-none"
-              inputMode="numeric"
-              placeholder="YYYY-MM-DD"
-              value={dueDateValue}
-              onChange={(event) => onUpdate({ dueDate: event.target.value })}
-            />
-            {dueDateValue ? (
-              <button
-                type="button"
-                className="grid size-5 place-items-center rounded-full text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-                aria-label="Clear due date"
-                onClick={() => onUpdate({ dueDate: "" })}
-              >
-                <X className="size-3" />
-              </button>
-            ) : null}
-          </div>
-          {dueDateValue ? (
-            <span className="text-xs text-muted-foreground">
-              {formatDueDateShort(task.dueDate)}
-            </span>
-          ) : null}
-        </div>
+        <TaskDueDatePicker
+          value={dueDateValue}
+          onChange={(dueDate) => onUpdate({ dueDate })}
+        />
       </PropertyRow>
 
       <PropertyRow label="Dependencies">
         <button
           type="button"
-          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className={cn(
+            detailInputClass,
+            "max-w-xs text-left text-muted-foreground transition-colors hover:text-foreground",
+          )}
         >
           Add dependencies
         </button>
       </PropertyRow>
 
       <PropertyRow label="Projects">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-md border border-border/60 bg-[#25262b] px-2.5 py-1 text-sm">
+        <div className="flex max-w-xs flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              detailInputClass,
+              "inline-flex h-9 items-center gap-2",
+            )}
+          >
             <span className="size-2 rounded-sm bg-slate-400" />
             {task.team}
           </span>
-          <div className="relative inline-flex items-center">
+          <div className="relative min-w-0 flex-1">
             <select
-              className={cn(detailSelectClass, "appearance-none pr-6")}
+              className={cn(detailSelectClass, "w-full")}
               value={task.status}
               onChange={(event) =>
                 onUpdate({ status: event.target.value as TaskStatus })
@@ -115,17 +106,17 @@ export function TaskDetailFields({ task, onUpdate }: TaskDetailFieldsProps) {
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-0 size-4 text-muted-foreground" />
+            <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
           </div>
         </div>
       </PropertyRow>
 
       <PropertyRow label="Priority">
-        <div className="relative inline-flex items-center">
+        <div className="relative max-w-xs">
           <select
             className={cn(
               detailSelectClass,
-              "appearance-none rounded-md border px-2.5 py-1 pr-7",
+              "w-full",
               priorityStyles[task.priority],
             )}
             value={task.priority}
@@ -139,20 +130,27 @@ export function TaskDetailFields({ task, onUpdate }: TaskDetailFieldsProps) {
               </option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2 size-3.5 opacity-70" />
+          <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 opacity-70" />
         </div>
       </PropertyRow>
 
       <PropertyRow label="Status">
-        <PillBadge
-          label={getStatusLabel(task.status, task.blocked)}
-          className={getStatusStyle(task.status, task.blocked)}
-        />
+        <div
+          className={cn(
+            detailInputClass,
+            "inline-flex h-9 max-w-xs items-center",
+          )}
+        >
+          <PillBadge
+            label={getStatusLabel(task.status, task.blocked)}
+            className={getStatusStyle(task.status, task.blocked)}
+          />
+        </div>
       </PropertyRow>
 
       <PropertyRow label="Tool">
         <input
-          className="h-8 w-full max-w-xs border-0 border-b border-transparent bg-transparent text-sm outline-none transition-colors focus:border-border/60"
+          className={cn(detailInputClass, "max-w-xs")}
           value={task.tool}
           placeholder="Add tool"
           onChange={(event) => onUpdate({ tool: event.target.value })}

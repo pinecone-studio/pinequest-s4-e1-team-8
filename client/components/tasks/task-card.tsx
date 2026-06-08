@@ -10,6 +10,7 @@ type TaskCardProps = {
   selected?: boolean;
   onSelect: (taskId: string) => void;
   onUpdate: (taskId: string, update: TaskUpdate) => void;
+  onEditingChange?: (editing: boolean) => void;
 };
 
 const memberColors = [
@@ -39,6 +40,7 @@ export function TaskCard({
   selected = false,
   onSelect,
   onUpdate,
+  onEditingChange,
 }: TaskCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(task.title);
@@ -77,12 +79,14 @@ export function TaskCard({
     }
 
     setIsEditing(false);
+    onEditingChange?.(false);
   };
 
   const startEditing = (event: React.MouseEvent) => {
     event.stopPropagation();
     setDraftTitle(task.title);
     setIsEditing(true);
+    onEditingChange?.(true);
   };
 
   return (
@@ -98,7 +102,10 @@ export function TaskCard({
       )}
     >
       {isEditing ? (
-        <div className="p-3">
+        <div
+          className="p-3"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
           <input
             ref={inputRef}
             className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm font-semibold outline-none focus:border-violet-500"
@@ -106,6 +113,8 @@ export function TaskCard({
             onChange={(event) => setDraftTitle(event.target.value)}
             onBlur={saveTitle}
             onKeyDown={(event) => {
+              event.stopPropagation();
+
               if (event.key === "Enter") {
                 event.preventDefault();
                 saveTitle();
@@ -115,6 +124,7 @@ export function TaskCard({
                 event.preventDefault();
                 setDraftTitle(task.title);
                 setIsEditing(false);
+                onEditingChange?.(false);
               }
             }}
           />

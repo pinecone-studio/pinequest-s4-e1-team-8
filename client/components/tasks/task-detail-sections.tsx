@@ -3,7 +3,11 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
-import { SectionHeading, detailTextareaClass } from "./task-detail-ui";
+import {
+  detailInputClass,
+  detailTextareaClass,
+  SectionHeading,
+} from "./task-detail-ui";
 
 type TaskDetailSectionsProps = {
   description: string;
@@ -19,8 +23,9 @@ export function TaskDetailSections({
       <section className="border-b border-border/50 py-8">
         <SectionHeading title="Description" />
         <textarea
-          className={detailTextareaClass}
+          className={cn(detailTextareaClass, "mt-4")}
           placeholder="What is this task about?"
+          rows={5}
           value={description}
           onChange={(event) => onDescriptionChange(event.target.value)}
         />
@@ -39,9 +44,10 @@ export function TaskDetailSections({
             </button>
           }
         />
-        <input
-          className="mt-5 h-9 w-full border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        <textarea
+          className={cn(detailTextareaClass, "mt-5 min-h-24")}
           placeholder="Add subtask"
+          rows={4}
         />
       </section>
 
@@ -102,10 +108,7 @@ export function TaskDetailSections({
             </AvatarFallback>
           </Avatar>
           <input
-            className={cn(
-              "min-h-10 flex-1 border-0 border-b border-border/60 bg-transparent py-2 text-sm outline-none",
-              "placeholder:text-muted-foreground focus:border-foreground/40",
-            )}
+            className={cn(detailInputClass, "min-h-10 flex-1")}
             placeholder="Add a comment"
           />
         </div>
