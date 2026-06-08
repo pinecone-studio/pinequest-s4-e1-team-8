@@ -1,15 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useGithubUserId } from "@/hooks/use-github-user-id";
 import {
   addGithubProjectItem,
@@ -64,11 +55,8 @@ import {
 } from "@/lib/integrations/github";
 import { cn } from "@/lib/utils";
 import {
-  Briefcase,
   CheckCircle2,
-  ChevronDown,
   ExternalLink,
-  FolderCode,
   GitPullRequest,
   Loader2,
   LogOut,
@@ -339,22 +327,11 @@ export function WorkflowContent() {
     }
   }, []);
 
-  // Lazy-load projects the first time the selector opens, so users whose PAT
-  // lacks the `project` scope aren't charged a failing request up front.
-  function handleSelectorOpenChange(open: boolean) {
-    if (open && projects.length === 0 && !projectsLoading) {
+  function handleSelectView(view: ActiveView) {
+    setActiveView(view);
+    if (view === "board" && projects.length === 0 && !projectsLoading) {
       void loadProjects();
     }
-  }
-
-  function handlePickProject(projectId: string) {
-    setActiveView("board");
-    setSelectedProjectId(projectId);
-  }
-
-  async function handlePickRepo(fullName: string) {
-    setActiveView("work");
-    await handleRepoChange(fullName);
   }
 
   const handleMoveItem = useCallback(
@@ -804,6 +781,23 @@ export function WorkflowContent() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <div className="flex gap-1 rounded-lg border border-border/60 p-0.5">
+              {(["work", "board"] as const).map((view) => (
+                <button
+                  key={view}
+                  type="button"
+                  onClick={() => handleSelectView(view)}
+                  className={cn(
+                    "rounded-md px-3 py-1 text-xs font-semibold capitalize transition-colors",
+                    activeView === view
+                      ? "bg-violet-600 text-white"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {view}
+                </button>
+              ))}
+            </div>
             <div
               className={cn(
                 "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm",
@@ -832,70 +826,23 @@ export function WorkflowContent() {
               )}
               Disconnect
             </Button>
-            <DropdownMenu onOpenChange={handleSelectorOpenChange}>
-              <DropdownMenuTrigger
-                className="flex h-9 min-w-48 items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  {activeView === "board" ? (
-                    <Briefcase className="size-4 shrink-0 text-muted-foreground" />
-                  ) : (
-                    <FolderCode className="size-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span className="truncate">
-                    {activeView === "board"
-                      ? (projects.find((p) => p.id === selectedProjectId)?.title ??
-                        "Select project")
-                      : (selectedRepo || "Select repository")}
-                  </span>
-                </span>
-                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="max-h-72 w-(--anchor-width)">
-                <DropdownMenuRadioGroup
-                  value={
-                    activeView === "board"
-                      ? `project:${selectedProjectId}`
-                      : `repo:${selectedRepo}`
-                  }
-                  onValueChange={(value) => {
-                    if (value.startsWith("project:")) {
-                      handlePickProject(value.slice("project:".length));
-                    } else {
-                      void handlePickRepo(value.slice("repo:".length));
-                    }
-                  }}
-                >
-                  {projectsLoading ? (
-                    <DropdownMenuLabel className="text-muted-foreground">
-                      Loading projects…
-                    </DropdownMenuLabel>
-                  ) : projects.length > 0 ? (
-                    <>
-                      <DropdownMenuLabel>Projects</DropdownMenuLabel>
-                      {projects.map((p) => (
-                        <DropdownMenuRadioItem key={p.id} value={`project:${p.id}`}>
-                          <Briefcase className="size-4 shrink-0 text-muted-foreground" />
-                          <span className="truncate">{p.title}</span>
-                        </DropdownMenuRadioItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                    </>
-                  ) : null}
-                  <DropdownMenuLabel>Repositories</DropdownMenuLabel>
-                  {repos.map((r) => (
-                    <DropdownMenuRadioItem key={r.fullName} value={`repo:${r.fullName}`}>
-                      <FolderCode className="size-4 shrink-0 text-muted-foreground" />
-                      <span className="truncate">{r.fullName}</span>
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
             {activeView === "work" ? (
-              <Button variant="outline" size="sm" onClick={() => resetForm("pull")}>
-                New PR
-              </Button>
+              <>
+                <select
+                  value={selectedRepo}
+                  onChange={(e) => void handleRepoChange(e.target.value)}
+                  className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+                >
+                  {repos.map((r) => (
+                    <option key={r.fullName} value={r.fullName}>
+                      {r.fullName}
+                    </option>
+                  ))}
+                </select>
+                <Button variant="outline" size="sm" onClick={() => resetForm("pull")}>
+                  New PR
+                </Button>
+              </>
             ) : null}
           </div>
         </div>
