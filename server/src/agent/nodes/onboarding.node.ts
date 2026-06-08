@@ -17,7 +17,10 @@ function parseOnboardingPlan(value: GeminiOnboardingResponse): OnboardingPlan {
   if (!isStringArray(value.steps) || typeof value.estimatedHours !== "number") {
     throw new Error("Unexpected onboarding plan response shape");
   }
-  return { steps: value.steps, estimatedHours: value.estimatedHours };
+  return {
+    features: value.steps,
+    dashboardStrategy: `Complete setup within ${value.estimatedHours} hours`,
+  };
 }
 
 function extractProjectDescription(messages: BaseMessage[]): string {

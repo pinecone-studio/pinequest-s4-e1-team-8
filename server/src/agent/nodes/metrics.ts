@@ -1,58 +1,41 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { AIMessage, type BaseMessage } from "@langchain/core/messages";
+import { generateGeminiJsonText } from "../gemini-structured";
 import type { SupervisorGraphState } from "../state";
 
-const SYSTEM_PROMPT = `You are an elite delivery analytics lead. Read the user's stated goals and current project context, then compute delivery velocity metrics, sprint milestone tracking, and an operational burn-down summary. Focus exclusively on measurable delivery performance and milestone progress. Ignore concerns outside of metrics such as onboarding sequencing or security risk.`;
+const SYSTEM_PROMPT = `You are an elite delivery analytics lead. Read the user's stated goals and compute delivery velocity metrics, sprint milestone tracking, and an operational burn-down summary. Focus exclusively on measurable delivery performance and milestone progress. Ignore concerns outside of metrics such as onboarding sequencing or security risk.`;
 
 type GeminiMetricsResponse = {
-  deliveryVelocityMetrics: unknown;
+  velocityMetrics: unknown;
   sprintMilestones: unknown;
   burnDownSummary: unknown;
 };
+
 function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((item) => typeof item === "string")
-  );
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
+
 function extractUserGoals(messages: BaseMessage[]): string {
   return messages
     .filter((message) => message._getType() === "human")
-    .map((message) =>
-      typeof message.content === "string" ? message.content : "",
-    )
+    .map((message) => (typeof message.content === "string" ? message.content : ""))
     .join("\n")
     .trim();
 }
-function buildMetricsInput(state: typeof SupervisorGraphState.State): string {
-  return JSON.stringify({
-    context: state.context,
-    userGoals: extractUserGoals(state.messages),
-    conversationSummary: state.messages
-      .map((message) => ({
-        role: message._getType(),
-        content: typeof message.content === "string" ? message.content : "",
-      }))
-      .filter((entry) => entry.content.length > 0),
-  });
-}
 
 function formatMetricsMessage(
-  deliveryVelocityMetrics: string[],
+  velocityMetrics: string[],
   sprintMilestones: string[],
   burnDownSummary: string,
 ): string {
-  const velocitySection = deliveryVelocityMetrics
-    .map((metric) => `- ${metric}`)
-    .join("\n");
+  const velocitySection = velocityMetrics.map((metric) => `- ${metric}`).join("\n");
   const milestoneSection = sprintMilestones
     .map((milestone, index) => `${index + 1}. ${milestone}`)
     .join("\n");
   return `Metrics report:\n\nDelivery velocity:\n${velocitySection}\n\nSprint milestones:\n${milestoneSection}\n\nBurn-down summary:\n${burnDownSummary}`;
 }
 
-export async function metricsWorkerNode(
-  state: typeof SupervisorGraphState.State,
-) {
+export async function metricsWorkerNode(state: typeof SupervisorGraphState.State) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
   const model = genAI.getGenerativeModel({
@@ -63,7 +46,7 @@ export async function metricsWorkerNode(
       responseSchema: {
         type: SchemaType.OBJECT,
         properties: {
-          deliveryVelocityMetrics: {
+          velocityMetrics: {
             type: SchemaType.ARRAY,
             items: { type: SchemaType.STRING },
           },
@@ -75,30 +58,26 @@ export async function metricsWorkerNode(
             type: SchemaType.STRING,
           },
         },
-        required: [
-          "deliveryVelocityMetrics",
-          "sprintMilestones",
-          "burnDownSummary",
-        ],
+        required: ["velocityMetrics", "sprintMilestones", "burnDownSummary"],
       },
     },
   });
 
-  const userContent = buildMetricsInput(state);
+  const userGoals = extractUserGoals(state.messages);
 
   let messageContent: string;
   try {
-    const result = await model.generateContent(userContent);
-    const parsed: GeminiMetricsResponse = JSON.parse(result.response.text());
+    const responseText = await generateGeminiJsonText(model, userGoals);
+    const parsed: GeminiMetricsResponse = JSON.parse(responseText);
     if (
-      !isStringArray(parsed.deliveryVelocityMetrics) ||
+      !isStringArray(parsed.velocityMetrics) ||
       !isStringArray(parsed.sprintMilestones) ||
       typeof parsed.burnDownSummary !== "string"
     ) {
       throw new Error("Unexpected metrics response shape");
     }
     messageContent = formatMetricsMessage(
-      parsed.deliveryVelocityMetrics,
+      parsed.velocityMetrics,
       parsed.sprintMilestones,
       parsed.burnDownSummary,
     );
