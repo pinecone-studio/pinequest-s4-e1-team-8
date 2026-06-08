@@ -1,6 +1,7 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
+import { MilestoneDraftRow } from "@/components/onboarding/milestone-draft-row";
 import {
   getCompilingMilestoneId,
   parseMilestoneDrafts,
@@ -83,14 +84,104 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  const isEditable = !isStreaming && step4.milestoneDrafts.length > 0;
+
+  const displayDrafts = isStreaming
+    ? liveDrafts
+    : step4.milestoneDrafts.length > 0
+      ? step4.milestoneDrafts
+      : liveDrafts;
+
   const compilingMilestoneId = useMemo(
     () => getCompilingMilestoneId(liveDrafts, isStreaming),
     [isStreaming, liveDrafts],
   );
 
-  const displayDrafts = isStreaming || liveDrafts.length > 0
-    ? liveDrafts
-    : step4.milestoneDrafts;
+  const updateDrafts = useCallback(
+    (updater: (drafts: MilestoneDraft[]) => MilestoneDraft[]) => {
+      setMilestoneDrafts(updater(step4.milestoneDrafts));
+    },
+    [setMilestoneDrafts, step4.milestoneDrafts],
+  );
+
+  const handleUpdateTitle = useCallback(
+    (milestoneIndex: number, title: string) => {
+      updateDrafts((drafts) =>
+        drafts.map((draft, index) =>
+          index === milestoneIndex ? { ...draft, title } : draft,
+        ),
+      );
+    },
+    [updateDrafts],
+  );
+
+  const handleUpdateTask = useCallback(
+    (milestoneIndex: number, taskIndex: number, value: string) => {
+      updateDrafts((drafts) =>
+        drafts.map((draft, index) => {
+          if (index !== milestoneIndex) {
+            return draft;
+          }
+          const tasks = [...draft.tasks];
+          tasks[taskIndex] = value;
+          return { ...draft, tasks };
+        }),
+      );
+    },
+    [updateDrafts],
+  );
+
+  const handleAddTask = useCallback(
+    (milestoneIndex: number) => {
+      updateDrafts((drafts) =>
+        drafts.map((draft, index) =>
+          index === milestoneIndex
+            ? { ...draft, tasks: [...draft.tasks, ""] }
+            : draft,
+        ),
+      );
+    },
+    [updateDrafts],
+  );
+
+  const handleRemoveTask = useCallback(
+    (milestoneIndex: number, taskIndex: number) => {
+      updateDrafts((drafts) =>
+        drafts.map((draft, index) => {
+          if (index !== milestoneIndex) {
+            return draft;
+          }
+          return {
+            ...draft,
+            tasks: draft.tasks.filter((_, taskIdx) => taskIdx !== taskIndex),
+          };
+        }),
+      );
+    },
+    [updateDrafts],
+  );
+
+  const handleDeleteMilestone = useCallback(
+    (milestoneIndex: number) => {
+      updateDrafts((drafts) =>
+        drafts.filter((_, index) => index !== milestoneIndex),
+      );
+    },
+    [updateDrafts],
+  );
+
+  const handleToggleApproval = useCallback(
+    (milestoneIndex: number) => {
+      updateDrafts((drafts) =>
+        drafts.map((draft, index) =>
+          index === milestoneIndex
+            ? { ...draft, isApproved: !draft.isApproved }
+            : draft,
+        ),
+      );
+    },
+    [updateDrafts],
+  );
 
   useEffect(() => {
     return () => {
@@ -134,8 +225,8 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
           },
           onDone: () => {
             const finalDrafts = parseMilestoneDrafts(accumulated);
-            setLiveDrafts(finalDrafts);
             setMilestoneDrafts(finalDrafts);
+            setLiveDrafts([]);
             setIsComplete(true);
             onStreamComplete?.();
           },
@@ -185,6 +276,20 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
               stream milestone drafts in real time.
             </p>
           </div>
+        ) : isEditable ? (
+          displayDrafts.map((draft, milestoneIndex) => (
+            <MilestoneDraftRow
+              key={draft.id}
+              draft={draft}
+              milestoneIndex={milestoneIndex}
+              onUpdateTitle={handleUpdateTitle}
+              onUpdateTask={handleUpdateTask}
+              onAddTask={handleAddTask}
+              onRemoveTask={handleRemoveTask}
+              onDeleteMilestone={handleDeleteMilestone}
+              onToggleApproval={handleToggleApproval}
+            />
+          ))
         ) : (
           displayDrafts.map((draft) => (
             <MilestoneCard
@@ -211,7 +316,7 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
 
       {isComplete ? (
         <p className="text-center text-xs text-emerald-300">
-          Milestone drafts saved to your onboarding workspace.
+          Milestone drafts saved — edit titles, tasks, and approvals below.
         </p>
       ) : null}
 
