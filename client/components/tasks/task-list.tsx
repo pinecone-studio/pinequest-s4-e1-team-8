@@ -8,6 +8,7 @@ import {
 } from "@/components/tasks/task-list-states";
 import { TaskListView } from "@/components/tasks/task-list-view";
 import { sourceLabels, taskSources } from "@/components/tasks/task-sources";
+import { TaskAsanaConnect } from "@/components/tasks/task-asana-connect";
 import { TaskBoard } from "@/components/tasks/task-board";
 import { TaskRiskAlert } from "@/components/tasks/task-risk-alert";
 import { TaskTeamFilter } from "@/components/tasks/task-team-filter";
@@ -20,7 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ListTodo, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export function TaskList() {
   const {
@@ -41,6 +43,16 @@ export function TaskList() {
     visibleTasks,
   } = useTaskList();
   const [viewMode, setViewMode] = useState<TaskViewMode>("board");
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (
+      searchParams.get("asana_connected") === "1" ||
+      searchParams.get("asana_error")
+    ) {
+      selectSource("asana");
+    }
+  }, [searchParams, selectSource]);
 
   return (
     <>
@@ -91,6 +103,13 @@ export function TaskList() {
             tasks={sourceTasks}
             onChange={setActiveTeam}
           />
+
+          {activeSource === "asana" ? (
+            <TaskAsanaConnect
+              oauthError={searchParams.get("asana_error")}
+              onSynced={() => void loadTasks()}
+            />
+          ) : null}
 
           <div className="flex justify-end">
             <TaskViewToggle value={viewMode} onChange={setViewMode} />
