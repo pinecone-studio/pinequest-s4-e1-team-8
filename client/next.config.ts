@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: monorepoRoot,
   turbopack: {
-    // Set to monorepo root so Turbopack matches where bun.lock lives.
     root: monorepoRoot,
     resolveAlias: {
       tailwindcss: path.join(clientRoot, "node_modules/tailwindcss"),
@@ -31,6 +30,7 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+import { createRequire } from "node:module";
 
-initOpenNextCloudflareForDev();
+const requireFromClient = createRequire(path.join(clientRoot, "package.json"));
+requireFromClient("@opennextjs/cloudflare").initOpenNextCloudflareForDev();
