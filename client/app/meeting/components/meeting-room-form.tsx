@@ -103,6 +103,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
 
         startMeetingSession({
           meetingId: selectedRoom.meetingId,
+          participantName: participantIdentity,
           response: {
             ...result,
             displayRoomName: selectedRoom.roomName,
@@ -123,6 +124,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
 
           startMeetingSession({
             meetingId: selectedRoom.meetingId,
+            participantName: participantIdentity,
             response: {
               ...result,
               displayRoomName: selectedRoom.roomName,

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { AIMessage, type BaseMessage } from "@langchain/core/messages";
+import { generateGeminiJsonText } from "../gemini-structured";
 import type { SupervisorGraphState } from "../state";
 
 const SYSTEM_PROMPT = `You are an elite risk management lead. Read the user's stated goals and craft a risk management analysis covering potential project blockers, scope-creep risk factors, and critical dependencies. Focus exclusively on delivery risk, scope control, and dependency exposure. Ignore concerns outside of risk such as onboarding sequencing or delivery metrics.`;
@@ -64,8 +65,8 @@ export async function riskWorkerNode(state: typeof SupervisorGraphState.State) {
 
   let messageContent: string;
   try {
-    const result = await model.generateContent(userGoals);
-    const parsed: GeminiRiskResponse = JSON.parse(result.response.text());
+    const responseText = await generateGeminiJsonText(model, userGoals);
+    const parsed: GeminiRiskResponse = JSON.parse(responseText);
     if (
       !isStringArray(parsed.projectBlockers) ||
       !isStringArray(parsed.scopeCreepRisks) ||

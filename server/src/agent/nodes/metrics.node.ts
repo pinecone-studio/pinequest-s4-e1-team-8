@@ -17,7 +17,11 @@ function parseMetricsReport(value: GeminiMetricsResponse): MetricsReport {
   if (!isStringArray(value.kpis) || typeof value.targetMetrics !== "string") {
     throw new Error("Unexpected metrics report response shape");
   }
-  return { kpis: value.kpis, targetMetrics: value.targetMetrics };
+  return {
+    projectAnalytics: { kpiCount: value.kpis.length },
+    milestoneVelocity: value.kpis.length,
+    progressEstimates: { completionTarget: value.targetMetrics.length },
+  };
 }
 
 function extractProjectDescription(messages: BaseMessage[]): string {

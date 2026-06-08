@@ -1,11 +1,14 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { AIMessage, type BaseMessage } from "@langchain/core/messages";
+import { generateGeminiJsonText } from "../gemini-structured";
 import type { SupervisorGraphState } from "../state";
 
 const SYSTEM_PROMPT = `You are an elite onboarding strategist. Read the user's stated goals and craft a tailored onboarding path: a sequence of concrete steps that gets them productive quickly, paired with feature recommendations that match their goals. Focus exclusively on onboarding sequencing and feature fit. Ignore concerns outside of onboarding such as risk analysis or product metrics.`;
 
 type GeminiOnboardingResponse = {
-  onboardingPath: unknown;
+  title: unknown;
+  overview: unknown;
+  onboardingSteps: unknown;
   featureRecommendations: unknown;
 };
 
@@ -21,10 +24,24 @@ function extractUserGoals(messages: BaseMessage[]): string {
     .trim();
 }
 
-function formatOnboardingMessage(onboardingPath: string[], featureRecommendations: string[]): string {
-  const pathSection = onboardingPath.map((step, index) => `${index + 1}. ${step}`).join("\n");
+function formatOnboardingMessage(
+  title: string,
+  overview: string,
+  onboardingSteps: string[],
+  featureRecommendations: string[],
+): string {
+  const pathSection = onboardingSteps.map((step, index) => `${index + 1}. ${step}`).join("\n");
   const featureSection = featureRecommendations.map((feature) => `- ${feature}`).join("\n");
-  return `Onboarding path:\n${pathSection}\n\nRecommended features:\n${featureSection}`;
+  return `# ${title}
+
+## Overview
+${overview}
+
+## Onboarding Steps
+${pathSection}
+
+## Recommended Features
+${featureSection}`;
 }
 
 export async function onboardingWorkerNode(state: typeof SupervisorGraphState.State) {
@@ -38,7 +55,13 @@ export async function onboardingWorkerNode(state: typeof SupervisorGraphState.St
       responseSchema: {
         type: SchemaType.OBJECT,
         properties: {
-          onboardingPath: {
+          title: {
+            type: SchemaType.STRING,
+          },
+          overview: {
+            type: SchemaType.STRING,
+          },
+          onboardingSteps: {
             type: SchemaType.ARRAY,
             items: { type: SchemaType.STRING },
           },
@@ -47,7 +70,7 @@ export async function onboardingWorkerNode(state: typeof SupervisorGraphState.St
             items: { type: SchemaType.STRING },
           },
         },
-        required: ["onboardingPath", "featureRecommendations"],
+        required: ["title", "overview", "onboardingSteps", "featureRecommendations"],
       },
     },
   });
@@ -56,12 +79,22 @@ export async function onboardingWorkerNode(state: typeof SupervisorGraphState.St
 
   let messageContent: string;
   try {
-    const result = await model.generateContent(userGoals);
-    const parsed: GeminiOnboardingResponse = JSON.parse(result.response.text());
-    if (!isStringArray(parsed.onboardingPath) || !isStringArray(parsed.featureRecommendations)) {
+    const responseText = await generateGeminiJsonText(model, userGoals);
+    const parsed: GeminiOnboardingResponse = JSON.parse(responseText);
+    if (
+      typeof parsed.title !== "string" ||
+      typeof parsed.overview !== "string" ||
+      !isStringArray(parsed.onboardingSteps) ||
+      !isStringArray(parsed.featureRecommendations)
+    ) {
       throw new Error("Unexpected onboarding response shape");
     }
-    messageContent = formatOnboardingMessage(parsed.onboardingPath, parsed.featureRecommendations);
+    messageContent = formatOnboardingMessage(
+      parsed.title,
+      parsed.overview,
+      parsed.onboardingSteps,
+      parsed.featureRecommendations,
+    );
   } catch {
     messageContent = "Onboarding path generation failed. Defaulting to a standard onboarding flow.";
   }
