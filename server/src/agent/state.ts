@@ -5,6 +5,7 @@ export type SupervisorContext = {
   onboardingComplete: boolean;
   metricsAnalyzed: boolean;
   risksIdentified: boolean;
+  prGenerated: boolean;
 };
 
 export const SupervisorGraphState = Annotation.Root({
@@ -25,6 +26,7 @@ export const SupervisorGraphState = Annotation.Root({
       onboardingComplete: false,
       metricsAnalyzed: false,
       risksIdentified: false,
+      prGenerated: false,
     }),
   }),
 });
