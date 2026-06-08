@@ -11,6 +11,7 @@ import githubRoutes from "./routes/integrations/github.routes";
 import mappingsRoutes from "./routes/mappings/mappings.routes";
 import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";
 import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-transcription.routes";
+import initializeProjectRoutes from "./routes/projects/initialize";
 import taskRoutes from "./routes/tasks/task.routes";
 import userRoutes from "./routes/users/user.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
@@ -53,5 +54,6 @@ app.route("/api/mappings", mappingsRoutes);
 app.route("/api/agent", agentRoutes);
 app.route("/api/agent/stream", agentStreamRoutes);
 app.route("/api/run-agent", runAgentRoutes);
+app.route("/api/projects/initialize", initializeProjectRoutes);
 
 export default app;

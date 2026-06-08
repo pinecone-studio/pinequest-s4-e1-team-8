@@ -1,4 +1,9 @@
-import { AIMessage, HumanMessage, SystemMessage, type BaseMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+  type BaseMessage,
+} from "@langchain/core/messages";
 import type { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { parseBreakdownFromContent } from "../breakdown.types";
 import type { BriskState } from "../brisk.state";
@@ -6,9 +11,7 @@ import type { BriskAgentRuntime } from "../brisk.types";
 
 const SYSTEM_PROMPT = `You are an Elite Multi-Industry Senior Project Manager.
 
-Your job is to transform a user's unstructured onboarding goal into a practical delivery plan.
-
-Analyze the goal and infer the domain (software, school group project, marketing campaign, research, operations, event planning, or similar).
+Your job is to transform a user's unstructured onboarding goal into a practical delivery plan.  Analyze the goal and infer the domain (software, school group project, marketing campaign, research, operations, event planning, or similar).
 Use domain-appropriate phase labels:
 - Software: features, epics, or delivery phases
 - School or academic work: subjects, modules, or assignment phases
@@ -60,7 +63,9 @@ export const createGenerateBreakdownNode =
         isStepValid: false,
         errorCode: "MODEL_FAILURE" as const,
         retryCount: state.retryCount + 1,
-        messages: [new AIMessage("Execution failed: No onboarding goal was provided.")],
+        messages: [
+          new AIMessage("Execution failed: No onboarding goal was provided."),
+        ],
       };
     }
 
@@ -71,7 +76,9 @@ export const createGenerateBreakdownNode =
 
     const contextLines = [
       config.projectName ? `Project name: ${config.projectName}` : null,
-      config.projectDescription ? `Project description: ${config.projectDescription}` : null,
+      config.projectDescription
+        ? `Project description: ${config.projectDescription}`
+        : null,
       `User goal: ${userGoal}`,
       retryHint,
     ].filter((line): line is string => line !== null);
@@ -94,7 +101,9 @@ export const createGenerateBreakdownNode =
         isStepValid: false,
         errorCode: "MODEL_FAILURE" as const,
         retryCount: state.retryCount + 1,
-        messages: [new AIMessage("Execution failed: Model response was not valid JSON.")],
+        messages: [
+          new AIMessage("Execution failed: Model response was not valid JSON."),
+        ],
       };
     }
 
@@ -105,7 +114,9 @@ export const createGenerateBreakdownNode =
       isStepValid: true,
       errorCode: null,
       messages: [
-        new AIMessage(`Generated ${breakdown.phases.length} phases with ${taskCount} tasks.`),
+        new AIMessage(
+          `Generated ${breakdown.phases.length} phases with ${taskCount} tasks.`,
+        ),
       ],
     };
   };
