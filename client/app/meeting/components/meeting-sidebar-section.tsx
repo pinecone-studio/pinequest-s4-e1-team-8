@@ -1,6 +1,11 @@
 "use client";
 
 import { useSidebar } from "@/components/sidebar/sidebar-context";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { ConnectionState } from "livekit-client";
 import {
@@ -206,15 +211,30 @@ export const MeetingSidebarSection = () => {
                           )}
                           key={participant.identity}
                         >
-                          <span
+                          <Avatar
                             className={cn(
-                              "flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-semibold text-violet-100 ring-1 ring-violet-400/20 transition-colors",
+                              "size-5 ring-1 ring-violet-400/20 transition-colors after:hidden",
                               participant.isSpeaking &&
-                                "bg-emerald-500/20 text-emerald-100 ring-emerald-400/50",
+                                "ring-2 ring-emerald-400/50",
                             )}
+                            size="sm"
                           >
-                            {initial}
-                          </span>
+                            {participant.avatarUrl ? (
+                              <AvatarImage
+                                alt=""
+                                src={participant.avatarUrl}
+                              />
+                            ) : null}
+                            <AvatarFallback
+                              className={cn(
+                                "bg-violet-500/15 text-[10px] font-semibold text-violet-100",
+                                participant.isSpeaking &&
+                                  "bg-emerald-500/20 text-emerald-100",
+                              )}
+                            >
+                              {initial}
+                            </AvatarFallback>
+                          </Avatar>
                           <span className="min-w-0 flex-1 truncate">
                             {participant.displayName}
                           </span>
