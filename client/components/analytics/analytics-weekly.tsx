@@ -81,6 +81,12 @@ export function AnalyticsWeekly({
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingWeekly, setIsLoadingWeekly] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messageIdRef = useRef(0);
+
+  const createMessageId = (role: ChatMessage["role"]) => {
+    messageIdRef.current += 1;
+    return `${role}-${messageIdRef.current}`;
+  };
 
   const teamTasks = useMemo(
     () =>
@@ -138,7 +144,7 @@ export function AnalyticsWeekly({
     if (!trimmed || isLoading) return;
 
     const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: createMessageId("user"),
       role: "user",
       content: trimmed,
     };
@@ -159,7 +165,7 @@ export function AnalyticsWeekly({
       setMessages((current) => [
         ...current,
         {
-          id: `assistant-${Date.now()}`,
+          id: createMessageId("assistant"),
           role: "assistant",
           content: data.answer,
         },
@@ -168,7 +174,7 @@ export function AnalyticsWeekly({
       setMessages((current) => [
         ...current,
         {
-          id: `error-${Date.now()}`,
+          id: createMessageId("assistant"),
           role: "assistant",
           content:
             "Could not get an answer. Is the server running with GEMINI_API_KEY?",

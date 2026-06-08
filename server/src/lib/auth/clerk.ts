@@ -3,7 +3,9 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import type { Context } from "hono";
 import { nanoid } from "nanoid";
-import type { Bindings } from "../common/types";
+import type { Bindings, Variables } from "../common/types";
+
+type AuthContext = Context<{ Bindings: Bindings; Variables: Variables }>;
 import { users } from "../../schema/schema";
 import * as schema from "../../schema/schema";
 
@@ -13,7 +15,7 @@ const AUTHORIZED_PARTIES = [
   "https://brisk-pm.vercel.app",
 ];
 
-export function extractBearerToken(c: Context<{ Bindings: Bindings }>): string | null {
+export function extractBearerToken(c: AuthContext): string | null {
   const auth = c.req.header("Authorization");
   if (!auth?.startsWith("Bearer ")) {
     return null;
@@ -64,7 +66,7 @@ async function ensureUserRecord(
 }
 
 export async function resolveAuthenticatedUserId(
-  c: Context<{ Bindings: Bindings }>,
+  c: AuthContext,
 ): Promise<string | null> {
   const token = extractBearerToken(c);
   if (!token) {
@@ -96,7 +98,7 @@ export async function resolveAuthenticatedUserId(
 }
 
 export async function getAuthenticatedUserId(
-  c: Context<{ Bindings: Bindings }>,
+  c: AuthContext,
 ): Promise<string | null> {
   return resolveAuthenticatedUserId(c);
 }
