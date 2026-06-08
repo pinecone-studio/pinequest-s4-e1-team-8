@@ -1,4 +1,6 @@
 import { TaskCard } from "@/components/tasks/task-card";
+import { TaskAiInsight } from "@/components/tasks/task-ai-insight";
+import { getColumnAiInsight } from "@/components/tasks/task-ai-insight-utils";
 import {
   taskColumnConfig,
   taskStatuses,
@@ -8,6 +10,7 @@ import {
 } from "@/components/tasks/task-types";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
+import { Fragment } from "react";
 
 type TaskBoardProps = {
   tasks: TaskListItem[];
@@ -55,14 +58,20 @@ export function TaskBoard({
               </span>
             </header>
             <div className="flex flex-1 flex-col gap-3 p-3">
-              {columnTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  selected={selectedTaskId === task.id}
-                  onSelect={onSelectTask}
-                  onUpdate={onUpdateTask}
-                />
+              {columnTasks.map((task, index) => (
+                <Fragment key={task.id}>
+                  <TaskCard
+                    task={task}
+                    selected={selectedTaskId === task.id}
+                    onSelect={onSelectTask}
+                    onUpdate={onUpdateTask}
+                  />
+                  {index === 0 ? (
+                    <TaskAiInsight
+                      text={getColumnAiInsight(columnTasks, status)}
+                    />
+                  ) : null}
+                </Fragment>
               ))}
               <button
                 type="button"
