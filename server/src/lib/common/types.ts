@@ -14,6 +14,9 @@ export interface Bindings {
   GITHUB_OAUTH_REDIRECT_URI?: string;
   GITHUB_TEST_TOKEN?: string;
   GITHUB_WEBHOOK_SECRET: string;
+  ASANA_CLIENT_ID?: string;
+  ASANA_CLIENT_SECRET?: string;
+  ASANA_TEST_TOKEN?: string;
   LIVEKIT_URL: string;
   LIVEKIT_WS_URL?: string;
   LIVEKIT_API_URL?: string;

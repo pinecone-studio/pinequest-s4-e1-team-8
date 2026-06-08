@@ -1,9 +1,10 @@
 const ASANA_BASE_URL = "https://app.asana.com/api/1.0";
+const ASANA_TOKEN_URL = "https://app.asana.com/-/oauth_token";
 
 export type AsanaUser = {
   gid: string;
   name: string;
-  email: string;
+  email?: string;
 };
 
 export type AsanaWorkspace = {
@@ -23,11 +24,13 @@ export type AsanaProject = {
 export type AsanaTask = {
   gid: string;
   name: string;
-  notes: string;
+  notes?: string;
   completed: boolean;
   created_at: string;
   modified_at: string;
-  permalink_url: string;
+  due_on?: string | null;
+  permalink_url?: string;
+  assignee?: { gid: string; name: string } | null;
 };
 
 export type AsanaTaskPayload = {
@@ -37,6 +40,18 @@ export type AsanaTaskPayload = {
   projects?: string[];
   due_on?: string | null;
   assignee?: string | null;
+};
+
+export type AsanaTokenResponse = {
+  access_token: string;
+  refresh_token?: string;
+  expires_in: number;
+  token_type: string;
+  data?: {
+    gid: string;
+    name: string;
+    email?: string;
+  };
 };
 
 type AsanaEnvelope<T> = { data: T };
@@ -65,6 +80,69 @@ async function asanaFetch<T>(
   return json.data;
 }
 
+async function asanaTokenRequest(body: URLSearchParams): Promise<AsanaTokenResponse> {
+  const res = await fetch(ASANA_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`Asana OAuth error ${res.status}: ${text}`);
+  }
+
+  return (await res.json()) as AsanaTokenResponse;
+}
+
+export async function exchangeAsanaCode(
+  code: string,
+  redirectUri: string,
+  clientId: string,
+  clientSecret: string,
+): Promise<AsanaTokenResponse> {
+  return asanaTokenRequest(
+    new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      code,
+    }),
+  );
+}
+
+export async function refreshAsanaToken(
+  refreshToken: string,
+  clientId: string,
+  clientSecret: string,
+): Promise<AsanaTokenResponse> {
+  return asanaTokenRequest(
+    new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+    }),
+  );
+}
+
+export async function revokeAsanaToken(token: string): Promise<void> {
+  const res = await fetch("https://app.asana.com/-/oauth_revoke", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ token }).toString(),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`Asana revoke error ${res.status}: ${text}`);
+  }
+}
+
+export const getCurrentUser = (token: string): Promise<AsanaUser> =>
+  asanaFetch<AsanaUser>("/users/me", token);
+
 export const getWorkspaces = (token: string): Promise<AsanaWorkspace[]> =>
   asanaFetch<AsanaWorkspace[]>("/workspaces", token);
 
@@ -74,6 +152,15 @@ export const getProjects = (
 ): Promise<AsanaProject[]> =>
   asanaFetch<AsanaProject[]>(
     `/workspaces/${workspaceGid}/projects?opt_fields=gid,name,archived,created_at,modified_at,workspace`,
+    token,
+  );
+
+export const getProjectTasks = (
+  token: string,
+  projectGid: string,
+): Promise<AsanaTask[]> =>
+  asanaFetch<AsanaTask[]>(
+    `/projects/${projectGid}/tasks?opt_fields=gid,name,notes,completed,created_at,modified_at,due_on,permalink_url,assignee.name`,
     token,
   );
 
