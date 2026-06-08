@@ -1,32 +1,49 @@
 "use client";
 
-import { ParticipantEvent, type Participant } from "livekit-client";
+import {
+  ParticipantEvent,
+  Track,
+  type Participant,
+  type TrackPublication,
+} from "livekit-client";
 import { useEffect, useState } from "react";
 
-export const useParticipantVersion = (participant: Participant) => {
+export const useParticipantTrackVersion = (
+  participant: Participant,
+  source: Track.Source,
+) => {
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
     const refresh = () => setVersion((currentVersion) => currentVersion + 1);
+    const refreshIfSourceMatches = (publication: TrackPublication) => {
+      if (publication.source === source) {
+        refresh();
+      }
+    };
+    const refreshSubscribedSource = (
+      _track: unknown,
+      publication: TrackPublication,
+    ) => refreshIfSourceMatches(publication);
 
     participant
-      .on(ParticipantEvent.TrackSubscribed, refresh)
-      .on(ParticipantEvent.TrackUnsubscribed, refresh)
-      .on(ParticipantEvent.LocalTrackPublished, refresh)
-      .on(ParticipantEvent.LocalTrackUnpublished, refresh)
-      .on(ParticipantEvent.TrackMuted, refresh)
-      .on(ParticipantEvent.TrackUnmuted, refresh);
+      .on(ParticipantEvent.TrackSubscribed, refreshSubscribedSource)
+      .on(ParticipantEvent.TrackUnsubscribed, refreshSubscribedSource)
+      .on(ParticipantEvent.LocalTrackPublished, refreshIfSourceMatches)
+      .on(ParticipantEvent.LocalTrackUnpublished, refreshIfSourceMatches)
+      .on(ParticipantEvent.TrackMuted, refreshIfSourceMatches)
+      .on(ParticipantEvent.TrackUnmuted, refreshIfSourceMatches);
 
     return () => {
       participant
-        .off(ParticipantEvent.TrackSubscribed, refresh)
-        .off(ParticipantEvent.TrackUnsubscribed, refresh)
-        .off(ParticipantEvent.LocalTrackPublished, refresh)
-        .off(ParticipantEvent.LocalTrackUnpublished, refresh)
-        .off(ParticipantEvent.TrackMuted, refresh)
-        .off(ParticipantEvent.TrackUnmuted, refresh);
+        .off(ParticipantEvent.TrackSubscribed, refreshSubscribedSource)
+        .off(ParticipantEvent.TrackUnsubscribed, refreshSubscribedSource)
+        .off(ParticipantEvent.LocalTrackPublished, refreshIfSourceMatches)
+        .off(ParticipantEvent.LocalTrackUnpublished, refreshIfSourceMatches)
+        .off(ParticipantEvent.TrackMuted, refreshIfSourceMatches)
+        .off(ParticipantEvent.TrackUnmuted, refreshIfSourceMatches);
     };
-  }, [participant]);
+  }, [participant, source]);
 
   return version;
 };

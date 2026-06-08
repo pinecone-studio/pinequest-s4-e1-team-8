@@ -16,9 +16,10 @@ export const ConnectedMeetingPanel = ({
 }: ConnectedMeetingPanelProps) => (
   <LivekitRoomView
     livekitUrl={response.url}
+    livekitRoomName={response.roomName}
     meetingId={meetingId}
     onLeave={onLeave}
-    roomName={response.roomName}
+    roomName={response.displayRoomName ?? response.roomName}
     token={response.token}
   />
 );

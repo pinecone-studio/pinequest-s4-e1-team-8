@@ -1,6 +1,5 @@
 "use client";
 
-import { AnalyticsBarChart, type ChartBarItem } from "@/components/analytics/analytics-bar-chart";
 import { AnalyticsSectionHeader } from "@/components/analytics/analytics-section-header";
 import { clientApi } from "@/app/lib/client-api";
 import type { AnalyticsSummary } from "@/lib/analytics/types";
@@ -8,56 +7,12 @@ import { cn } from "@/lib/utils";
 import { BarChart3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-function toChartData(summary: AnalyticsSummary) {
-  const byStatus: ChartBarItem[] = [
-    {
-      label: "Todo",
-      value: summary.byStatus.backlog + summary.byStatus.todo,
-      gradient: "from-slate-600 to-slate-500/70",
-      glow: "shadow-slate-500/20",
-    },
-    {
-      label: "Doing",
-      value: summary.byStatus.in_progress,
-      gradient: "from-violet-600 to-violet-400",
-      glow: "shadow-violet-500/35",
-    },
-    {
-      label: "Done",
-      value: summary.byStatus.done,
-      gradient: "from-emerald-600 to-emerald-400",
-      glow: "shadow-emerald-500/35",
-    },
-  ];
-
-  const bySource: ChartBarItem[] = [
-    {
-      label: "GH",
-      value: summary.bySource.github,
-      gradient: "from-violet-600 to-violet-400",
-      glow: "shadow-violet-500/35",
-    },
-    {
-      label: "Asana",
-      value: summary.bySource.asana,
-      gradient: "from-sky-500 to-sky-300",
-      glow: "shadow-sky-400/35",
-    },
-    {
-      label: "Int",
-      value: summary.bySource.internal,
-      gradient: "from-amber-500 to-amber-300",
-      glow: "shadow-amber-400/35",
-    },
-  ];
-
+function toMetrics(summary: AnalyticsSummary) {
   return {
     total: summary.total,
     done: summary.byStatus.done,
     blocked: summary.blocked,
     progress: summary.avgProgress,
-    byStatus,
-    bySource,
   };
 }
 
@@ -88,7 +43,7 @@ export function AnalyticsMetrics() {
   }, []);
 
   const metrics = useMemo(
-    () => (summary ? toChartData(summary) : null),
+    () => (summary ? toMetrics(summary) : null),
     [summary],
   );
 
@@ -104,31 +59,24 @@ export function AnalyticsMetrics() {
       ) : !metrics ? (
         <p className="text-sm text-muted-foreground">Loading metrics...</p>
       ) : (
-        <>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            <SummaryStat label="Total" value={metrics.total} />
-            <SummaryStat
-              label="Done"
-              value={metrics.done}
-              valueClassName="text-emerald-400"
-            />
-            <SummaryStat
-              label="Blocked"
-              value={metrics.blocked}
-              valueClassName="text-rose-400"
-            />
-            <SummaryStat
-              label="Progress"
-              value={`${metrics.progress}%`}
-              valueClassName="text-sky-400"
-            />
-          </div>
-
-          <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            <AnalyticsBarChart title="By status" items={metrics.byStatus} />
-            <AnalyticsBarChart title="By source" items={metrics.bySource} />
-          </div>
-        </>
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <SummaryStat label="Total" value={metrics.total} />
+          <SummaryStat
+            label="Done"
+            value={metrics.done}
+            valueClassName="text-emerald-400"
+          />
+          <SummaryStat
+            label="Blocked"
+            value={metrics.blocked}
+            valueClassName="text-rose-400"
+          />
+          <SummaryStat
+            label="Progress"
+            value={`${metrics.progress}%`}
+            valueClassName="text-sky-400"
+          />
+        </div>
       )}
     </section>
   );

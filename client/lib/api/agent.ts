@@ -36,7 +36,7 @@ export type RunBriskAgentParams = {
 };
 
 const getServerBaseUrl = () =>
-  (process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:8788").replace(/\/$/, "");
+  (process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:8787").replace(/\/$/, "");
 
 const extractErrorMessage = async (response: Response): Promise<string> => {
   try {

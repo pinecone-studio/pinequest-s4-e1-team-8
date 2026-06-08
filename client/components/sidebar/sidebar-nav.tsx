@@ -1,12 +1,14 @@
 "use client";
 
+import { MeetingSidebarSection } from "@/app/meeting/components/meeting-sidebar-section";
 import { SidebarNavItem } from "@/components/sidebar/sidebar-nav-item";
 import { SidebarTree } from "@/components/sidebar/sidebar-tree";
 import { useSidebar } from "@/components/sidebar/sidebar-context";
 import { sidebarNavItems, sidebarWorkflowItems } from "@/lib/dashboard/data";
 import { cn } from "@/lib/utils";
+import { Suspense } from "react";
 
-export function SidebarNav() {
+export const SidebarNav = () => {
   const { collapsed } = useSidebar();
 
   return (
@@ -30,6 +32,9 @@ export function SidebarNav() {
             )}
           </li>
         ))}
+        <Suspense fallback={null}>
+          <MeetingSidebarSection />
+        </Suspense>
       </ul>
 
       {!collapsed && (
@@ -46,4 +51,4 @@ export function SidebarNav() {
       </ul>
     </nav>
   );
-}
+};

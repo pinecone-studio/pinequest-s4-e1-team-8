@@ -1,17 +1,17 @@
 "use client";
 
 import { Track, type RemoteParticipant } from "livekit-client";
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 
 type ParticipantAudioProps = {
   participant: RemoteParticipant;
   version: number;
 };
 
-export const ParticipantAudio = ({
+export const ParticipantAudio = memo(function ParticipantAudio({
   participant,
   version,
-}: ParticipantAudioProps) => {
+}: ParticipantAudioProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -29,4 +29,4 @@ export const ParticipantAudio = ({
   }, [participant, version]);
 
   return <audio autoPlay ref={audioRef} />;
-};
+});

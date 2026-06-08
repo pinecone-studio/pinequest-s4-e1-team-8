@@ -14,8 +14,7 @@
     },
   ],
   "vars": {
-    "LIVEKIT_URL": "wss://your-project.livekit.cloud",
-    "LIVEKIT_API_KEY": "APIKPm9Sr87RShW",
+    "LIVEKIT_URL": "wss://brisk-505qgdpu.livekit.cloud",
     "CLERK_PUBLISHABLE_KEY": "pk_test_c2VsZWN0ZWQtbXV0dC0zMS5jbGVyay5hY2NvdW50cy5kZXYk",
     "CLIENT_APP_URL": "https://brisk-pm.vercel.app/",
     "FRONTEND_URL": "https://brisk-pm.vercel.app/",
@@ -31,9 +30,7 @@
         },
       ],
       "vars": {
-        "LIVEKIT_URL": "wss://your-project.livekit.cloud",
-        "LIVEKIT_API_KEY": "APIKPm9Sr87RShW",
-        "LIVEKIT_API_SECRET": "your_secret_here",
+        "LIVEKIT_URL": "wss://brisk-505qgdpu.livekit.cloud",
       },
     },
   },

@@ -26,7 +26,7 @@ export type FetchTasksParams = {
 };
 
 const getServerBaseUrl = () =>
-  (process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:8788").replace(
+  (process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:8787").replace(
     /\/$/,
     "",
   );

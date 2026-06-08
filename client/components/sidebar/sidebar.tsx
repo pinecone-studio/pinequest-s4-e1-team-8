@@ -20,7 +20,7 @@ const utilityIcons = [
   { icon: Bookmark, label: "Saved" },
 ] as const;
 
-function DashboardSidebarInner() {
+const DashboardSidebarInner = () => {
   const { collapsed } = useSidebar();
 
   return (
@@ -103,12 +103,12 @@ function DashboardSidebarInner() {
       </div>
     </aside>
   );
-}
+};
 
-export function DashboardSidebar() {
+export const DashboardSidebar = () => {
   return (
     <SidebarProvider>
       <DashboardSidebarInner />
     </SidebarProvider>
   );
-}
+};

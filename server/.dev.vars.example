@@ -1,0 +1,13 @@
+LIVEKIT_URL=wss://brisk-505qgdpu.livekit.cloud
+LIVEKIT_API_KEY=livekit-api-key-placeholder
+LIVEKIT_API_SECRET=livekit-api-secret-placeholder
+LIVEKIT_EGRESS_WEBHOOK_URL=https://example.com/api/meeting-transcription/livekit-webhook
+CHIMEGE_API_KEY=chimege-api-key-placeholder
+CHIMEGE_BASE_URL=https://api.chimege.com/
+CLIENT_APP_URL=http://localhost:3000/
+
+# Required when recording/upload stores files in Cloudflare R2.
+R2_ACCOUNT_ID=r2-account-id-placeholder
+R2_ACCESS_KEY_ID=r2-access-key-id-placeholder
+R2_SECRET_ACCESS_KEY=r2-secret-access-key-placeholder
+R2_BUCKET_NAME=r2-bucket-name-placeholder

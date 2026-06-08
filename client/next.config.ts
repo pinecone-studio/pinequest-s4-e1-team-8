@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const clientRoot = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.resolve(clientRoot, "..");
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8788";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 
 const nextConfig: NextConfig = {
   turbopack: {

@@ -1,100 +1,240 @@
 "use client";
 
-import { useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { Headphones } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   createMeetingRoom,
   joinMeetingRoom,
   type MeetingRoomTokenResponse,
 } from "../index";
+import type { MeetingRoomListItem } from "../types/meeting-room.types";
 import { ConnectedMeetingPanel } from "./connected-meeting-panel";
 import { FormField } from "./form-field";
-import { MeetingActionButtons } from "./meeting-action-buttons";
 
-type MeetingAction = "create" | "join";
+type MeetingJoinStatus = "idle" | "joining";
 
-export const MeetingRoomForm = () => {
-  const [meetingId, setMeetingId] = useState("");
-  const [roomName, setRoomName] = useState("");
-  const [participantName, setParticipantName] = useState("");
+type MeetingRoomFormProps = {
+  selectedRoom: Pick<MeetingRoomListItem, "meetingId" | "roomName"> | null;
+};
+
+const LIVEKIT_PLACEHOLDER_HOST = ["your-project", "livekit", "cloud"].join(".");
+
+const getSafeLivekitUrl = (url: string) => {
+  if (url) {
+    try {
+      if (new URL(url).host !== LIVEKIT_PLACEHOLDER_HOST) return url;
+    } catch {
+      return url;
+    }
+  }
+
+  return process.env.NEXT_PUBLIC_LIVEKIT_URL ?? "";
+};
+
+const getClerkDisplayName = (user: ReturnType<typeof useUser>["user"]) => {
+  if (!user) return "";
+
+  return (
+    user.fullName?.trim() ||
+    user.username?.trim() ||
+    user.primaryEmailAddress?.emailAddress?.trim() ||
+    ""
+  );
+};
+
+const getParticipantIdentity = ({
+  displayName,
+  user,
+}: {
+  displayName: string;
+  user: ReturnType<typeof useUser>["user"];
+}) => {
+  const stableId =
+    user?.id ||
+    user?.primaryEmailAddress?.emailAddress ||
+    displayName.toLowerCase();
+
+  return `${displayName.trim()}__${stableId}`;
+};
+
+export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const authenticatedName = useMemo(() => getClerkDisplayName(user), [user]);
+  const resolvedDisplayName = isSignedIn
+    ? authenticatedName || "User"
+    : "";
+  const [manualDisplayName, setManualDisplayName] = useState("");
   const [response, setResponse] = useState<MeetingRoomTokenResponse | null>(
     null
   );
-  const [loadingAction, setLoadingAction] = useState<MeetingAction | null>(
-    null
-  );
+  const [joinStatus, setJoinStatus] = useState<MeetingJoinStatus>("idle");
   const [error, setError] = useState("");
-  const isActionDisabled =
-    !meetingId || !roomName || !participantName || Boolean(loadingAction);
+  const selectedRoomKey = selectedRoom
+    ? `${selectedRoom.meetingId}:${selectedRoom.roomName}`
+    : "";
+  const displayName = resolvedDisplayName || manualDisplayName.trim();
+  const requiresDisplayName = isLoaded && !isSignedIn && !manualDisplayName.trim();
+  const joinedRoomKeyRef = useRef("");
+
+  useEffect(() => {
+    joinedRoomKeyRef.current = "";
+    setResponse(null);
+    setError("");
+  }, [selectedRoom, selectedRoomKey]);
+
+  const joinSelectedRoom = useCallback(
+    async (participantName: string) => {
+      if (!selectedRoom || !participantName.trim()) return;
+
+      setError("");
+      setJoinStatus("joining");
+
+      try {
+        const participantIdentity = getParticipantIdentity({
+          displayName: participantName,
+          user,
+        });
+        const livekitRoomName = selectedRoom.meetingId;
+        const result = await joinMeetingRoom({
+          participantName: participantIdentity,
+          roomName: livekitRoomName,
+        });
+
+        setResponse({
+          ...result,
+          displayRoomName: selectedRoom.roomName,
+          url: getSafeLivekitUrl(result.url),
+        });
+      } catch {
+        try {
+          const participantIdentity = getParticipantIdentity({
+            displayName: participantName,
+            user,
+          });
+          const livekitRoomName = selectedRoom.meetingId;
+          const result = await createMeetingRoom({
+            hostName: participantIdentity,
+            roomName: livekitRoomName,
+          });
+
+          setResponse({
+            ...result,
+            displayRoomName: selectedRoom.roomName,
+            url: getSafeLivekitUrl(result.url),
+          });
+        } catch (caughtError) {
+          setError((caughtError as Error).message);
+          joinedRoomKeyRef.current = "";
+        }
+      } finally {
+        setJoinStatus("idle");
+      }
+    },
+    [selectedRoom, user],
+  );
+
+  if (!selectedRoom) {
+    return (
+      <section className="m-auto w-full max-w-xs space-y-4 rounded-2xl border border-border/60 bg-card p-6 text-center shadow-sm">
+        <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-muted">
+          <Headphones className="size-5 stroke-[1.75] text-violet-400" />
+        </div>
+        <div>
+          <h1 className="text-[15px] font-semibold text-foreground">
+            Select a channel
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Pick a voice channel from the sidebar to join.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   if (response) {
     return (
       <ConnectedMeetingPanel
-        meetingId={meetingId}
+        meetingId={selectedRoom.meetingId}
         onLeave={() => {
           setResponse(null);
+          joinedRoomKeyRef.current = "";
         }}
         response={response}
       />
     );
   }
 
-  const handleRoomAction = async (action: MeetingAction) => {
-    setError("");
-    setLoadingAction(action);
+  if (requiresDisplayName) {
+    return (
+      <section className="m-auto w-full max-w-sm space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-400">
+            {selectedRoom.roomName}
+          </p>
+          <h1 className="mt-1 text-[15px] font-semibold text-foreground">
+            Enter display name
+          </h1>
+        </div>
+        <FormField
+          label="Display name"
+          onChange={(event) => setManualDisplayName(event.target.value)}
+          required
+          value={manualDisplayName}
+        />
 
-    try {
-      const result =
-        action === "create"
-          ? await createMeetingRoom({ hostName: participantName, roomName })
-          : await joinMeetingRoom({ participantName, roomName });
+        {error ? (
+          <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+            {error}
+          </p>
+        ) : null}
 
-      setResponse(result);
-    } catch (caughtError) {
-      setError((caughtError as Error).message);
-    } finally {
-      setLoadingAction(null);
-    }
-  };
+        <button
+          className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={!manualDisplayName.trim() || joinStatus === "joining"}
+          onClick={() => {
+            void joinSelectedRoom(manualDisplayName);
+          }}
+          type="button"
+        >
+          {joinStatus === "joining" ? "Joining..." : "Join channel"}
+        </button>
+      </section>
+    );
+  }
 
   return (
-    <section className="mx-auto max-w-2xl space-y-5 rounded-3xl border border-white/10 bg-[#14111f] p-5 shadow-2xl shadow-black/30">
+    <section className="m-auto w-full max-w-sm space-y-4 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
       <div>
-        <h1 className="text-xl font-semibold text-white">Meeting Room</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          Create or join a room to open the conference workspace.
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-400">
+          {selectedRoom.roomName}
+        </p>
+        <h1 className="mt-1 text-[15px] font-semibold text-foreground">
+          {joinStatus === "joining" ? "Joining channel..." : "Ready to join"}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {joinStatus === "joining"
+            ? `Connecting as ${displayName || "User"}`
+            : `Join as ${displayName || "User"}`}
         </p>
       </div>
 
-      <FormField
-        label="Meeting ID"
-        onChange={(event) => setMeetingId(event.target.value)}
-        required
-        value={meetingId}
-      />
-      <FormField
-        label="Room name"
-        onChange={(event) => setRoomName(event.target.value)}
-        required
-        value={roomName}
-      />
-      <FormField
-        label="Participant name"
-        onChange={(event) => setParticipantName(event.target.value)}
-        required
-        value={participantName}
-      />
-
       {error ? (
-        <p className="rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+        <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
           {error}
         </p>
       ) : null}
 
-      <MeetingActionButtons
-        disabled={isActionDisabled}
-        loadingAction={loadingAction}
-        onAction={(action) => void handleRoomAction(action)}
-      />
+      <button
+        className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={joinStatus === "joining" || !displayName}
+        onClick={() => {
+          void joinSelectedRoom(displayName);
+        }}
+        type="button"
+      >
+        {joinStatus === "joining" ? "Joining..." : "Join channel"}
+      </button>
     </section>
   );
 };

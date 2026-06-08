@@ -1,21 +1,23 @@
 "use client";
 
 import { Track, type Participant } from "livekit-client";
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 
 type ParticipantVideoProps = {
   participant: Participant;
+  source?: Track.Source.Camera | Track.Source.ScreenShare;
   version: number;
 };
 
-export const ParticipantVideo = ({
+export const ParticipantVideo = memo(function ParticipantVideo({
   participant,
+  source = Track.Source.Camera,
   version,
-}: ParticipantVideoProps) => {
+}: ParticipantVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const publication = participant.getTrackPublication(Track.Source.Camera);
+    const publication = participant.getTrackPublication(source);
     const track = publication?.track;
     const element = videoRef.current;
 
@@ -26,15 +28,17 @@ export const ParticipantVideo = ({
     return () => {
       track.detach(element);
     };
-  }, [participant, version]);
+  }, [participant, source, version]);
 
   return (
     <video
       autoPlay
-      className="h-full w-full object-cover"
+      className={`h-full w-full ${
+        source === Track.Source.ScreenShare ? "object-contain" : "object-cover"
+      }`}
       muted={participant.isLocal}
       playsInline
       ref={videoRef}
     />
   );
-};
+});

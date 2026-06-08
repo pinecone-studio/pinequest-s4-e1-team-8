@@ -70,6 +70,19 @@ export function briskAgent(db: BriskAgentDb) {
     return state.isStepValid ? "persistTasks" : "end";
   }
 
+  function routeAfterSupervisor(state: typeof BriskState.State) {
+    switch (state.nextWorker) {
+      case "ONBOARDING":
+        return "onboardingWorker";
+      case "METRICS":
+        return "metricsWorker";
+      case "RISK":
+        return "riskWorker";
+      default:
+        return "end";
+    }
+  }
+
   const workflow = new StateGraph(BriskState)
     .addNode("validateInput", validateInputNode)
     .addNode("verifyProject", verifyProjectNode)
@@ -111,8 +124,19 @@ export function briskAgent(db: BriskAgentDb) {
     end: END,
   });
 
+  workflow.addConditionalEdges("supervisor", routeAfterSupervisor, {
+    onboardingWorker: "onboardingWorker",
+    metricsWorker: "metricsWorker",
+    riskWorker: "riskWorker",
+    end: END,
+  });
+
+  workflow.addEdge("onboardingWorker", "supervisor");
+  workflow.addEdge("metricsWorker", "supervisor");
+  workflow.addEdge("riskWorker", "supervisor");
+
   workflow.addEdge("persistTasks", "logExecution");
-  workflow.addEdge("logExecution", END);
+  workflow.addEdge("logExecution", "supervisor");
 
   return workflow.compile();
 }

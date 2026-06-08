@@ -1,10 +1,11 @@
 "use client";
 
+import { AnalyticsRiskAsk } from "@/components/analytics/analytics-risk-ask";
 import { AnalyticsSectionHeader } from "@/components/analytics/analytics-section-header";
 import { clientApi } from "@/app/lib/client-api";
 import type { AnalyticsRisks, RiskLevel } from "@/lib/analytics/types";
 import { cn } from "@/lib/utils";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const levelStyles: Record<RiskLevel, string> = {
@@ -16,6 +17,7 @@ const levelStyles: Record<RiskLevel, string> = {
 export function AnalyticsRisksPanel() {
   const [risks, setRisks] = useState<AnalyticsRisks | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,29 +64,57 @@ export function AnalyticsRisksPanel() {
             {risks.items.length === 0 ? (
               <p className="text-sm text-muted-foreground">No active risks right now.</p>
             ) : (
-              risks.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-lg border border-border/60 bg-[#1c1d22] px-3 py-2.5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{item.title}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {item.team} · {item.reason}
-                      </p>
-                    </div>
-                    <span
-                      className={cn(
-                        "shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase",
-                        levelStyles[item.level],
-                      )}
+              risks.items.map((item) => {
+                const isExpanded = expandedId === item.id;
+
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      "rounded-lg border bg-[#1c1d22] transition-colors",
+                      isExpanded
+                        ? "border-sky-500/30"
+                        : "border-border/60",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      className="flex w-full items-start justify-between gap-2 px-3 py-2.5 text-left"
+                      onClick={() =>
+                        setExpandedId(isExpanded ? null : item.id)
+                      }
                     >
-                      {item.level}
-                    </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{item.title}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {item.team} · {item.reason}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span
+                          className={cn(
+                            "rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase",
+                            levelStyles[item.level],
+                          )}
+                        >
+                          {item.level}
+                        </span>
+                        {isExpanded ? (
+                          <ChevronUp className="size-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="size-4 text-muted-foreground" />
+                        )}
+                      </div>
+                    </button>
+
+                    {isExpanded ? (
+                      <div className="px-3 pb-3">
+                        <AnalyticsRiskAsk item={item} />
+                      </div>
+                    ) : null}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </>

@@ -1,4 +1,5 @@
 export type MeetingRoomTokenResponse = {
+  displayRoomName?: string;
   roomName: string;
   token: string;
   url: string;
