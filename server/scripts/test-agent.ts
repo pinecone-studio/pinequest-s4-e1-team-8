@@ -1,4 +1,5 @@
 const BASE_URL = process.env.API_URL ?? "http://localhost:8787";
+const TRACING_ENABLED = (process.env.LANGCHAIN_TRACING_V2 ?? "true") === "true";
 
 type WorkspaceTestCase = {
   label: string;
@@ -97,6 +98,7 @@ async function main(): Promise<void> {
   }
 
   console.log(`Running agent tests against ${BASE_URL}`);
+  console.log(`LangSmith tracing: ${TRACING_ENABLED ? "enabled" : "disabled"}`);
 
   await runUnauthenticatedTest();
 
