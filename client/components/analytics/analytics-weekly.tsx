@@ -1,130 +1,293 @@
 "use client";
 
-import { AnalyticsBarChart, type ChartBarItem } from "@/components/analytics/analytics-bar-chart";
 import { clientApi } from "@/app/lib/client-api";
-import type { AnalyticsWeekly, WeeklySummaryResponse } from "@/lib/analytics/types";
+import { getTaskTeam, type TaskListItem } from "@/components/tasks/task-types";
+import type { AnalyticsWeekly } from "@/lib/analytics/types";
 import { cn } from "@/lib/utils";
-import { CalendarRange, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { ArrowUp, Bot, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-export function AnalyticsWeekly() {
+const quickQuestions = [
+  "Summarize this team's week",
+  "What should we prioritize next?",
+  "Which tasks are falling behind?",
+  "Where are the bottlenecks?",
+];
+
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
+function buildWeeklyQuestion({
+  activeTeam,
+  weekly,
+  teamTasks,
+  question,
+}: {
+  activeTeam: string | null;
+  weekly: AnalyticsWeekly | null;
+  teamTasks: TaskListItem[];
+  question: string;
+}) {
+  const scope = activeTeam ?? "the workspace";
+  const taskLines = teamTasks
+    .slice(0, 6)
+    .map(
+      (task) =>
+        `- ${task.title} (${task.status}, ${task.progress}%): ${task.timeLeft || "no deadline"}`,
+    )
+    .join("\n");
+
+  return [
+    `Weekly summary context for ${scope}:`,
+    weekly
+      ? `Completed: ${weekly.totals.completed}, Started: ${weekly.totals.started}`
+      : "Weekly metrics unavailable",
+    weekly
+      ? `Daily breakdown: ${weekly.days.map((day) => `${day.label} ${day.completed} done`).join(", ")}`
+      : "",
+    `Team tasks:\n${taskLines || "None"}`,
+    "",
+    question,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function welcomeMessage(activeTeam: string | null): ChatMessage {
+  return {
+    id: "welcome",
+    role: "assistant",
+    content: activeTeam
+      ? `Hi! I can help you understand ${activeTeam}'s weekly progress. Pick a suggestion or ask me anything.`
+      : "Hi! Select a team above, or ask me about workspace-wide weekly progress.",
+  };
+}
+
+export function AnalyticsWeekly({
+  activeTeam,
+  tasks,
+  className,
+}: {
+  activeTeam: string | null;
+  tasks: TaskListItem[];
+  className?: string;
+}) {
   const [weekly, setWeekly] = useState<AnalyticsWeekly | null>(null);
-  const [recap, setRecap] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [recapError, setRecapError] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingWeekly, setIsLoadingWeekly] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const teamTasks = useMemo(
+    () =>
+      activeTeam
+        ? tasks.filter((task) => getTaskTeam(task) === activeTeam)
+        : tasks,
+    [activeTeam, tasks],
+  );
 
   useEffect(() => {
     let cancelled = false;
 
+    setIsLoadingWeekly(true);
+
+    const query = activeTeam
+      ? `?team=${encodeURIComponent(activeTeam)}`
+      : "";
+
     clientApi
-      .get<{ weekly: AnalyticsWeekly }>("/analytics/weekly")
+      .get<{ weekly: AnalyticsWeekly }>(`/analytics/weekly${query}`)
       .then((response) => {
         if (!cancelled) {
           setWeekly(response.data.weekly);
-          setError(null);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setError("Could not load weekly data. Is the server running?");
+          setWeekly(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingWeekly(false);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeTeam]);
 
-  const chartItems = useMemo<ChartBarItem[]>(() => {
-    if (!weekly) return [];
+  useEffect(() => {
+    setMessages([welcomeMessage(activeTeam)]);
+  }, [activeTeam]);
 
-    return weekly.days.map((day) => ({
-      label: day.label,
-      value: day.completed,
-      gradient: "from-violet-600 to-violet-400",
-      glow: "shadow-violet-500/35",
-    }));
-  }, [weekly]);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages, isLoading]);
 
-  const generateRecap = async () => {
-    setIsGenerating(true);
-    setRecapError(null);
+  const ask = async (question: string) => {
+    const trimmed = question.trim();
+    if (!trimmed || isLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: trimmed,
+    };
+
+    setMessages((current) => [...current, userMessage]);
+    setIsLoading(true);
 
     try {
-      const { data } = await clientApi.post<WeeklySummaryResponse>(
-        "/analytics/weekly-summary",
-      );
-      setRecap(data.summary);
+      const { data } = await clientApi.post<{ answer: string }>("/analytics/ask", {
+        question: buildWeeklyQuestion({
+          activeTeam,
+          weekly,
+          teamTasks,
+          question: trimmed,
+        }),
+      });
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: data.answer,
+        },
+      ]);
     } catch {
-      setRecapError("Could not generate recap. Check GEMINI_API_KEY on the server.");
+      setMessages((current) => [
+        ...current,
+        {
+          id: `error-${Date.now()}`,
+          role: "assistant",
+          content:
+            "Could not get an answer. Is the server running with GEMINI_API_KEY?",
+        },
+      ]);
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false);
     }
   };
 
+  const submit = async () => {
+    const question = input.trim();
+    if (!question) return;
+    setInput("");
+    await ask(question);
+  };
+
   return (
-    <section className="rounded-xl border border-border/60 bg-[#16171b] p-4 shadow-sm">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="grid size-6 place-items-center rounded-md bg-violet-500/15">
-            <CalendarRange className="size-3.5 text-sky-400" />
-          </div>
-          <h2 className="text-base font-semibold tracking-tight">Weekly summary</h2>
+    <section
+      className={cn(
+        "flex h-full min-h-[400px] flex-col overflow-hidden rounded-xl border border-border/60 bg-[#16171b] shadow-sm",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2.5">
+        <div className="grid size-7 place-items-center rounded-full bg-violet-500/15">
+          <Sparkles className="size-3.5 text-violet-400/80" />
         </div>
-        <Button
-          type="button"
-          size="sm"
-          className="rounded-lg bg-violet-600 hover:bg-violet-500"
-          disabled={isGenerating || !weekly}
-          onClick={generateRecap}
-        >
-          <Sparkles className={cn("size-4", isGenerating && "animate-pulse")} />
-          {isGenerating ? "Generating..." : "Generate recap"}
-        </Button>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-foreground/90">Weekly assistant</p>
+          <p className="truncate text-[10px] text-muted-foreground">
+            {activeTeam ?? "All teams"}
+            {weekly && !isLoadingWeekly
+              ? ` · ${weekly.totals.completed} done · ${weekly.totals.started} started`
+              : ""}
+          </p>
+        </div>
       </div>
 
-      {error ? (
-        <p className="text-sm text-rose-400">{error}</p>
-      ) : !weekly ? (
-        <p className="text-sm text-muted-foreground">Loading weekly data...</p>
-      ) : (
-        <>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <WeeklyStat label="Completed" value={weekly.totals.completed} />
-            <WeeklyStat label="Started" value={weekly.totals.started} />
-          </div>
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+        {messages.map((message) => (
+          <ChatBubble key={message.id} message={message} />
+        ))}
 
-          <div className="mt-3 overflow-x-auto">
-            <AnalyticsBarChart
-              title="Completed per day"
-              items={chartItems}
-              columns={weekly.days.length}
-            />
-          </div>
-
-          {recapError ? (
-            <p className="mt-3 text-sm text-rose-400">{recapError}</p>
-          ) : null}
-
-          {recap ? (
-            <div className="mt-3 rounded-lg border border-violet-500/30 bg-violet-500/5 px-3 py-2.5">
-              <p className="text-xs font-medium text-violet-300">AI recap</p>
-              <p className="mt-1 text-sm leading-relaxed text-foreground">{recap}</p>
+        {isLoading ? (
+          <div className="flex items-start gap-2">
+            <div className="grid size-6 shrink-0 place-items-center rounded-full bg-violet-500/15">
+              <Bot className="size-3 text-violet-400/80" />
             </div>
-          ) : null}
-        </>
-      )}
+            <div className="rounded-2xl rounded-tl-sm bg-[#1c1d22] px-3 py-2 text-xs text-muted-foreground">
+              Thinking...
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="shrink-0 border-t border-border/50 bg-[#18191d]/80 px-3 py-2.5">
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {quickQuestions.map((question) => (
+            <button
+              key={question}
+              type="button"
+              disabled={isLoading}
+              onClick={() => void ask(question)}
+              className="rounded-full border border-border/50 bg-[#1c1d22] px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-violet-500/30 hover:text-foreground/80 disabled:opacity-50"
+            >
+              {question}
+            </button>
+          ))}
+        </div>
+
+        <form
+          className="flex items-center gap-2 rounded-xl border border-border/50 bg-[#1c1d22] px-2 py-1.5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          <input
+            className="min-w-0 flex-1 bg-transparent px-1 text-sm text-foreground/90 outline-none placeholder:text-muted-foreground"
+            placeholder="Message..."
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            disabled={isLoading}
+          />
+          <button
+            type="submit"
+            disabled={isLoading || !input.trim()}
+            className="grid size-8 shrink-0 place-items-center rounded-lg bg-violet-600 text-white transition-colors hover:bg-violet-500 disabled:opacity-50"
+          >
+            <ArrowUp className="size-4" />
+          </button>
+        </form>
+      </div>
     </section>
   );
 }
 
-function WeeklyStat({ label, value }: { label: string; value: number }) {
+function ChatBubble({ message }: { message: ChatMessage }) {
+  const isUser = message.role === "user";
+
   return (
-    <div className="rounded-lg border border-border/60 bg-[#1c1d22] px-3 py-2.5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-xl font-semibold tabular-nums text-sky-400">{value}</p>
+    <div className={cn("flex", isUser ? "justify-end" : "items-start gap-2")}>
+      {!isUser ? (
+        <div className="grid size-6 shrink-0 place-items-center rounded-full bg-violet-500/15">
+          <Bot className="size-3 text-violet-400/80" />
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          "max-w-[88%] px-3 py-2 text-sm leading-relaxed",
+          isUser
+            ? "rounded-2xl rounded-tr-sm bg-violet-600/90 text-white"
+            : "rounded-2xl rounded-tl-sm bg-[#1c1d22] text-foreground/85",
+        )}
+      >
+        {message.content}
+      </div>
     </div>
   );
 }

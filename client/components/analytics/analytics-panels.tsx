@@ -1,7 +1,7 @@
 "use client";
 
 import { AnalyticsRisksPanel } from "@/components/analytics/analytics-risks";
-import { AnalyticsWeekly } from "@/components/analytics/analytics-weekly";
+import { AnalyticsSummary } from "@/components/analytics/analytics-summary";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useState } from "react";
 
@@ -29,7 +29,7 @@ export function AnalyticsPanels() {
         </ToggleGroupItem>
       </ToggleGroup>
 
-      {panel === "risks" ? <AnalyticsRisksPanel /> : <AnalyticsWeekly />}
+      {panel === "risks" ? <AnalyticsRisksPanel /> : <AnalyticsSummary />}
     </div>
   );
 }

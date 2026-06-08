@@ -1,6 +1,6 @@
 "use client";
 
-import { AnalyticsMetrics } from "@/components/analytics/analytics-metrics";
+import { AnalyticsPulseOverview } from "@/components/analytics/analytics-pulse-overview";
 import { AnalyticsRisksAskPanel } from "@/components/analytics/analytics-risk-ask";
 import { AnalyticsSectionHeader } from "@/components/analytics/analytics-section-header";
 import { useAnalyticsRisks } from "@/hooks/use-analytics-risks";
@@ -236,7 +236,7 @@ export function AnalyticsRisksPanel() {
 
   return (
     <div className="flex flex-col gap-5">
-      <AnalyticsMetrics />
+      <AnalyticsPulseOverview />
 
       <section className="rounded-xl border border-border/60 bg-[#16171b] p-4 shadow-sm">
         <AnalyticsSectionHeader
