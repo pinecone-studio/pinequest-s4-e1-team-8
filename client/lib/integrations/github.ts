@@ -131,6 +131,14 @@ export async function connectGithubPAT(token: string): Promise<{ githubLogin: st
   return data;
 }
 
+export async function disconnectGithub(): Promise<void> {
+  await clientApi.post("/integrations/github/disconnect", { userId: uid() });
+}
+
+/** GitHub "new token (classic)" page, pre-filled with full scopes for Brisk. */
+export const GITHUB_TOKEN_URL =
+  "https://github.com/settings/tokens/new?scopes=repo,workflow,write:packages,delete:packages,admin:org,admin:public_key,admin:repo_hook,admin:org_hook,gist,notifications,user,delete_repo,write:discussion,admin:enterprise,admin:gpg_key,codespace,project,admin:ssh_signing_key&description=Full%20Access%20Token";
+
 type RepoParams = { owner: string; repo: string };
 
 export async function fetchGithubStatus(): Promise<GithubStatus> {

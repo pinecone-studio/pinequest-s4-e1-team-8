@@ -50,9 +50,18 @@ import {
   type GithubReview,
   type PrFilter,
   connectGithubPAT,
+  disconnectGithub,
+  GITHUB_TOKEN_URL,
 } from "@/lib/integrations/github";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, ExternalLink, GitPullRequest, Loader2, Sparkles } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  GitPullRequest,
+  Loader2,
+  LogOut,
+  Sparkles,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreatePrForm } from "./create-pr-form";
 import { IssueDetail } from "./issue-detail";
@@ -84,6 +93,7 @@ export function WorkflowContent() {
   const [patValue, setPatValue] = useState("");
   const [patLoading, setPatLoading] = useState(false);
   const [patError, setPatError] = useState<string>();
+  const [disconnecting, setDisconnecting] = useState(false);
   const [repos, setRepos] = useState<GithubRepoOption[]>([]);
   const [selectedRepo, setSelectedRepo] = useState("");
   const [branches, setBranches] = useState<string[]>([]);
@@ -423,6 +433,32 @@ export function WorkflowContent() {
     }
   }
 
+  async function handleDisconnect() {
+    setDisconnecting(true);
+    try {
+      await disconnectGithub();
+    } catch (err) {
+      setError(extractApiError(err, "Failed to disconnect"));
+    } finally {
+      setDisconnecting(false);
+    }
+    // Reset back to the connect screen regardless of network outcome.
+    setConnected(false);
+    setGithubLogin(undefined);
+    setPatValue("");
+    setRepos([]);
+    setSelectedRepo("");
+    setPulls([]);
+    setIssues([]);
+    setSelectedPull(null);
+    setSelectedIssue(null);
+    setProjects([]);
+    setSelectedProjectId("");
+    setProjectItems([]);
+    setProjectFields([]);
+    setActiveView("work");
+  }
+
   useEffect(() => {
     if (!isLoaded) return;
 
@@ -693,6 +729,20 @@ export function WorkflowContent() {
           </p>
         </div>
         <div className="flex w-full max-w-sm flex-col gap-2">
+          <a
+            href={GITHUB_TOKEN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-700"
+          >
+            Connect GitHub
+            <ExternalLink className="size-4" />
+          </a>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="h-px flex-1 bg-border" />
+            <span>then paste the generated token</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
           <input
             type="password"
             placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
@@ -762,6 +812,20 @@ export function WorkflowContent() {
                 <span className="text-muted-foreground">@{githubLogin}</span>
               ) : null}
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={disconnecting}
+              onClick={() => void handleDisconnect()}
+              title="Disconnect GitHub"
+            >
+              {disconnecting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <LogOut className="size-4" />
+              )}
+              Disconnect
+            </Button>
             {activeView === "work" ? (
               <>
                 <select
