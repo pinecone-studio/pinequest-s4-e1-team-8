@@ -10,7 +10,8 @@
     "db:migrate:local": "wrangler d1 migrations apply server-preset-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply server-preset-db --remote",
     "db:seed:local": "wrangler d1 execute server-preset-db --local --file=./scripts/seed.sql",
-    "db:setup:local": "bun run db:migrate:local && bun run db:seed:local"
+    "db:setup:local": "bun run db:migrate:local && bun run db:seed:local",
+    "db:repair:local": "bun run scripts/repair-local-schema.ts"
   },
   "dependencies": {
     "@clerk/backend": "3.5.0",

@@ -25,7 +25,7 @@ export function ShareProjectDialog({
   onOpenChange,
 }: ShareProjectDialogProps) {
   const titleId = useId();
-  const { data, inviteToken } = useOnboardingData();
+  const { data, inviteToken, refresh } = useOnboardingData();
   const [copied, setCopied] = useState(false);
   const [teamName, setTeamName] = useState("");
   const [subTeams, setSubTeams] = useState<SubTeam[]>([]);
@@ -57,8 +57,9 @@ export function ShareProjectDialog({
 
   useEffect(() => {
     if (!open) return;
+    void refresh();
     void loadTeams();
-  }, [loadTeams, open]);
+  }, [loadTeams, open, refresh]);
 
   useEffect(() => {
     if (!open) return;

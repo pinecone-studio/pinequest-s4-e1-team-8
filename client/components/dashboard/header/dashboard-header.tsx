@@ -1,5 +1,6 @@
 "use client";
 
+import { LinkResourcesMenu } from "@/components/dashboard/link-resources-menu";
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
 import { Avatar, AvatarFallback, AvatarGroup } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { useOnboardingData } from "@/hooks/use-onboarding-data";
 import { memberAvatarColor, memberInitials } from "@/lib/onboarding-utils";
 import {
   Bell,
-  ChevronDown,
   FileText,
   Mic,
   Search,
@@ -19,7 +19,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 export function DashboardHeader() {
-  const { data, loaded, hasProject } = useOnboardingData();
+  const { data, loaded, hasProject, refresh } = useOnboardingData();
   const [shareOpen, setShareOpen] = useState(false);
   const projectName = hasProject && data ? data.projectName : "Your Project";
   const members = data?.members ?? [];
@@ -85,15 +85,23 @@ export function DashboardHeader() {
               variant="outline"
               className="gap-1.5 rounded-xl"
               disabled={!hasProject}
-              onClick={() => setShareOpen(true)}
+              title={
+                hasProject
+                  ? "Invite teammates and manage mini teams"
+                  : "Complete onboarding to share your project"
+              }
+              onClick={() => {
+                void refresh();
+                setShareOpen(true);
+              }}
             >
               <Share2 className="size-4" />
               <span className="hidden sm:inline">Share</span>
             </Button>
-            <Button className="gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700">
-              <span className="hidden sm:inline">Link</span>
-              <ChevronDown className="size-4" />
-            </Button>
+            <LinkResourcesMenu
+              projectId={data?.projectId}
+              disabled={!hasProject}
+            />
           </div>
         </div>
       </header>

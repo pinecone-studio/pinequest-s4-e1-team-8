@@ -6,6 +6,15 @@ export type EssentialResource = {
 
 const STORAGE_KEY = "brisk-essential-resources";
 
+export const ESSENTIAL_RESOURCES_EVENT = "brisk:essential-resources-updated";
+
+function notifyResourcesUpdated(projectId: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(ESSENTIAL_RESOURCES_EVENT, { detail: { projectId } }),
+  );
+}
+
 type ResourceStore = Record<string, EssentialResource[]>;
 
 function readStore(): ResourceStore {
@@ -39,4 +48,12 @@ export function saveEssentialResources(
   const store = readStore();
   store[projectId] = resources;
   writeStore(store);
+  notifyResourcesUpdated(projectId);
+}
+
+export function normalizeResourceUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }

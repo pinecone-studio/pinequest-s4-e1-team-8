@@ -30,10 +30,15 @@ export async function getMyProjects(
     .from(projects)
     .where(inArray(projects.id, projectIds));
 
-  const allCollaborators = await db
-    .select()
-    .from(projectCollaborators)
-    .where(inArray(projectCollaborators.projectId, projectIds));
+  let allCollaborators: (typeof projectCollaborators.$inferSelect)[] = [];
+  try {
+    allCollaborators = await db
+      .select()
+      .from(projectCollaborators)
+      .where(inArray(projectCollaborators.projectId, projectIds));
+  } catch {
+    allCollaborators = [];
+  }
 
   const [owner] = await db
     .select({ email: users.email, name: users.name })

@@ -12,6 +12,7 @@ export type GithubIssue = {
   pull_request?: { url: string };
   labels: { name: string; color?: string }[];
   assignees: GithubUser[];
+  milestone?: { number: number; title: string } | null;
   user?: GithubUser;
   created_at?: string;
   updated_at?: string;

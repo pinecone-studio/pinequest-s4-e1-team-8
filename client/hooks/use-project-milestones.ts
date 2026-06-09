@@ -2,11 +2,20 @@
 
 import { fetchTasks, type ApiTaskRecord } from "@/lib/api/tasks";
 import { useOnboardingData } from "@/hooks/use-onboarding-data";
+import { GITHUB_SYNCED_EVENT } from "@/lib/integrations/github";
 import { useCallback, useEffect, useState } from "react";
 
 export type ProjectMilestone = ApiTaskRecord & {
   subtaskCount: number;
 };
+
+function isMilestoneTask(task: ApiTaskRecord) {
+  if (task.parentId !== null) {
+    return false;
+  }
+
+  return task.source === "internal" || task.id.startsWith("github-milestone-");
+}
 
 export function useProjectMilestones() {
   const { data, loaded, hasProject } = useOnboardingData();
@@ -26,10 +35,9 @@ export function useProjectMilestones() {
     try {
       const tasks = await fetchTasks({
         projectId: data.projectId,
-        source: "internal",
       });
 
-      const milestoneTasks = tasks.filter((task) => task.parentId === null);
+      const milestoneTasks = tasks.filter(isMilestoneTask);
       const subtaskCounts = tasks.reduce<Record<string, number>>(
         (counts, task) => {
           if (!task.parentId) {
@@ -71,6 +79,17 @@ export function useProjectMilestones() {
 
     void loadMilestones();
   }, [data?.projectId, hasProject, loadMilestones, loaded]);
+
+  useEffect(() => {
+    const handleGithubSynced = () => {
+      void loadMilestones();
+    };
+
+    window.addEventListener(GITHUB_SYNCED_EVENT, handleGithubSynced);
+    return () => {
+      window.removeEventListener(GITHUB_SYNCED_EVENT, handleGithubSynced);
+    };
+  }, [loadMilestones]);
 
   return {
     milestones,
