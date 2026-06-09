@@ -42,6 +42,9 @@ export function useOnboardingData() {
         active,
         local?.aiGoals ?? "",
       );
+      if (local?.scopedMilestones?.length) {
+        synced.scopedMilestones = local.scopedMilestones;
+      }
       setData(synced);
       setInviteToken(active.inviteToken);
       saveOnboardingData(synced);

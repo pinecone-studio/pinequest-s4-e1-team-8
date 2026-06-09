@@ -26,6 +26,21 @@ export function readOnboardingData(): OnboardingData | null {
       isGithubDisconnected: parsed.isGithubDisconnected ?? false,
       isAsanaDisconnected: parsed.isAsanaDisconnected ?? false,
       aiGoals: parsed.aiGoals ?? "",
+      scopedMilestones: Array.isArray(parsed.scopedMilestones)
+        ? parsed.scopedMilestones
+            .filter(
+              (entry): entry is NonNullable<typeof entry> =>
+                !!entry && typeof entry === "object",
+            )
+            .map((entry) => ({
+              title: typeof entry.title === "string" ? entry.title : "",
+              tasks: Array.isArray(entry.tasks)
+                ? entry.tasks.filter((task): task is string => typeof task === "string")
+                : [],
+              isApproved: Boolean(entry.isApproved),
+            }))
+            .filter((entry) => entry.title.trim())
+        : undefined,
     };
   } catch {
     return null;
