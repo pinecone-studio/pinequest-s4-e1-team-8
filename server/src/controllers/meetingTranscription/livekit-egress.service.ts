@@ -20,7 +20,32 @@ export const getLiveKitFrontendUrl = (env: Bindings) => {
   return env.LIVEKIT_WS_URL ?? env.LIVEKIT_URL;
 };
 
+const REQUIRED_R2_ENV_KEYS = [
+  "R2_ACCOUNT_ID",
+  "R2_BUCKET_NAME",
+  "R2_ACCESS_KEY_ID",
+  "R2_SECRET_ACCESS_KEY",
+] as const;
+
+const getMissingR2ConfigKeys = (env: Bindings) => {
+  return REQUIRED_R2_ENV_KEYS.filter((key) => !env[key]?.trim());
+};
+
+const assertR2UploadConfigured = (env: Bindings) => {
+  const missingKeys = getMissingR2ConfigKeys(env);
+
+  if (missingKeys.length) {
+    throw new Error(
+      `Meeting recording storage is not configured. Missing ${missingKeys.join(
+        ", ",
+      )}. Configure R2_ACCOUNT_ID and R2_BUCKET_NAME in wrangler vars, and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY with wrangler secret put.`,
+    );
+  }
+};
+
 const getR2Upload = (env: Bindings) => {
+  assertR2UploadConfigured(env);
+
   return new S3Upload({
     accessKey: env.R2_ACCESS_KEY_ID,
     secret: env.R2_SECRET_ACCESS_KEY,

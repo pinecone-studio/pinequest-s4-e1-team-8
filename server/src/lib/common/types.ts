@@ -2,6 +2,8 @@ import { D1Database } from "@cloudflare/workers-types";
 
 export interface Bindings {
   DB: D1Database;
+  ENVIRONMENT?: string;
+  D1_DATABASE_NAME?: string;
   CLIENT_APP_URL?: string;
   CLERK_PUBLISHABLE_KEY?: string;
   CLERK_SECRET_KEY?: string;

@@ -16,6 +16,7 @@ import { usePathname } from "next/navigation";
 type NavItem =
   | (typeof sidebarNavItems)[number]
   | (typeof sidebarWorkflowItems)[number];
+type NavHref = keyof typeof navIconsByHref;
 
 const navIconsByHref = {
   "/dashboard": LayoutDashboard,
@@ -28,9 +29,9 @@ const navIconsByHref = {
 export function SidebarNavItem({ item }: { item: NavItem }) {
   const pathname = usePathname();
   const { collapsed } = useSidebar();
-  const isActive = item.href !== "#" && pathname === item.href;
-  const Icon =
-    navIconsByHref[item.href as keyof typeof navIconsByHref] ?? LayoutDashboard;
+  const href = item.href as NavHref;
+  const isActive = pathname === href;
+  const Icon = navIconsByHref[href] ?? LayoutDashboard;
   const hasDot = "dot" in item && item.dot;
 
   const className = cn(
@@ -69,17 +70,9 @@ export function SidebarNavItem({ item }: { item: NavItem }) {
     </>
   );
 
-  if (item.href === "#") {
-    return (
-      <span title={collapsed ? item.label : undefined} className={className}>
-        {content}
-      </span>
-    );
-  }
-
   return (
     <Link
-      href={item.href}
+      href={href}
       title={collapsed ? item.label : undefined}
       className={className}
     >

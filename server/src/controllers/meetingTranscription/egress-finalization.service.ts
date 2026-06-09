@@ -9,6 +9,11 @@ import {
 
 type FileShape = Record<string, unknown>;
 
+const getRuntimeLogContext = (env: Bindings) => ({
+  database: env.D1_DATABASE_NAME ?? "unknown",
+  environment: env.ENVIRONMENT ?? "unknown",
+});
+
 const FILE_LOCATION_KEYS = new Set([
   "location",
   "fileLocation",
@@ -98,6 +103,14 @@ export const finalizeEgressRecording = async ({
 }) => {
   const recordingUrl = getEgressRecordingUrl(egress);
 
+  console.info("[meetingTranscription] Finalizing LiveKit egress", {
+    ...getRuntimeLogContext(env),
+    egressId: egress.egressId,
+    egressStatus: getEgressStatusName(egress.status),
+    recordingUrl: recordingUrl ?? null,
+    roomName: egress.roomName,
+  });
+
   if (!recordingUrl) {
     const transcription = await findByEgressId(db, egress.egressId);
 
@@ -136,12 +149,33 @@ export const finalizeRecordingUrl = async ({
   const transcription = await findByEgressId(db, egressId);
 
   if (!transcription) {
+    console.warn("[meetingTranscription] No transcription row for egress", {
+      ...getRuntimeLogContext(env),
+      egressId,
+      recordingUrl,
+    });
+
     throw new Error("Transcription not found");
   }
 
   if (transcription.status === "done") {
+    console.info("[meetingTranscription] Egress already finalized", {
+      ...getRuntimeLogContext(env),
+      egressId,
+      roomName: transcription.roomName,
+      transcriptionId: transcription.id,
+    });
+
     return { status: "done" as const, skipped: true };
   }
+
+  console.info("[meetingTranscription] Transcribing finalized recording", {
+    ...getRuntimeLogContext(env),
+    egressId,
+    recordingUrl,
+    roomName: transcription.roomName,
+    transcriptionId: transcription.id,
+  });
 
   await transcribeRecording({
     db,
@@ -150,6 +184,13 @@ export const finalizeRecordingUrl = async ({
     recordingUrl,
     summary: transcription.summary,
     participantNames: transcription.participantNames,
+  });
+
+  console.info("[meetingTranscription] Recording finalized", {
+    ...getRuntimeLogContext(env),
+    egressId,
+    roomName: transcription.roomName,
+    transcriptionId: transcription.id,
   });
 
   return { status: "done" as const, skipped: false };
