@@ -387,16 +387,32 @@ export async function fetchRepoAssignees(owner: string, repo: string) {
   return data.assignees;
 }
 
+export type GithubSyncResult = {
+  synced: number;
+  milestones?: number;
+  issues?: number;
+  projectId?: string;
+  resolvedFrom?: "requested" | "accessible" | "default";
+};
+
 export async function syncGithubIssues(
   owner: string,
   repo: string,
-): Promise<{ synced: number }> {
-  const { data } = await clientApi.post<{ synced: number }>(
+  projectId?: string,
+): Promise<GithubSyncResult> {
+  const { data } = await clientApi.post<GithubSyncResult>(
     "/integrations/github/sync",
-    { userId: uid(), owner, repo },
+    {
+      userId: uid(),
+      owner,
+      repo,
+      ...(projectId ? { projectId } : {}),
+    },
   );
   return data;
 }
+
+export const GITHUB_SYNCED_EVENT = "github-synced";
 
 export type GithubProject = {
   id: string;

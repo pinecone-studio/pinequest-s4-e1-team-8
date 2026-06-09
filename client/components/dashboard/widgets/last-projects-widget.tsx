@@ -9,45 +9,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useEssentialResources } from "@/hooks/use-essential-resources";
 import { useOnboardingData } from "@/hooks/use-onboarding-data";
-import {
-  readEssentialResources,
-  saveEssentialResources,
-  type EssentialResource,
-} from "@/lib/essential-resources-storage";
 import { ExternalLink, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function LastProjectsWidget() {
   const { data, loaded } = useOnboardingData();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [resources, setResources] = useState<EssentialResource[]>([]);
-
-  useEffect(() => {
-    if (!loaded) return;
-
-    const projectId = data?.projectId;
-    if (!projectId) {
-      setResources([]);
-      return;
-    }
-
-    setResources(readEssentialResources(projectId));
-  }, [data?.projectId, loaded]);
+  const { resources, addResource } = useEssentialResources(data?.projectId);
 
   const handleAddResource = (resource: { name: string; url: string }) => {
-    const projectId = data?.projectId ?? "default";
-    const nextResources = [
-      ...resources,
-      {
-        id: crypto.randomUUID(),
-        name: resource.name,
-        url: resource.url,
-      },
-    ];
-
-    setResources(nextResources);
-    saveEssentialResources(projectId, nextResources);
+    addResource(resource);
     setDialogOpen(false);
   };
 
@@ -61,6 +34,7 @@ export function LastProjectsWidget() {
               variant="outline"
               size="sm"
               className="gap-1"
+              disabled={!loaded || !data?.projectId}
               onClick={() => setDialogOpen(true)}
             >
               <Plus className="size-3.5" />

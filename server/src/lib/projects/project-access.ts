@@ -11,6 +11,14 @@ import {
 
 type Db = DrizzleD1Database<typeof schema>;
 
+async function safeQuery<T>(run: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await run();
+  } catch {
+    return fallback;
+  }
+}
+
 export async function getUserEmail(db: Db, userId: string) {
   const [row] = await db
     .select({ email: users.email })
@@ -39,16 +47,20 @@ export async function userCanAccessProject(
     return true;
   }
 
-  const [collaborator] = await db
-    .select({ id: projectCollaborators.id })
-    .from(projectCollaborators)
-    .where(
-      and(
-        eq(projectCollaborators.projectId, projectId),
-        sql`lower(${projectCollaborators.email}) = ${email}`,
-      ),
-    )
-    .limit(1);
+  const [collaborator] = await safeQuery(
+    () =>
+      db
+        .select({ id: projectCollaborators.id })
+        .from(projectCollaborators)
+        .where(
+          and(
+            eq(projectCollaborators.projectId, projectId),
+            sql`lower(${projectCollaborators.email}) = ${email}`,
+          ),
+        )
+        .limit(1),
+    [] as { id: string }[],
+  );
   if (collaborator) {
     return true;
   }
@@ -92,20 +104,28 @@ export async function listAccessibleProjectIds(db: Db, userId: string) {
   }
 
   if (email) {
-    const collaborators = await db
-      .select({ projectId: projectCollaborators.projectId })
-      .from(projectCollaborators)
-      .where(sql`lower(${projectCollaborators.email}) = ${email}`);
+    const collaborators = await safeQuery(
+      () =>
+        db
+          .select({ projectId: projectCollaborators.projectId })
+          .from(projectCollaborators)
+          .where(sql`lower(${projectCollaborators.email}) = ${email}`),
+      [] as { projectId: string }[],
+    );
     for (const row of collaborators) {
       ids.add(row.projectId);
     }
   }
 
-  const teamProjects = await db
-    .select({ projectId: subTeams.projectId })
-    .from(subTeamMembers)
-    .innerJoin(subTeams, eq(subTeamMembers.subTeamId, subTeams.id))
-    .where(eq(subTeamMembers.userId, userId));
+  const teamProjects = await safeQuery(
+    () =>
+      db
+        .select({ projectId: subTeams.projectId })
+        .from(subTeamMembers)
+        .innerJoin(subTeams, eq(subTeamMembers.subTeamId, subTeams.id))
+        .where(eq(subTeamMembers.userId, userId)),
+    [] as { projectId: string }[],
+  );
 
   for (const row of teamProjects) {
     ids.add(row.projectId);

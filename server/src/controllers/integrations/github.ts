@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { Context } from "hono";
 import { nanoid } from "nanoid";
 import { Bindings } from "../../lib/common/types";
@@ -40,7 +40,11 @@ import {
   updateGithubIssue,
   updateGithubPull,
 } from "../../lib/github/github";
-import { mapGithubIssueToTask } from "../../lib/github/map-github-issue";
+import {
+  mapGithubIssueToTask,
+  mapGithubMilestoneToTask,
+} from "../../lib/github/map-github-issue";
+import { resolveGithubSyncProject } from "../../lib/github/resolve-sync-project";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import { githubIntegrations, tasks } from "../../schema/schema";
 
@@ -802,6 +806,7 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
     userId?: string;
     owner?: string;
     repo?: string;
+    projectId?: string;
   } | null;
 
   if (!body?.userId || !body.owner || !body.repo) {
@@ -821,16 +826,60 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
 
   try {
     const { owner, repo } = body;
-    const issues = await fetchRepoIssues(integration.accessToken, owner, repo);
-    const rows = issues.map((issue) => mapGithubIssueToTask(issue, owner, repo));
+    const syncProject = await resolveGithubSyncProject(
+      db,
+      body.userId,
+      body.projectId,
+    );
+
+    if (!syncProject) {
+      return c.json(
+        {
+          error:
+            "No project found to sync into. Complete onboarding or create a project first.",
+        },
+        400,
+      );
+    }
+
+    const { projectId, workspaceId, resolvedFrom } = syncProject;
+    const [milestones, issues] = await Promise.all([
+      fetchRepoMilestones(integration.accessToken, owner, repo),
+      fetchRepoIssues(integration.accessToken, owner, repo),
+    ]);
+
+    const milestoneRows = milestones.map((milestone) =>
+      mapGithubMilestoneToTask(
+        milestone,
+        owner,
+        repo,
+        projectId,
+        workspaceId,
+      ),
+    );
+    const issueRows = issues.map((issue) =>
+      mapGithubIssueToTask(issue, owner, repo, projectId, workspaceId),
+    );
+
+    const syncedIds = [...milestoneRows, ...issueRows].map((row) => row.id);
+
+    // Task ids are repo-scoped, not project-scoped — clear old copies from prior syncs
+    // that may still live under a different project_id.
+    if (syncedIds.length > 0) {
+      await db.delete(tasks).where(inArray(tasks.id, syncedIds));
+    }
 
     await db
       .delete(tasks)
       .where(
-        and(eq(tasks.source, "github"), eq(tasks.workspaceId, DEFAULT_WORKSPACE_ID)),
+        and(eq(tasks.source, "github"), eq(tasks.projectId, projectId)),
       );
 
-    for (const row of rows) {
+    for (const row of milestoneRows) {
+      await db.insert(tasks).values(row);
+    }
+
+    for (const row of issueRows) {
       await db.insert(tasks).values(row);
     }
 
@@ -839,7 +888,13 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
       .set({ repoOwner: owner, repoName: repo })
       .where(eq(githubIntegrations.id, integration.id));
 
-    return c.json({ synced: rows.length });
+    return c.json({
+      synced: milestoneRows.length + issueRows.length,
+      milestones: milestoneRows.length,
+      issues: issueRows.length,
+      projectId,
+      resolvedFrom,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Sync failed";
     return c.json({ error: message }, 502);

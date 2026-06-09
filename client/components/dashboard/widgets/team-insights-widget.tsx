@@ -14,18 +14,20 @@ import { Flag, Layers3 } from "lucide-react";
 import Link from "next/link";
 
 function statusLabel(status: string) {
-  if (status === "todo") return "To do";
-  if (status === "in progress") return "In progress";
-  if (status === "completed") return "Done";
+  const normalized = status.toLowerCase();
+  if (normalized === "todo" || normalized === "review") return "To do";
+  if (normalized === "in progress" || normalized === "doing") return "In progress";
+  if (normalized === "completed" || normalized === "done") return "Done";
   return "Backlog";
 }
 
 function statusClassName(status: string) {
-  if (status === "todo")
+  const normalized = status.toLowerCase();
+  if (normalized === "todo" || normalized === "review")
     return "bg-violet-100 dark:bg-violet-500/15 text-violet-800 dark:text-violet-300";
-  if (status === "in progress")
+  if (normalized === "in progress" || normalized === "doing")
     return "bg-sky-100 dark:bg-sky-500/15 text-sky-800 dark:text-sky-300";
-  if (status === "completed")
+  if (normalized === "completed" || normalized === "done")
     return "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300";
   return "bg-muted/40 text-muted-foreground";
 }
@@ -91,11 +93,11 @@ export function TeamInsightsWidget() {
             title="No milestones yet"
             description={
               projectName
-                ? `${projectName} has no generated phases yet. Run AI onboarding to create milestones.`
-                : "Run AI onboarding to generate milestones and tasks."
+                ? `${projectName} has no milestones yet. Sync a GitHub repo from Tasks, or run AI onboarding to generate phases.`
+                : "Sync a GitHub repo from Tasks, or run AI onboarding to generate milestones."
             }
-            href="/onboarding"
-            linkLabel="Generate with AI"
+            href="/tasks"
+            linkLabel="Connect GitHub"
           />
         ) : (
           <div className="max-h-64 space-y-0 overflow-y-auto pr-1">

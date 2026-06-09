@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useGithubUserId } from "@/hooks/use-github-user-id";
+import { useOnboardingData } from "@/hooks/use-onboarding-data";
 import {
   connectGithubPAT,
   disconnectGithub,
@@ -9,6 +10,7 @@ import {
   fetchGithubStatus,
   getGithubRepo,
   extractApiError,
+  GITHUB_SYNCED_EVENT,
   GITHUB_TOKEN_URL,
   setGithubUserId,
   syncGithubIssues,
@@ -33,6 +35,7 @@ function formatGithubError(err: unknown, fallback: string) {
 
 export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
   const { userId, isLoaded } = useGithubUserId();
+  const { data: onboardingData, refresh: refreshOnboarding } = useOnboardingData();
   const [status, setStatus] = useState<GithubStatus | null>(null);
   const [repos, setRepos] = useState<GithubRepoOption[]>([]);
   const [selectedRepo, setSelectedRepo] = useState("");
@@ -61,16 +64,28 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
       setIsSyncing(true);
       setError(null);
       try {
-        const { synced } = await syncGithubIssues(owner, repo);
+        const result = await syncGithubIssues(
+          owner,
+          repo,
+          onboardingData?.projectId,
+        );
         if (requestId !== syncRequestRef.current) return;
 
         lastSyncedKeyRef.current = syncKey;
-        setLastSyncedCount(synced);
+        setLastSyncedCount(result.synced);
         setStatus((current) =>
           current
             ? { ...current, repoOwner: owner, repoName: repo }
             : current,
         );
+        if (
+          result.projectId &&
+          result.resolvedFrom &&
+          result.resolvedFrom !== "requested"
+        ) {
+          await refreshOnboarding();
+        }
+        window.dispatchEvent(new Event(GITHUB_SYNCED_EVENT));
         onSynced?.();
       } catch (err) {
         if (requestId === syncRequestRef.current) {
@@ -82,7 +97,7 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
         }
       }
     },
-    [onSynced],
+    [onSynced, onboardingData?.projectId, refreshOnboarding],
   );
 
   const loadReposAndSync = useCallback(
