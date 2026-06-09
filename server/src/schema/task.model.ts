@@ -49,6 +49,8 @@ export const tasks = sqliteTable("tasks", {
   doneCount: integer("done_count").notNull().default(0),
   blockedCount: integer("blocked_count").notNull().default(0),
   timeLeft: text("time_left"),
+  sequenceOrder: integer("sequence_order").notNull().default(0),
+  dependenciesJson: text("dependencies_json").notNull().default("[]"),
   /** JSON array of members, e.g. [{"initials":"MG","avatarUrl":"https://..."}] */
   membersJson: text("members_json").notNull().default("[]"),
   sequenceOrder: integer("sequence_order").notNull().default(0),

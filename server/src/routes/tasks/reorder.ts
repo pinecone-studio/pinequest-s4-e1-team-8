@@ -1,111 +1,116 @@
-import { asc, eq, inArray } from "drizzle-orm";
-import type { Context } from "hono";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { resolveAuthenticatedUserId } from "../../lib/auth/clerk";
 import type { Bindings, Variables } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
-import {
-  serializeDependencyTaskIds,
-  toReorderedTaskDto,
-  uiPriorityToDb,
-} from "../../lib/tasks/task-mapper";
-import { validateReprioritizeBody } from "../../lib/tasks/validate-reprioritize-payload";
-import { projects, tasks } from "../../schema/schema";
+import { toTaskListItem, uiPriorityToDb } from "../../lib/tasks/task-mapper";
+import { tasks } from "../../schema/schema";
 
 type HonoEnv = { Bindings: Bindings; Variables: Variables };
 
-const taskReorderRoutes = new Hono<HonoEnv>();
+type PriorityInput = "Low" | "Medium" | "High";
 
-taskReorderRoutes.use(async (c, next) => {
+type TaskUpdateEntry = {
+  taskId: string;
+  priority: PriorityInput;
+  sequenceOrder: number;
+  dependencyTaskIds: string[];
+};
+
+type ReprioritizeBody = {
+  projectId: string;
+  updates: TaskUpdateEntry[];
+};
+
+function isValidPriority(value: unknown): value is PriorityInput {
+  return value === "Low" || value === "Medium" || value === "High";
+}
+
+function isTaskUpdateEntry(value: unknown): value is TaskUpdateEntry {
+  if (!value || typeof value !== "object") return false;
+  const entry = value as Record<string, unknown>;
+  return (
+    typeof entry.taskId === "string" &&
+    entry.taskId.trim().length > 0 &&
+    isValidPriority(entry.priority) &&
+    typeof entry.sequenceOrder === "number" &&
+    Number.isFinite(entry.sequenceOrder) &&
+    Array.isArray(entry.dependencyTaskIds) &&
+    (entry.dependencyTaskIds as unknown[]).every(
+      (id) => typeof id === "string",
+    )
+  );
+}
+
+function parseReprioritizeBody(raw: unknown): ReprioritizeBody | null {
+  if (!raw || typeof raw !== "object") return null;
+  const body = raw as Record<string, unknown>;
+  if (typeof body.projectId !== "string" || !body.projectId.trim()) return null;
+  if (!Array.isArray(body.updates)) return null;
+  if (!(body.updates as unknown[]).every(isTaskUpdateEntry)) return null;
+  return {
+    projectId: body.projectId.trim(),
+    updates: body.updates as TaskUpdateEntry[],
+  };
+}
+
+const reorderRoutes = new Hono<HonoEnv>();
+
+reorderRoutes.use(async (c, next) => {
   const userId = await resolveAuthenticatedUserId(c);
   if (!userId) {
     return c.json({ success: false, error: "Unauthorized" }, 401);
   }
-
   c.set("userId", userId);
   await next();
 });
 
-taskReorderRoutes.post("/", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  const validation = validateReprioritizeBody(body);
+reorderRoutes.post("/reprioritize", async (c) => {
+  const raw = await c.req.json().catch(() => null);
+  const body = parseReprioritizeBody(raw);
 
-  if (!validation.ok) {
-    return c.json({ success: false, error: validation.error }, 400);
+  if (!body) {
+    return c.json({ success: false, error: "Invalid request body" }, 400);
   }
 
-  const { projectId, updates } = validation.data;
   const db = useDB(c as unknown as Context<{ Bindings: Bindings }>);
 
-  const [project] = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(eq(projects.id, projectId))
-    .limit(1);
+  try {
+    const updated = await db.transaction(async (tx) => {
+      const results = [];
 
-  if (!project) {
-    return c.json({ success: false, error: "Project not found" }, 404);
-  }
+      for (const entry of body.updates) {
+        const dbPriority = uiPriorityToDb(entry.priority.toLowerCase());
+        if (!dbPriority) continue;
 
-  const projectTasks = await db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(eq(tasks.projectId, projectId));
+        const [row] = await tx
+          .update(tasks)
+          .set({
+            priority: dbPriority,
+            sequenceOrder: entry.sequenceOrder,
+            dependenciesJson: JSON.stringify(entry.dependencyTaskIds),
+          })
+          .where(eq(tasks.id, entry.taskId))
+          .returning();
 
-  const projectTaskIds = new Set(projectTasks.map((task) => task.id));
-
-  for (const update of updates) {
-    if (!projectTaskIds.has(update.taskId)) {
-      return c.json(
-        { success: false, error: `Task ${update.taskId} does not belong to project ${projectId}` },
-        400,
-      );
-    }
-
-    for (const dependencyTaskId of update.dependencyTaskIds) {
-      if (!projectTaskIds.has(dependencyTaskId)) {
-        return c.json(
-          {
-            success: false,
-            error: `Dependency task ${dependencyTaskId} does not belong to project ${projectId}`,
-          },
-          400,
-        );
+        if (row) {
+          results.push(row);
+        }
       }
 
-      if (dependencyTaskId === update.taskId) {
-        return c.json(
-          { success: false, error: `Task ${update.taskId} cannot depend on itself` },
-          400,
-        );
-      }
-    }
+      return results;
+    });
+
+    return c.json({
+      success: true,
+      tasks: updated.map(toTaskListItem),
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Reprioritization failed";
+    return c.json({ success: false, error: message }, 500);
   }
-
-  await db.transaction(async (tx) => {
-    for (const update of updates) {
-      const priority = uiPriorityToDb(update.priority);
-      await tx
-        .update(tasks)
-        .set({
-          ...(priority !== undefined && { priority }),
-          sequenceOrder: update.sequenceOrder,
-          dependencyTaskIdsJson: serializeDependencyTaskIds(update.dependencyTaskIds),
-        })
-        .where(eq(tasks.id, update.taskId));
-    }
-  });
-
-  const reorderedRows = await db
-    .select()
-    .from(tasks)
-    .where(inArray(tasks.id, [...projectTaskIds]))
-    .orderBy(asc(tasks.sequenceOrder));
-
-  return c.json({
-    success: true,
-    tasks: reorderedRows.map(toReorderedTaskDto),
-  });
 });
 
-export default taskReorderRoutes;
+export default reorderRoutes;

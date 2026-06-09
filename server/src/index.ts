@@ -18,6 +18,7 @@ import reportStreamRoutes from "./routes/reports/stream";
 import riskAnalyzeRoutes from "./routes/risk/analyze";
 import taskReorderRoutes from "./routes/tasks/reorder";
 import taskRoutes from "./routes/tasks/task.routes";
+import reorderRoutes from "./routes/tasks/reorder";
 import userRoutes from "./routes/users/user.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
 
@@ -67,7 +68,6 @@ app.route("/api/agent/stream", agentStreamRoutes);
 app.route("/api/run-agent", runAgentRoutes);
 app.route("/api/projects/initialize", initializeProjectRoutes);
 app.route("/api/reports/stream", reportStreamRoutes);
-app.route("/api/risk/analyze", riskAnalyzeRoutes);
-app.route("/api/tasks/reprioritize", taskReorderRoutes);
+app.route("/api/tasks", reorderRoutes);
 
 export default app;
