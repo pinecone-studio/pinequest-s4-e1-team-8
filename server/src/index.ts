@@ -26,10 +26,15 @@ import webhookRoutes from "./routes/webhooks/webhook.routes";
 const app = new Hono<{ Bindings: Bindings }>();
 const DEPLOYED_CLIENT_ORIGIN =
   "https://brisk-client.danny-otgontsetseg.workers.dev";
-const LOCAL_ORIGIN = "http://localhost:3000";
+const LOCAL_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
+];
 
 const getAllowedOrigins = (env: Bindings) =>
-  [LOCAL_ORIGIN, env.FRONTEND_URL, env.CLIENT_APP_URL, DEPLOYED_CLIENT_ORIGIN]
+  [...LOCAL_ORIGINS, env.FRONTEND_URL, env.CLIENT_APP_URL, DEPLOYED_CLIENT_ORIGIN]
     .filter((origin): origin is string => Boolean(origin))
     .map((origin) => origin.replace(/\/$/, ""));
 
@@ -40,7 +45,7 @@ app.use(
       const normalize = (value: string) => value.replace(/\/$/, "");
       const allowedOrigins = getAllowedOrigins(c.env as Bindings);
       if (!origin) {
-        return LOCAL_ORIGIN;
+        return LOCAL_ORIGINS[0];
       }
       return allowedOrigins.includes(normalize(origin))
         ? origin

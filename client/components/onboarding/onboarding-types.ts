@@ -6,6 +6,12 @@ export interface TeamMember {
   role: TeamRole;
 }
 
+export type ScopedMilestone = {
+  title: string;
+  tasks: string[];
+  isApproved: boolean;
+};
+
 export interface OnboardingData {
   projectId: string;
   workspaceId: string;
@@ -18,6 +24,7 @@ export interface OnboardingData {
   isGithubDisconnected: boolean;
   isAsanaDisconnected: boolean;
   aiGoals: string;
+  scopedMilestones?: ScopedMilestone[];
 }
 
 export type UserProject = OnboardingData & {

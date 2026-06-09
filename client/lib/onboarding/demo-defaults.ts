@@ -1,6 +1,10 @@
 import type { OnboardingDraft } from "@/lib/onboarding-draft-storage";
 import type { MilestoneDraft } from "@/lib/onboarding/parse-milestone-drafts";
 
+/** Demo team-lead GitHub PAT — set via NEXT_PUBLIC_DEMO_GITHUB_PAT in client/.env.local */
+export const DEMO_GITHUB_PAT =
+  process.env.NEXT_PUBLIC_DEMO_GITHUB_PAT?.trim() ?? "";
+
 export const DEMO_PROJECT_NAME = "Mazaalai Learn";
 
 export const DEMO_PROJECT_DESCRIPTION =

@@ -72,6 +72,7 @@ type OnboardingStoreContextValue = OnboardingStoreState & {
   removeCollaborator: (index: number) => void;
   toggleGithubConnection: () => void;
   toggleAsanaConnection: () => void;
+  setGithubConnected: (connected: boolean) => void;
   setAsanaConnected: (connected: boolean) => void;
   setAiGoals: (aiGoals: string) => void;
   setMilestoneDrafts: (milestoneDrafts: MilestoneDraft[]) => void;
@@ -93,6 +94,7 @@ type OnboardingStoreAction =
   | { type: "REMOVE_COLLABORATOR"; index: number }
   | { type: "TOGGLE_GITHUB" }
   | { type: "TOGGLE_ASANA" }
+  | { type: "SET_GITHUB_CONNECTED"; connected: boolean }
   | { type: "SET_ASANA_CONNECTED"; connected: boolean }
   | { type: "SKIP_STEP3" }
   | { type: "SET_AI_GOALS"; aiGoals: string }
@@ -187,6 +189,17 @@ function onboardingReducer(
         },
       };
     }
+    case "SET_GITHUB_CONNECTED":
+      return {
+        ...state,
+        step3: {
+          ...state.step3,
+          githubConnected: action.connected,
+          isGithubDisconnected: action.connected
+            ? false
+            : state.step3.isGithubDisconnected,
+        },
+      };
     case "SET_ASANA_CONNECTED":
       return {
         ...state,
@@ -317,6 +330,10 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "TOGGLE_ASANA" });
   }, []);
 
+  const setGithubConnected = useCallback((connected: boolean) => {
+    dispatch({ type: "SET_GITHUB_CONNECTED", connected });
+  }, []);
+
   const setAsanaConnected = useCallback((connected: boolean) => {
     dispatch({ type: "SET_ASANA_CONNECTED", connected });
   }, []);
@@ -361,6 +378,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       removeCollaborator,
       toggleGithubConnection,
       toggleAsanaConnection,
+      setGithubConnected,
       setAsanaConnected,
       setAiGoals,
       setMilestoneDrafts,
@@ -380,6 +398,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       removeCollaborator,
       toggleGithubConnection,
       toggleAsanaConnection,
+      setGithubConnected,
       setAsanaConnected,
       setAiGoals,
       setMilestoneDrafts,

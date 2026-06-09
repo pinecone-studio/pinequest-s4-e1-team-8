@@ -1,9 +1,7 @@
+import { getAgentStreamRunUrl } from "@/lib/api/agent-stream-url";
 import { buildBackendAuthHeaders } from "@/lib/api/backend-auth";
 
 const ONBOARDING_WORKER_NODE = "onboarding_worker";
-
-const getServerBaseUrl = () =>
-  (process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:8787").replace(/\/$/, "");
 
 type AgentStreamMessage = {
   type: string;
@@ -97,13 +95,26 @@ export async function streamOnboardingWorker(
   signal?: AbortSignal,
 ): Promise<void> {
   const headers = await buildBackendAuthHeaders(getToken);
-  const response = await fetch(`${getServerBaseUrl()}/api/agent/stream/run`, {
-    method: "POST",
-    headers,
-    credentials: "include",
-    body: JSON.stringify({ prompt }),
-    signal,
-  });
+
+  let response: Response;
+  try {
+    response = await fetch(getAgentStreamRunUrl(), {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: JSON.stringify({ prompt }),
+      signal,
+    });
+  } catch (error) {
+    const message =
+      error instanceof TypeError
+        ? "Could not reach the API server. Run `bun run dev` in the server folder on port 8787."
+        : error instanceof Error
+          ? error.message
+          : "Onboarding stream failed to connect.";
+    handlers.onError(message);
+    return;
+  }
 
   if (!response.ok || !response.body) {
     handlers.onError(`Onboarding stream failed with status ${response.status}.`);

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { initializeProject } from "@/lib/api/projects";
 import { clearOnboardingDraft } from "@/lib/onboarding-draft-storage";
+import { milestoneDraftsToScoped } from "@/lib/onboarding/scoped-milestones";
 import { saveOnboardingData } from "@/lib/onboarding-storage";
 import { AuthThemeToggle } from "@/components/auth/auth-theme-toggle";
 import { StepHeader } from "./step-header";
@@ -18,7 +19,8 @@ import { StepAiTasks } from "./steps/step-ai-tasks";
 
 function OnboardingWizardContent() {
   const router = useRouter();
-  const { step, toOnboardingData, toInitializePayload } = useOnboardingStore();
+  const { step, step4, toOnboardingData, toInitializePayload } =
+    useOnboardingStore();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,10 +28,13 @@ function OnboardingWizardContent() {
     setSaving(true);
     setError(null);
 
-    const localData = toOnboardingData();
+    const payload = toInitializePayload();
+    const localData = {
+      ...toOnboardingData(),
+      scopedMilestones: milestoneDraftsToScoped(step4.milestoneDrafts),
+    };
 
     try {
-      const payload = toInitializePayload();
       const result = await initializeProject(payload);
       const members = result.members.map((member) => ({
         email: member.email,
