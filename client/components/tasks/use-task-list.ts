@@ -52,6 +52,7 @@ export function useTaskList() {
       );
       const next = mapTasksFromApi(data.tasks);
       setTasks(next);
+      saveStoredTasks(next);
       return next;
     } catch {
       const fallback = readStoredTasks() ?? [];

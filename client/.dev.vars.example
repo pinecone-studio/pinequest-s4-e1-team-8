@@ -1,7 +1,12 @@
-NEXTJS_ENV=production
-NEXT_PUBLIC_API_URL=https://server-preset.danny-otgontsetseg.workers.dev
+# Client Worker deploy — copy to client/.dev.vars (wrangler deploy)
+
+NEXTJS_ENV=development
+API_URL=http://localhost:8787
+NEXT_PUBLIC_API_URL=http://localhost:8787
+NEXT_PUBLIC_LIVEKIT_URL=wss://brisk-505qgdpu.livekit.cloud
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
 CLERK_SECRET_KEY=sk_test_your_key_here
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-API_URL=https://server-preset.danny-otgontsetseg.workers.dev
+ASANA_CLIENT_ID=asana-client-id-placeholder
+ASANA_CLIENT_SECRET=asana-client-secret-placeholder
