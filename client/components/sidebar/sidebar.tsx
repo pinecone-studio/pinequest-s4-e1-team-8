@@ -3,6 +3,7 @@
 import { ActiveMeetingReturnCard } from "@/app/meeting/components/active-meeting-return-card";
 import { SidebarAddProject } from "@/components/sidebar/sidebar-add-project";
 import { SidebarAuth } from "@/components/sidebar/sidebar-auth";
+import { MobileSidebarTrigger } from "@/components/sidebar/mobile-sidebar-trigger";
 import { SidebarCollapseTrigger } from "@/components/sidebar/sidebar-collapse-trigger";
 import {
   SidebarProvider,
@@ -22,14 +23,25 @@ const utilityIcons = [
 ] as const;
 
 const DashboardSidebarInner = () => {
-  const { collapsed } = useSidebar();
+  const { collapsed, setCollapsed } = useSidebar();
 
   return (
+    <>
+      {!collapsed ? (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setCollapsed(true)}
+        />
+      ) : null}
     <aside
       data-collapsed={collapsed}
       className={cn(
-        "sticky top-0 flex min-h-screen shrink-0 flex-col self-start overflow-hidden bg-[#121214] text-white transition-[width] duration-300 ease-in-out",
-        collapsed ? "w-[72px]" : "w-[272px]",
+        "fixed inset-y-0 left-0 z-40 flex min-h-screen shrink-0 flex-col overflow-hidden bg-[#121214] text-white shadow-2xl transition-[width,transform] duration-300 ease-in-out md:sticky md:top-0 md:self-start md:shadow-none",
+        collapsed
+          ? "w-[272px] -translate-x-full md:w-[72px] md:translate-x-0"
+          : "w-[272px] translate-x-0",
       )}
     >
       <div
@@ -105,6 +117,7 @@ const DashboardSidebarInner = () => {
         <SidebarAddProject />
       </div>
     </aside>
+    </>
   );
 };
 
@@ -112,6 +125,7 @@ export const DashboardSidebar = () => {
   return (
     <SidebarProvider>
       <DashboardSidebarInner />
+      <MobileSidebarTrigger />
     </SidebarProvider>
   );
 };

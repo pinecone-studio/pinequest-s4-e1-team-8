@@ -59,8 +59,8 @@ async function resolveAsanaAuth(
     if (
       shouldRefresh &&
       integration.refreshToken &&
-      asanaClientId &&
-      asanaClientSecret
+      c.env.ASANA_CLIENT_ID &&
+      c.env.ASANA_CLIENT_SECRET
     ) {
       const refreshed = await refreshAsanaToken(
         integration.refreshToken,

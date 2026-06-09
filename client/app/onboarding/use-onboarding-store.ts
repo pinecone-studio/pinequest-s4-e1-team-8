@@ -7,12 +7,19 @@ import { DEFAULT_WORKSPACE_ID } from "@/lib/workspace-defaults";
 
 export type { MilestoneDraft };
 import {
+  readOnboardingDraft,
+  saveOnboardingDraft,
+  type OnboardingDraft,
+} from "@/lib/onboarding-draft-storage";
+import {
   createContext,
   createElement,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
+  useState,
   type ReactNode,
 } from "react";
 
@@ -71,9 +78,11 @@ type OnboardingStoreContextValue = OnboardingStoreState & {
   skipStep3: () => void;
   setStep: (step: number) => void;
   toOnboardingData: () => OnboardingData;
+  toInitializePayload: () => import("@/lib/api/projects").InitializeProjectPayload;
 };
 
 type OnboardingStoreAction =
+  | { type: "RESTORE"; draft: OnboardingDraft }
   | { type: "SET_STEP"; step: number }
   | { type: "PATCH_STEP1"; patch: Partial<OnboardingStep1> }
   | { type: "ADD_COLLABORATOR"; collaborator: OnboardingCollaborator }
@@ -121,6 +130,17 @@ function onboardingReducer(
   action: OnboardingStoreAction,
 ): OnboardingStoreState {
   switch (action.type) {
+    case "RESTORE":
+      return {
+        step: action.draft.step,
+        projectId: action.draft.projectId,
+        workspaceId: action.draft.workspaceId,
+        aiGoals: action.draft.aiGoals,
+        step1: action.draft.step1,
+        step2: action.draft.step2,
+        step3: action.draft.step3,
+        step4: action.draft.step4,
+      };
     case "SET_STEP":
       return { ...state, step: action.step };
     case "PATCH_STEP1":
@@ -224,11 +244,56 @@ function toOnboardingData(state: OnboardingStoreState): OnboardingData {
   };
 }
 
+function toInitializePayload(
+  state: OnboardingStoreState,
+): import("@/lib/api/projects").InitializeProjectPayload {
+  return {
+    projectId: state.projectId,
+    workspaceId: state.workspaceId,
+    step1: { ...state.step1 },
+    step2: { collaborators: [...state.step2.collaborators] },
+    step3: { ...state.step3 },
+    step4: {
+      milestoneDrafts: state.step4.milestoneDrafts.map((draft) => ({
+        title: draft.title,
+        tasks: draft.tasks,
+        isApproved: draft.isApproved,
+      })),
+    },
+  };
+}
+
 const OnboardingStoreContext =
   createContext<OnboardingStoreContextValue | null>(null);
 
 export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(onboardingReducer, INITIAL_STATE);
+  const [draftReady, setDraftReady] = useState(false);
+
+  // Restore session draft after mount so SSR and first client render match.
+  useEffect(() => {
+    const draft = readOnboardingDraft();
+    if (draft) {
+      dispatch({ type: "RESTORE", draft });
+    }
+    setDraftReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) {
+      return;
+    }
+    saveOnboardingDraft({
+      step: state.step,
+      projectId: state.projectId,
+      workspaceId: state.workspaceId,
+      aiGoals: state.aiGoals,
+      step1: state.step1,
+      step2: state.step2,
+      step3: state.step3,
+      step4: state.step4,
+    });
+  }, [draftReady, state]);
 
   const canAdvanceFromStep1 = state.step1.projectName.trim().length > 0;
 
@@ -306,6 +371,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       skipStep3,
       setStep,
       toOnboardingData: () => toOnboardingData(state),
+      toInitializePayload: () => toInitializePayload(state),
     }),
     [
       state,

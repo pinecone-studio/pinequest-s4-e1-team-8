@@ -21,16 +21,25 @@ function getBaseUrl(request: Request): string {
   return `${url.protocol}//${url.host}`;
 }
 
+function withQuery(path: string, query: string) {
+  return path.includes("?") ? `${path}&${query}` : `${path}?${query}`;
+}
+
 export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const returnTo = url.searchParams.get("returnTo")?.trim() || "/tasks";
+  const safeReturnTo = returnTo.startsWith("/") ? returnTo : "/onboarding";
+
   const clientId = process.env.ASANA_CLIENT_ID?.trim();
   if (!clientId) {
-    return Response.json({ error: "ASANA_CLIENT_ID not configured" }, { status: 500 });
+    return redirect(
+      withQuery(safeReturnTo, "asana_error=not_configured"),
+    );
   }
 
-  const url = new URL(request.url);
   const userId = url.searchParams.get("userId");
   if (!userId) {
-    return Response.json({ error: "userId is required" }, { status: 400 });
+    return redirect(withQuery(safeReturnTo, "asana_error=missing_user"));
   }
 
   const baseUrl = getBaseUrl(request);
@@ -40,7 +49,7 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   cookieStore.set(
     "asana_oauth_state",
-    JSON.stringify({ state, userId }),
+    JSON.stringify({ state, userId, returnTo: safeReturnTo }),
     {
       httpOnly: true,
       sameSite: "lax",

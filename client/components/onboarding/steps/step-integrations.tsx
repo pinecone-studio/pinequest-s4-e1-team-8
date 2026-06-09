@@ -3,7 +3,8 @@
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
 import { fetchAsanaStatus, getAsanaConnectUrl } from "@/lib/integrations/asana";
 import { Check, ArrowRight } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 function GithubMark() {
   return (
@@ -29,6 +30,7 @@ interface IntegrationCardProps {
   logo: React.ReactNode;
   connected: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 }
 
 function IntegrationCard({
@@ -37,6 +39,7 @@ function IntegrationCard({
   logo,
   connected,
   onToggle,
+  disabled = false,
 }: IntegrationCardProps) {
   return (
     <div
@@ -56,7 +59,7 @@ function IntegrationCard({
         </div>
       </div>
       <button
-        className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-[13px] font-semibold transition-colors"
+        className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         style={
           connected
             ? {
@@ -66,6 +69,7 @@ function IntegrationCard({
               }
             : { background: "#7c3aed", color: "#fff" }
         }
+        disabled={disabled || connected}
         onClick={onToggle}
       >
         {connected ? (
@@ -81,14 +85,30 @@ function IntegrationCard({
   );
 }
 
+const ASANA_ERROR_MESSAGES: Record<string, string> = {
+  not_configured:
+    "Asana is not set up yet (missing ASANA_CLIENT_ID in .env.local). Use Skip for now.",
+  missing_client_credentials:
+    "Asana credentials are incomplete. Use Skip for now or ask your teammate to add them.",
+  missing_user: "Could not start Asana sign-in. Refresh and try again.",
+};
+
+function asanaErrorMessage(code: string | null) {
+  if (!code) return null;
+  return ASANA_ERROR_MESSAGES[code] ?? `Asana connection failed (${code}). You can skip this step.`;
+}
+
 export function StepIntegrations() {
+  const searchParams = useSearchParams();
   const {
     step3,
     toggleGithubConnection,
     setAsanaConnected,
     advanceFromStep3,
     skipStep3,
+    setStep,
   } = useOnboardingStore();
+  const [asanaMessage, setAsanaMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAsanaStatus()
@@ -102,9 +122,28 @@ export function StepIntegrations() {
       });
   }, [setAsanaConnected]);
 
+  useEffect(() => {
+    const connected = searchParams.get("asana_connected");
+    const error = searchParams.get("asana_error");
+
+    if (connected === "1") {
+      setAsanaConnected(true);
+      setAsanaMessage("Asana connected successfully.");
+      setStep(2);
+      window.history.replaceState({}, "", "/onboarding");
+      return;
+    }
+
+    if (error) {
+      setAsanaMessage(asanaErrorMessage(error));
+      setStep(2);
+      window.history.replaceState({}, "", "/onboarding");
+    }
+  }, [searchParams, setAsanaConnected, setStep]);
+
   const handleAsanaConnect = () => {
     if (step3.asanaConnected) return;
-    window.location.href = getAsanaConnectUrl();
+    window.location.href = getAsanaConnectUrl("/onboarding");
   };
 
   return (
@@ -118,7 +157,19 @@ export function StepIntegrations() {
         </p>
       </div>
 
-      <div className="flex gap-3.5">
+      {asanaMessage ? (
+        <p
+          className={`mb-4 rounded-lg px-3 py-2 text-[13px] ${
+            step3.asanaConnected
+              ? "bg-emerald-500/10 text-emerald-300"
+              : "bg-amber-500/10 text-amber-200"
+          }`}
+        >
+          {asanaMessage}
+        </p>
+      ) : null}
+
+      <div className="flex flex-col gap-3.5 sm:flex-row">
         <IntegrationCard
           name="GitHub"
           desc="Sync commits, PRs & issues"
@@ -134,6 +185,11 @@ export function StepIntegrations() {
           onToggle={handleAsanaConnect}
         />
       </div>
+
+      <p className="mt-3 text-[12px] text-[#6b6b73]">
+        GitHub is a demo toggle for now. Asana needs developer keys — optional during
+        onboarding.
+      </p>
 
       <div className="mt-7 flex items-center">
         <button

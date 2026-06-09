@@ -32,10 +32,10 @@ export function SidebarAddProject() {
       <p className="mt-1 text-[11px] text-[#6b6b73]">
         Or use{" "}
         <a
-          href="#"
+          href="/onboarding"
           className="font-medium text-[#a78bfa] underline underline-offset-2 hover:text-[#c4b5fd]"
         >
-          invite link
+          new project
         </a>
       </p>
     </div>

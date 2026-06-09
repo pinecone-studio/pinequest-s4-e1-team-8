@@ -12,9 +12,7 @@ import githubRoutes from "./routes/integrations/github.routes";
 import mappingsRoutes from "./routes/mappings/mappings.routes";
 import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";
 import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-transcription.routes";
-import initializeProjectRoutes from "./routes/projects/initialize";
-import reportStreamRoutes from "./routes/reports/stream";
-import riskAnalyzeRoutes from "./routes/risk/analyze";
+import projectRoutes from "./routes/projects/project.routes";
 import taskRoutes from "./routes/tasks/task.routes";
 import userRoutes from "./routes/users/user.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
@@ -50,6 +48,7 @@ app.use(
 );
 
 app.route("/users", userRoutes);
+app.route("/projects", projectRoutes);
 app.route("/tasks", taskRoutes);
 app.route("/integrations/github", githubRoutes);
 app.route("/integrations/asana", asanaRoutes);
