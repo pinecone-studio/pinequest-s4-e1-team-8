@@ -30,13 +30,13 @@ export function AnalyticsPulseSummary({
   return (
     <div
       className={cn(
-        "group w-full max-w-xs rounded-xl border border-border/50 bg-[#1c1d22]/95 p-3 shadow-lg backdrop-blur-sm",
+        "group w-full max-w-xs rounded-xl border border-border/50 bg-secondary/95 p-3 shadow-lg backdrop-blur-sm",
         className,
       )}
     >
       <div className="flex items-start gap-2">
-        <div className="grid size-7 shrink-0 place-items-center rounded-lg bg-violet-500/15">
-          <FileText className="size-3.5 text-violet-400/80" />
+        <div className="grid size-7 shrink-0 place-items-center rounded-lg bg-violet-100 dark:bg-violet-500/15">
+          <FileText className="size-3.5 text-violet-700 dark:text-violet-400/80" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-foreground/90">Summary</p>

@@ -34,13 +34,13 @@ function MilestoneCard({ draft, isCompiling }: MilestoneCardProps) {
         "rounded-xl border p-4 transition-all duration-300",
         isCompiling
           ? "border-violet-500/50 bg-violet-500/8 shadow-[0_0_24px_rgba(139,92,246,0.12)]"
-          : "border-white/10 bg-[#121318]",
+          : "border-border bg-secondary",
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-sm font-semibold text-white">{draft.title}</h3>
+        <h3 className="text-sm font-semibold text-foreground">{draft.title}</h3>
         {draft.isApproved ? (
-          <span className="rounded-md bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300">
+          <span className="rounded-md bg-emerald-100 dark:bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
             Approved
           </span>
         ) : null}
@@ -50,7 +50,7 @@ function MilestoneCard({ draft, isCompiling }: MilestoneCardProps) {
           {draft.tasks.map((task, index) => (
             <li
               key={`${draft.id}-task-${index}`}
-              className="flex items-start gap-2 text-[13px] leading-snug text-[#c4c4cc]"
+              className="flex items-start gap-2 text-[13px] leading-snug text-foreground"
             >
               <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-violet-400/80" />
               <span>{task}</span>
@@ -58,7 +58,7 @@ function MilestoneCard({ draft, isCompiling }: MilestoneCardProps) {
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-[13px] text-[#6b6b73]">Awaiting scoped tasks…</p>
+        <p className="mt-3 text-[13px] text-foreground/80">Awaiting scoped tasks…</p>
       )}
       {isCompiling ? (
         <div className="mt-2 inline-flex items-center">
@@ -263,15 +263,15 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
     <div className="flex flex-col gap-4">
       <div
         ref={scrollRef}
-        className="max-h-[22rem] space-y-3 overflow-y-auto rounded-xl border border-white/10 bg-[#0f1014] p-3"
+        className="max-h-[22rem] space-y-3 overflow-y-auto rounded-xl border border-border bg-secondary p-3"
       >
         {displayDrafts.length === 0 && !isStreaming ? (
           <div className="flex min-h-[12rem] flex-col items-center justify-center gap-2 px-4 text-center">
-            <Sparkles className="size-5 text-violet-400" />
-            <p className="text-sm font-medium text-[#a1a1ab]">
+            <Sparkles className="size-5 text-violet-700 dark:text-violet-400" />
+            <p className="text-sm font-medium text-muted-foreground">
               Scoping canvas ready
             </p>
-            <p className="max-w-xs text-xs leading-relaxed text-[#6b6b73]">
+            <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
               Submit a rough project brief below. The onboarding worker will
               stream milestone drafts in real time.
             </p>
@@ -300,7 +300,7 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
           ))
         )}
         {isStreaming && liveDrafts.length === 0 ? (
-          <div className="flex items-center gap-2 rounded-xl border border-dashed border-violet-500/30 bg-violet-500/5 px-4 py-6 text-sm text-violet-200">
+          <div className="flex items-center gap-2 rounded-xl border border-dashed border-violet-300 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/5 px-4 py-6 text-sm text-violet-800 dark:text-violet-200">
             <Loader2 className="size-4 animate-spin" />
             Compiling first milestone draft
             <StreamCursor />
@@ -309,18 +309,18 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
       </div>
 
       {error ? (
-        <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[13px] text-rose-300">
+        <p className="rounded-lg border border-rose-500/30 bg-rose-100 dark:bg-rose-500/10 px-3 py-2 text-[13px] text-rose-800 dark:text-rose-300">
           {error}
         </p>
       ) : null}
 
       {isComplete ? (
-        <p className="text-center text-xs text-emerald-300">
+        <p className="text-center text-xs text-emerald-800 dark:text-emerald-300">
           Milestone drafts saved — edit titles, tasks, and approvals below.
         </p>
       ) : null}
 
-      <div className="rounded-xl border border-white/10 bg-[#121318] p-3">
+      <div className="rounded-xl border border-border bg-secondary p-3">
         <textarea
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
@@ -333,10 +333,10 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
           rows={3}
           disabled={isStreaming}
           placeholder="Describe your unpolished goals — features, timeline, team constraints…"
-          className="w-full resize-none bg-transparent text-sm leading-snug text-white outline-none placeholder:text-[#5c5c66] disabled:opacity-60"
+          className="w-full resize-none bg-transparent text-sm leading-snug text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-60"
         />
         <div className="mt-3 flex items-center justify-between gap-3">
-          <p className="text-[11px] text-[#6b6b73]">
+          <p className="text-[11px] text-muted-foreground">
             Press Enter to scope · Shift+Enter for newline
           </p>
           <button

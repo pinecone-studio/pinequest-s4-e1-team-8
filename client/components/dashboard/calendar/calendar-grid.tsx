@@ -82,7 +82,7 @@ export function CalendarGrid({
           return (
             <div
               key={ev.id}
-              className="truncate rounded-sm px-1.5 py-[1px] text-[8px] font-medium"
+              className="truncate rounded-md px-2 py-1 text-[9px] font-medium leading-tight"
               style={{
                 backgroundColor: `${hex}22`,
                 color: hex,
@@ -98,13 +98,13 @@ export function CalendarGrid({
     >
       <div className="flex" style={{ height: TOTAL_GRID_HEIGHT_PX }}>
         <div
-          className="relative shrink-0 border-r border-[#1a1d24]"
+          className="relative shrink-0 border-r border-border"
           style={{ width: CALENDAR_GUTTER_WIDTH, height: TOTAL_GRID_HEIGHT_PX }}
         >
           {timeLabels.map(({ hour, label, topPx }) => (
             <span
               key={hour}
-              className="absolute right-[8px] -translate-y-1/2 text-[9px] tabular-nums text-[#2c3040]"
+              className="absolute right-[8px] -translate-y-1/2 text-[9px] tabular-nums text-muted-foreground"
               style={{ top: topPx }}
             >
               {label}
@@ -171,8 +171,8 @@ function DayColumn({
   return (
     <div
       className={cn(
-        "relative flex-1 cursor-crosshair border-l border-[#1a1d24]",
-        day.isToday && "bg-[#0f1016]",
+        "relative flex-1 cursor-crosshair border-l border-border",
+        day.isToday && "bg-muted/40",
       )}
       style={{ height: TOTAL_GRID_HEIGHT_PX }}
       onClick={handleColumnClick}

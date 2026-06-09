@@ -155,7 +155,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
     return (
       <section className="m-auto w-full max-w-xs space-y-4 rounded-2xl border border-border/60 bg-card p-6 text-center shadow-sm">
         <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-muted">
-          <Headphones className="size-5 stroke-[1.75] text-violet-400" />
+          <Headphones className="size-5 stroke-[1.75] text-violet-700 dark:text-violet-400" />
         </div>
         <div>
           <h1 className="text-[15px] font-semibold text-foreground">
@@ -173,7 +173,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
     return (
       <section className="m-auto w-full max-w-sm space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-400">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-400">
             {selectedRoom.roomName}
           </p>
           <h1 className="mt-1 text-[15px] font-semibold text-foreground">
@@ -188,7 +188,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
         />
 
         {error ? (
-          <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+          <p className="rounded-xl border border-red-400/30 bg-red-100 dark:bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
             {error}
           </p>
         ) : null}
@@ -210,7 +210,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
   return (
     <section className="m-auto w-full max-w-sm space-y-4 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-400">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-400">
           {selectedRoom.roomName}
         </p>
         <h1 className="mt-1 text-[15px] font-semibold text-foreground">
@@ -224,7 +224,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
       </div>
 
       {error ? (
-        <p className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+        <p className="rounded-xl border border-red-400/30 bg-red-100 dark:bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
           {error}
         </p>
       ) : null}

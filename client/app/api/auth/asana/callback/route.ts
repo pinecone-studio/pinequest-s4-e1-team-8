@@ -24,35 +24,58 @@ function getBaseUrl(request: Request): string {
   return `${url.protocol}//${url.host}`;
 }
 
+function withQuery(path: string, query: string) {
+  return path.includes("?") ? `${path}&${query}` : `${path}?${query}`;
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const errorParam = url.searchParams.get("error");
 
+  const cookieStore = await cookies();
+  const savedEarly = cookieStore.get("asana_oauth_state")?.value;
+  let returnTo = "/tasks";
+  if (savedEarly) {
+    try {
+      const parsed = JSON.parse(savedEarly) as { returnTo?: string };
+      if (parsed.returnTo?.startsWith("/")) {
+        returnTo = parsed.returnTo;
+      }
+    } catch {
+      // keep default
+    }
+  }
+
   if (errorParam) {
-    return redirect(`/tasks?asana_error=${encodeURIComponent(errorParam)}`);
+    return redirect(
+      withQuery(returnTo, `asana_error=${encodeURIComponent(errorParam)}`),
+    );
   }
 
   if (!code) {
     return Response.json({ error: "Missing authorization code" }, { status: 400 });
   }
 
-  const cookieStore = await cookies();
   const saved = cookieStore.get("asana_oauth_state")?.value;
   if (!saved) {
-    return Response.json({ error: "Missing OAuth state" }, { status: 400 });
+    return redirect(withQuery(returnTo, "asana_error=missing_state"));
   }
 
-  let parsed: { state: string; userId: string };
+  let parsed: { state: string; userId: string; returnTo?: string };
   try {
-    parsed = JSON.parse(saved) as { state: string; userId: string };
+    parsed = JSON.parse(saved) as { state: string; userId: string; returnTo?: string };
   } catch {
-    return Response.json({ error: "Invalid OAuth state" }, { status: 400 });
+    return redirect(withQuery(returnTo, "asana_error=invalid_state"));
+  }
+
+  if (parsed.returnTo?.startsWith("/")) {
+    returnTo = parsed.returnTo;
   }
 
   if (!parsed.state || parsed.state !== state) {
-    return Response.json({ error: "Invalid OAuth state" }, { status: 400 });
+    return redirect(withQuery(returnTo, "asana_error=state_mismatch"));
   }
 
   cookieStore.delete("asana_oauth_state");
@@ -60,7 +83,7 @@ export async function GET(request: Request) {
   const clientId = process.env.ASANA_CLIENT_ID?.trim();
   const clientSecret = process.env.ASANA_CLIENT_SECRET?.trim();
   if (!clientId || !clientSecret) {
-    return redirect("/tasks?asana_error=missing_client_credentials");
+    return redirect(withQuery(returnTo, "asana_error=missing_client_credentials"));
   }
 
   const redirectUri = `${getBaseUrl(request)}/api/auth/asana/callback`;
@@ -81,12 +104,12 @@ export async function GET(request: Request) {
     console.error("[asana callback] token exchange failed:", err);
     let errorCode = "token_exchange_failed";
     try {
-      const parsed = JSON.parse(err) as { error?: string };
-      if (parsed.error === "invalid_client") errorCode = "invalid_client";
+      const parsedError = JSON.parse(err) as { error?: string };
+      if (parsedError.error === "invalid_client") errorCode = "invalid_client";
     } catch {
       // keep generic code
     }
-    return redirect(`/tasks?asana_error=${errorCode}`);
+    return redirect(withQuery(returnTo, `asana_error=${errorCode}`));
   }
 
   const tokens = (await tokenRes.json()) as AsanaTokenResponse;
@@ -114,14 +137,14 @@ export async function GET(request: Request) {
   if (!saveRes.ok) {
     const err = await saveRes.text();
     console.error("[asana callback] save integration failed:", err);
-    const hint =
-      saveRes.status === 404
-        ? "api_not_found"
-        : "save_failed";
+    const hint = saveRes.status === 404 ? "api_not_found" : "save_failed";
     return redirect(
-      `/tasks?asana_error=${hint}&asana_source=${encodeURIComponent(apiUrl)}`,
+      withQuery(
+        returnTo,
+        `asana_error=${hint}&asana_source=${encodeURIComponent(apiUrl)}`,
+      ),
     );
   }
 
-  redirect("/tasks?asana_connected=1");
+  redirect(withQuery(returnTo, "asana_connected=1"));
 }

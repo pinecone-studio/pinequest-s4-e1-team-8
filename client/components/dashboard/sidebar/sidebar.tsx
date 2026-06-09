@@ -20,7 +20,7 @@ const utilityIcons = [
 
 export function DashboardSidebar() {
   return (
-    <aside className="sticky top-0 flex min-h-screen w-[280px] shrink-0 flex-col self-start border-r border-border/60 bg-[#16171b] text-sidebar-foreground dark:bg-[#16171b]">
+    <aside className="sticky top-0 flex min-h-screen w-[280px] shrink-0 flex-col self-start border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <SidebarProfile />
       <SidebarSearch />
       <Separator className="bg-border/40" />

@@ -10,6 +10,7 @@ import type { SortableTaskCardProps } from "./types";
 export function SortableTaskCard({
   task,
   selected,
+  isBoardDragging = false,
   onSelect,
   onUpdate,
 }: SortableTaskCardProps) {
@@ -26,6 +27,7 @@ export function SortableTaskCard({
     id: task.id,
     data: { type: "task", status: task.status },
     disabled: isEditing,
+    animateLayoutChanges: () => false,
   });
 
   return (
@@ -33,9 +35,10 @@ export function SortableTaskCard({
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
-        transition,
+        transition: isDragging || isBoardDragging ? undefined : transition,
+        opacity: isDragging ? 0 : 1,
       }}
-      className={cn("touch-none", isDragging && "opacity-40")}
+      className="touch-none"
       {...attributes}
       {...(isEditing ? {} : listeners)}
     >

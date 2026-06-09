@@ -52,7 +52,7 @@ export function PillBadge({
 }
 
 export const detailFieldClass =
-  "rounded-lg border border-border/60 bg-[#25262b] text-sm outline-none transition-colors focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20";
+  "rounded-lg border border-border/60 bg-muted text-sm outline-none transition-colors focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20";
 
 export const detailInputClass = cn(detailFieldClass, "h-9 px-3");
 

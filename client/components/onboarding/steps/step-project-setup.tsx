@@ -15,7 +15,7 @@ const TIMEZONES = [
 ];
 
 const inputClassName =
-  "w-full rounded-lg border border-white/10 bg-[#121318] text-sm text-white placeholder:text-[#5c5c66] transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20";
+  "w-full rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20";
 
 export function StepProjectSetup() {
   const { step1, patchStep1, canAdvanceFromStep1, advanceFromStep1 } =
@@ -24,17 +24,17 @@ export function StepProjectSetup() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-white">
+        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-foreground">
           Set up your project
         </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-[#8e8e93]">
+        <p className="mt-1.5 text-sm leading-relaxed text-foreground">
           Tell us the basics. You can change any of this later in settings.
         </p>
       </div>
 
       <div className="flex flex-col gap-4">
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#c4c4cc]">
+          <label className="mb-1.5 block text-[13px] font-medium text-foreground">
             Project name
           </label>
           <input
@@ -49,9 +49,9 @@ export function StepProjectSetup() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#c4c4cc]">
+          <label className="mb-1.5 block text-[13px] font-medium text-foreground">
             Description{" "}
-            <span className="font-normal text-[#6b6b73]">(optional)</span>
+            <span className="font-normal text-muted-foreground">(optional)</span>
           </label>
           <textarea
             className={`${inputClassName} resize-none px-3.5 py-3 leading-snug`}
@@ -65,7 +65,7 @@ export function StepProjectSetup() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[#c4c4cc]">
+          <label className="mb-1.5 block text-[13px] font-medium text-foreground">
             Timezone
           </label>
           <div className="relative">
@@ -77,7 +77,7 @@ export function StepProjectSetup() {
               }
             >
               {TIMEZONES.map((timezone) => (
-                <option key={timezone} className="bg-[#1a1b1f] text-white">
+                <option key={timezone} className="bg-card text-foreground">
                   {timezone}
                 </option>
               ))}

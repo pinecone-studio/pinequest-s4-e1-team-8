@@ -46,7 +46,7 @@ export function SidebarNavItem({ item }: { item: NavItem }) {
         collapsed ? "justify-center px-0 py-2.5" : "gap-2.5 px-3 py-2.5",
         isActive
           ? "bg-[#7c3aed] text-white shadow-[0_4px_24px_-4px_rgba(124,58,237,0.55)]"
-          : "text-[#8e8e93] hover:bg-white/[0.04] hover:text-[#c4c4cc]",
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
   );
 
   const content = (
@@ -55,7 +55,7 @@ export function SidebarNavItem({ item }: { item: NavItem }) {
         className={cn(
           "shrink-0 stroke-[1.75]",
           collapsed ? "size-[18px]" : "size-[17px]",
-          isActive ? "text-white" : "text-[#6b6b73]",
+          isActive ? "text-white" : "text-muted-foreground",
         )}
       />
 

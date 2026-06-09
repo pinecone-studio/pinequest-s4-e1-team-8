@@ -8,7 +8,14 @@ import {
 } from "@/components/tasks/task-list-states";
 import { TaskListView } from "@/components/tasks/task-list-view";
 import { sourceLabels, taskSources } from "@/components/tasks/task-sources";
-import { TaskAsanaConnect } from "@/components/tasks/task-asana-connect";
+import {
+  TaskAsanaErrorMessage,
+  TaskAsanaHeaderActions,
+  TaskAsanaHeaderBadge,
+  TaskAsanaProjectBar,
+  TaskAsanaProvider,
+} from "@/components/tasks/task-asana-connect";
+import { TaskGithubConnect } from "@/components/tasks/task-github-connect";
 import { TaskBoard } from "@/components/tasks/task-board";
 import { TaskRiskAlert } from "@/components/tasks/task-risk-alert";
 import { TaskTeamFilter } from "@/components/tasks/task-team-filter";
@@ -54,16 +61,17 @@ export function TaskList() {
     }
   }, [searchParams, selectSource]);
 
-  return (
-    <>
-      <Card className="rounded-lg border border-border/60 bg-[#16171b] shadow-none">
-        <CardHeader className="border-b border-border/60">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <ListTodo className="size-5 text-violet-400" />
-              Task list
-            </CardTitle>
-            <div className="flex flex-wrap items-center gap-2">
+  const card = (
+    <Card className="rounded-lg border border-border/60 bg-card shadow-none">
+      <CardHeader className="border-b border-border/60">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ListTodo className="size-5 text-violet-700 dark:text-violet-400" />
+            Task list
+          </CardTitle>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {activeSource === "asana" ? <TaskAsanaHeaderBadge /> : null}
               <TaskRiskAlert onFocusTask={focusTask} />
               <Button
                 type="button"
@@ -76,76 +84,96 @@ export function TaskList() {
                 Refresh
               </Button>
             </div>
+            {activeSource === "asana" ? <TaskAsanaHeaderActions /> : null}
           </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4 p-4">
-          <div className="flex flex-wrap gap-2">
-            {taskSources.map((source) => (
-              <button
-                key={source}
-                type="button"
-                className={cn(
-                  "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
-                  activeSource === source
-                    ? "border-violet-500 bg-violet-500 text-white"
-                    : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
-                )}
-                onClick={() => selectSource(source)}
-              >
-                {sourceLabels[source]}
-              </button>
-            ))}
+        </div>
+        {activeSource === "asana" ? (
+          <div className="mt-2 flex justify-end">
+            <TaskAsanaErrorMessage />
           </div>
+        ) : null}
+      </CardHeader>
 
-          {activeSource !== "asana" ? (
-            <TaskTeamFilter
-              activeTeam={activeTeam}
-              tasks={sourceTasks}
-              onChange={setActiveTeam}
-            />
-          ) : null}
+      <CardContent className="space-y-4 p-4">
+        <div className="flex flex-wrap gap-2">
+          {taskSources.map((source) => (
+            <button
+              key={source}
+              type="button"
+              className={cn(
+                "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+                activeSource === source
+                  ? "border-violet-600 bg-violet-600 text-white dark:border-violet-500 dark:bg-violet-500"
+                  : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
+              )}
+              onClick={() => selectSource(source)}
+            >
+              {sourceLabels[source]}
+            </button>
+          ))}
+        </div>
 
-          {activeSource === "asana" ? (
-            <TaskAsanaConnect
-              oauthError={searchParams.get("asana_error")}
-              onSynced={() => void loadTasks()}
-            />
-          ) : null}
+        {activeSource === "github" ? (
+          <TaskGithubConnect onSynced={() => void loadTasks()} />
+        ) : null}
 
-          <div className="flex justify-end">
-            <TaskViewToggle value={viewMode} onChange={setViewMode} />
-          </div>
+        {activeSource === "asana" ? <TaskAsanaProjectBar /> : null}
 
-          {isLoading ? (
-            viewMode === "board" ? (
-              <TaskListSkeleton />
-            ) : (
-              <TaskListTableSkeleton />
-            )
-          ) : visibleTasks.length === 0 ? (
-            <EmptyTasks source={sourceLabels[activeSource]} />
-          ) : viewMode === "board" ? (
-            <div className="min-h-[28rem] overflow-x-auto">
-              <TaskBoard
-                tasks={visibleTasks}
-                selectedTaskId={selectedTaskId}
-                onSelectTask={setSelectedTaskId}
-                onAddTask={addTaskToColumn}
-                onUpdateTask={updateTask}
-              />
-            </div>
+        {activeSource === "internal" ? (
+          <TaskTeamFilter
+            activeTeam={activeTeam}
+            tasks={sourceTasks}
+            onChange={setActiveTeam}
+          />
+        ) : null}
+
+        <div className="flex justify-end">
+          <TaskViewToggle value={viewMode} onChange={setViewMode} />
+        </div>
+
+        {isLoading ? (
+          viewMode === "board" ? (
+            <TaskListSkeleton />
           ) : (
-            <TaskListView
+            <TaskListTableSkeleton />
+          )
+        ) : visibleTasks.length === 0 ? (
+          <EmptyTasks source={sourceLabels[activeSource]} />
+        ) : viewMode === "board" ? (
+          <div className="min-h-[28rem] overflow-x-auto">
+            <TaskBoard
               tasks={visibleTasks}
               selectedTaskId={selectedTaskId}
               onSelectTask={setSelectedTaskId}
+              onAddTask={addTaskToColumn}
               onUpdateTask={updateTask}
-              onDeleteTask={deleteTask}
             />
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        ) : (
+          <TaskListView
+            tasks={visibleTasks}
+            selectedTaskId={selectedTaskId}
+            onSelectTask={setSelectedTaskId}
+            onUpdateTask={updateTask}
+            onDeleteTask={deleteTask}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <>
+      {activeSource === "asana" ? (
+        <TaskAsanaProvider
+          oauthError={searchParams.get("asana_error")}
+          onSynced={() => void loadTasks()}
+        >
+          {card}
+        </TaskAsanaProvider>
+      ) : (
+        card
+      )}
 
       {selectedTask ? (
         <>

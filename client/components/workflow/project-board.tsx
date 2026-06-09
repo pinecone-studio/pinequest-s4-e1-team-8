@@ -48,7 +48,7 @@ export function ProjectBoard({
   if (projectsLoading) {
     return (
       <div className="flex flex-1 items-center justify-center py-24">
-        <Loader2 className="size-6 animate-spin text-violet-500" />
+        <Loader2 className="size-6 animate-spin text-violet-700 dark:text-violet-500" />
       </div>
     );
   }
@@ -92,7 +92,7 @@ export function ProjectBoard({
 
       {boardLoading ? (
         <div className="flex flex-1 items-center justify-center py-24">
-          <Loader2 className="size-6 animate-spin text-violet-500" />
+          <Loader2 className="size-6 animate-spin text-violet-700 dark:text-violet-500" />
         </div>
       ) : !statusField ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 py-24 text-center">

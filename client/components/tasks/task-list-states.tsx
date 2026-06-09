@@ -8,7 +8,7 @@ export function TaskListSkeleton() {
       {taskStatuses.map((status) => (
         <div
           key={status}
-          className="flex min-h-[28rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-[#18191d]"
+          className="flex min-h-[28rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-card"
         >
           <div
             className={cn(
@@ -21,7 +21,7 @@ export function TaskListSkeleton() {
               (_, index) => (
                 <div
                   key={index}
-                  className="space-y-2 rounded-lg border border-border/50 bg-card p-3 dark:bg-[#1f2024]"
+                  className="space-y-2 rounded-lg border border-border/50 bg-card p-3 "
                 >
                   <div className="h-4 max-w-[85%] rounded bg-muted/60" />
                   <div className="h-3 max-w-[55%] rounded bg-muted/50" />
@@ -42,7 +42,7 @@ export function TaskListSkeleton() {
 
 export function TaskListTableSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-border/60 bg-[#18191d]">
+    <div className="overflow-hidden rounded-lg border border-border/60 bg-card">
       <div className="space-y-0">
         {Array.from({ length: 6 }).map((_, index) => (
           <div
@@ -63,8 +63,8 @@ export function TaskListTableSkeleton() {
 
 export function EmptyTasks({ source }: { source: string }) {
   return (
-    <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/60 bg-[#18191d] px-6 text-center">
-      <div className="rounded-lg bg-violet-500/15 p-3 text-violet-300">
+    <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/60 bg-card px-6 text-center">
+      <div className="rounded-lg bg-violet-100 dark:bg-violet-500/15 p-3 text-violet-800 dark:text-violet-300">
         <ListTodo className="size-6" />
       </div>
       <div className="space-y-1">

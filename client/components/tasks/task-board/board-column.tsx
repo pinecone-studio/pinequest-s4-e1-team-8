@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 import { SortableTaskCard } from "./sortable-task-card";
 import type { BoardColumnProps } from "./types";
 
@@ -16,6 +16,7 @@ export function BoardColumn({
   tasks,
   taskIds,
   selectedTaskId,
+  isBoardDragging = false,
   onSelectTask,
   onUpdateTask,
   onAddTask,
@@ -37,7 +38,7 @@ export function BoardColumn({
   );
 
   return (
-    <section className="flex min-h-[28rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-[#18191d]">
+    <section className="flex min-h-[28rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-card">
       <header
         className={cn(
           "px-4 py-3 text-center text-sm font-semibold tracking-tight",
@@ -54,31 +55,30 @@ export function BoardColumn({
         ref={setNodeRef}
         className={cn(
           "flex min-h-[12rem] flex-1 flex-col gap-3 p-3 transition-colors duration-200",
-          isOver && "bg-violet-500/5",
+          isOver && "bg-violet-50 dark:bg-violet-500/5",
         )}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          {taskIds.map((taskId, index) => {
+          {taskIds.map((taskId) => {
             const task = taskMap.get(taskId);
             if (!task) return null;
 
             return (
-              <Fragment key={taskId}>
-                <SortableTaskCard
-                  task={task}
-                  selected={selectedTaskId === taskId}
-                  onSelect={onSelectTask}
-                  onUpdate={onUpdateTask}
-                />
-                {index === 0 ? (
-                  <TaskAiInsight
-                    text={getColumnAiInsight(columnTasks, status)}
-                  />
-                ) : null}
-              </Fragment>
+              <SortableTaskCard
+                key={taskId}
+                task={task}
+                selected={selectedTaskId === taskId}
+                isBoardDragging={isBoardDragging}
+                onSelect={onSelectTask}
+                onUpdate={onUpdateTask}
+              />
             );
           })}
         </SortableContext>
+
+        {!isBoardDragging && columnTasks.length > 0 ? (
+          <TaskAiInsight text={getColumnAiInsight(columnTasks, status)} />
+        ) : null}
 
         <button
           type="button"

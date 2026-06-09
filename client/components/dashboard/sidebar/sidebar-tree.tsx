@@ -20,7 +20,7 @@ export function SidebarTree() {
         </p>
         <Link
           href="/onboarding"
-          className="block px-2 py-1.5 text-[12px] text-violet-500 hover:text-violet-400"
+          className="block px-2 py-1.5 text-[12px] text-violet-700 dark:text-violet-500 hover:text-violet-800 dark:hover:text-violet-400"
         >
           Set up project
         </Link>

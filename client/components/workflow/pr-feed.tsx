@@ -49,7 +49,7 @@ export function PrFeed({
           className={cn(
             "flex-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
             feedTab === "pulls"
-              ? "border-violet-500/50 bg-violet-500/10 text-violet-600"
+              ? "border-violet-500/50 bg-violet-100 dark:bg-violet-500/10 text-violet-600"
               : "border-border/60 text-muted-foreground hover:border-border",
           )}
         >
@@ -61,7 +61,7 @@ export function PrFeed({
           className={cn(
             "flex-1 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
             feedTab === "issues"
-              ? "border-violet-500/50 bg-violet-500/10 text-violet-600"
+              ? "border-violet-500/50 bg-violet-100 dark:bg-violet-500/10 text-violet-600"
               : "border-border/60 text-muted-foreground hover:border-border",
           )}
         >
@@ -108,13 +108,13 @@ export function PrFeed({
                   className={cn(
                     "rounded-xl border bg-card p-4 text-left transition-colors",
                     isSelected
-                      ? "border-violet-500/50 ring-1 ring-violet-500/30"
+                      ? "border-violet-500/50 ring-1 ring-violet-400 dark:ring-violet-500/30"
                       : "border-border/60 hover:border-border",
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                      <GitPullRequest className="size-3.5 text-violet-500" />
+                      <GitPullRequest className="size-3.5 text-violet-700 dark:text-violet-500" />
                       #{pull.number}
                       <span className="font-normal text-muted-foreground">{repoName}</span>
                     </div>
@@ -170,7 +170,7 @@ export function PrFeed({
                 className={cn(
                   "rounded-xl border bg-card p-4 text-left transition-colors",
                   isSelected
-                    ? "border-violet-500/50 ring-1 ring-violet-500/30"
+                    ? "border-violet-500/50 ring-1 ring-violet-400 dark:ring-violet-500/30"
                     : "border-border/60 hover:border-border",
                 )}
               >

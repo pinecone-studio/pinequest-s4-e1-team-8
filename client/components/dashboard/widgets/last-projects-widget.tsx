@@ -87,7 +87,7 @@ export function LastProjectsWidget() {
                       <span className="min-w-0 truncate font-medium">
                         {resource.name}
                       </span>
-                      <ExternalLink className="size-3.5 shrink-0 text-violet-400" />
+                      <ExternalLink className="size-3.5 shrink-0 text-violet-700 dark:text-violet-400" />
                     </a>
                   </li>
                 ))}

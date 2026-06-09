@@ -40,6 +40,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-elevated: var(--elevated);
+  --color-inset: var(--inset);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -51,19 +53,21 @@
 
 :root {
   --background: #f8f9fa;
-  --foreground: oklch(0.145 0 0);
+  --foreground: #0a0a0a;
   --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
+  --elevated: #f1f3f5;
+  --inset: #eef0f2;
+  --card-foreground: #0a0a0a;
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: #0a0a0a;
+  --primary: #0a0a0a;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary-foreground: #0a0a0a;
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: #333333;
   --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent-foreground: #0a0a0a;
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
@@ -74,12 +78,12 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 1rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #0a0a0a;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-accent-foreground: #0a0a0a;
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 }
@@ -88,6 +92,8 @@
   --background: #121212;
   --foreground: oklch(0.985 0 0);
   --card: #1e1e1e;
+  --elevated: #18191d;
+  --inset: #25262b;
   --card-foreground: oklch(0.985 0 0);
   --popover: #1e1e1e;
   --popover-foreground: oklch(0.985 0 0);
@@ -161,6 +167,40 @@
   }
   body {
     @apply min-h-full bg-background font-sans text-foreground;
+  }
+}
+
+/* Light mode: stronger accent fills & borders. Dark mode classes unchanged via dark: variants in components. */
+@layer utilities {
+  .tone-violet-surface {
+    @apply border-violet-200 bg-violet-100 text-violet-800;
+  }
+  .tone-sky-surface {
+    @apply border-sky-200 bg-sky-100 text-sky-800;
+  }
+  .tone-emerald-surface {
+    @apply border-emerald-200 bg-emerald-100 text-emerald-800;
+  }
+  .tone-amber-surface {
+    @apply border-amber-200 bg-amber-100 text-amber-900;
+  }
+  .tone-rose-surface {
+    @apply border-rose-200 bg-rose-100 text-rose-800;
+  }
+  .dark .tone-violet-surface {
+    @apply border-violet-500/25 bg-violet-500/15 text-violet-300;
+  }
+  .dark .tone-sky-surface {
+    @apply border-sky-500/25 bg-sky-500/15 text-sky-300;
+  }
+  .dark .tone-emerald-surface {
+    @apply border-emerald-500/25 bg-emerald-500/15 text-emerald-300;
+  }
+  .dark .tone-amber-surface {
+    @apply border-amber-500/25 bg-amber-500/15 text-amber-200;
+  }
+  .dark .tone-rose-surface {
+    @apply border-rose-500/25 bg-rose-500/15 text-rose-300;
   }
 }
 

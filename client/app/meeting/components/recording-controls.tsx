@@ -77,18 +77,18 @@ export const RecordingControls = ({
   const statusConfig = isRecordingActive
     ? {
         className:
-          "border-red-400/30 bg-red-500/15 text-red-100 shadow-[0_0_24px_rgba(239,68,68,0.16)]",
+          "border-red-400/30 bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-100 shadow-[0_0_24px_rgba(239,68,68,0.16)]",
         dotClassName: "bg-red-400",
         label: "Recording in progress",
       }
     : hasStopped
       ? {
-          className: "border-emerald-400/30 bg-emerald-500/15 text-emerald-100",
+          className: "border-emerald-400/30 bg-emerald-100 dark:bg-emerald-500/15 text-emerald-900 dark:text-emerald-100",
           dotClassName: "bg-emerald-400",
           label: "Recording ready",
         }
       : {
-          className: "border-white/10 bg-white/[0.05] text-zinc-300",
+          className: "border-border bg-muted/50 text-muted-foreground",
           dotClassName: "bg-zinc-500",
           label: "Recording not started",
         };
@@ -112,10 +112,10 @@ export const RecordingControls = ({
         className={cn(
           "inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl px-4 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60",
           isRecordingActive
-            ? "bg-red-500/20 text-red-100 hover:bg-red-500/30"
+            ? "bg-red-500/20 text-red-800 dark:text-red-100 hover:bg-red-500/30"
             : hasStopped
-              ? "bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/20"
-              : "bg-white/[0.08] text-white hover:bg-white/[0.12]",
+              ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-500/20"
+              : "bg-muted text-foreground hover:bg-accent",
         )}
         disabled={isLoading || hasStopped}
         onClick={() =>
@@ -136,7 +136,7 @@ export const RecordingControls = ({
       </button>
 
       {error ? (
-        <p className="basis-full rounded-2xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+        <p className="basis-full rounded-2xl border border-red-400/30 bg-red-100 dark:bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
           {error}
         </p>
       ) : null}

@@ -1,18 +1,20 @@
 import type { Task, TaskPriority, TaskSource, TaskStatus } from "../../schema/task.model";
 import type { TaskListItemDto } from "./task-api.types";
+import type { ReorderedTaskDto } from "./reprioritize-payload.types";
 
 const STATUS_TO_UI: Record<TaskStatus, string> = {
   BACKLOG: "backlog",
-  TODO: "todo",
-  IN_PROGRESS: "in progress",
-  DONE: "completed",
+  TODO: "review",
+  IN_PROGRESS: "doing",
+  DONE: "done",
 };
 
 const UI_TO_STATUS: Record<string, TaskStatus> = {
   backlog: "BACKLOG",
-  todo: "TODO",
+  todo: "BACKLOG",
   doing: "IN_PROGRESS",
-  "in progress": "IN_PROGRESS",
+  review: "TODO",
+  "in progress": "TODO",
   completed: "DONE",
   done: "DONE",
 };
@@ -85,6 +87,21 @@ export function serializeMembers(
   return JSON.stringify(normalized);
 }
 
+export function parseDependencyTaskIds(value: string | null | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is string => typeof item === "string");
+  } catch {
+    return [];
+  }
+}
+
+export function serializeDependencyTaskIds(dependencyTaskIds: string[]): string {
+  return JSON.stringify(dependencyTaskIds);
+}
+
 export function toTaskListItem(row: Task): TaskListItemDto {
   return {
     id: row.id,
@@ -105,6 +122,14 @@ export function toTaskListItem(row: Task): TaskListItemDto {
     members: parseMembersJson(row.membersJson),
     sequenceOrder: row.sequenceOrder ?? 0,
     dependencyTaskIds: parseDependenciesJson(row.dependenciesJson),
+  };
+}
+
+export function toReorderedTaskDto(row: Task): ReorderedTaskDto {
+  return {
+    ...toTaskListItem(row),
+    sequenceOrder: row.sequenceOrder,
+    dependencyTaskIds: parseDependencyTaskIds(row.dependencyTaskIdsJson),
   };
 }
 

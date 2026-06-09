@@ -166,7 +166,7 @@ export function IssueDetail({
                           className={cn(
                             "flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors",
                             selectedAssignees.includes(u.login)
-                              ? "border-violet-500/50 bg-violet-500/10 text-violet-600"
+                              ? "border-violet-500/50 bg-violet-100 dark:bg-violet-500/10 text-violet-600"
                               : "border-border/60 text-muted-foreground hover:border-border",
                           )}
                         >
@@ -323,7 +323,7 @@ export function IssueDetail({
           </p>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="size-5 animate-spin text-violet-500" />
+              <Loader2 className="size-5 animate-spin text-violet-700 dark:text-violet-500" />
             </div>
           ) : comments.length === 0 ? (
             <p className="py-4 text-sm text-muted-foreground">No comments yet</p>

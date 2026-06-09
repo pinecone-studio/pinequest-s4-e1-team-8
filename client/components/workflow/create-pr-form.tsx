@@ -76,7 +76,7 @@ export function CreatePrForm({
       <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Sparkles className="size-4 text-violet-500" />
+            <Sparkles className="size-4 text-violet-700 dark:text-violet-500" />
             <h2 className="text-sm font-semibold text-foreground">
               {mode === "pull" ? "Create Pull Request" : "Create Issue"}
             </h2>
@@ -189,7 +189,7 @@ export function CreatePrForm({
         ) : null}
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-5">
-          <Badge className="bg-violet-500/10 text-violet-600 hover:bg-violet-500/10">
+          <Badge className="bg-violet-100 dark:bg-violet-500/10 text-violet-600 hover:bg-violet-200 dark:hover:bg-violet-500/10">
             {selectedRepo}
           </Badge>
           <div className="flex gap-2">

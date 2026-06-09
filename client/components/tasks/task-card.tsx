@@ -94,7 +94,7 @@ export function TaskCard({
       ref={cardRef}
       data-task-id={task.id}
       className={cn(
-        "group relative w-full rounded-lg border bg-card text-card-foreground shadow-sm transition-colors dark:bg-[#1f2024]",
+        "group relative w-full rounded-lg border bg-card text-card-foreground shadow-sm transition-colors ",
         "hover:border-violet-400/50",
         selected
           ? "border-violet-500 ring-1 ring-violet-500"
@@ -167,7 +167,7 @@ export function TaskCard({
             type="button"
             aria-label="Rename task"
             className={cn(
-              "absolute top-2 right-2 grid size-7 place-items-center rounded-md border border-border/60 bg-[#25262b] text-muted-foreground opacity-0 transition-opacity",
+              "absolute top-2 right-2 grid size-7 place-items-center rounded-md border border-border/60 bg-muted text-muted-foreground opacity-0 transition-opacity",
               "group-hover:opacity-100 hover:border-violet-400/50 hover:text-foreground",
               selected && "opacity-100",
             )}

@@ -734,7 +734,7 @@ export function WorkflowContent() {
   if (!isLoaded || loading) {
     return (
       <div className="flex flex-1 items-center justify-center py-24">
-        <Loader2 className="size-6 animate-spin text-violet-500" />
+        <Loader2 className="size-6 animate-spin text-violet-700 dark:text-violet-500" />
       </div>
     );
   }
@@ -742,8 +742,8 @@ export function WorkflowContent() {
   if (!connected) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-violet-500/10">
-          <GitPullRequest className="size-7 text-violet-500" />
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-500/10">
+          <GitPullRequest className="size-7 text-violet-700 dark:text-violet-500" />
         </div>
         <div>
           <h2 className="text-xl font-semibold text-foreground">Connect GitHub</h2>
@@ -796,7 +796,7 @@ export function WorkflowContent() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <Sparkles className="size-5 text-violet-500" />
+              <Sparkles className="size-5 text-violet-700 dark:text-violet-500" />
               <h1 className="text-xl font-semibold tracking-tight text-foreground">Workflow</h1>
             </div>
             <p className="mt-0.5 text-sm text-muted-foreground">

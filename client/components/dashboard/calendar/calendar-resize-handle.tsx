@@ -54,11 +54,11 @@ export function CalendarResizeHandle() {
       onPointerDown={onPointerDown}
       className={cn(
         "absolute right-0 bottom-0 left-0 z-10 flex h-4 cursor-ns-resize items-center justify-center",
-        "rounded-b-2xl border-t border-[#1a1d24]/80 bg-[#0d0e12]/95 transition-colors",
-        "hover:bg-[#14161d] group-hover/calendar-resize:bg-[#14161d]",
+        "rounded-b-2xl border-t border-border/80 bg-popover/95 transition-colors",
+        "hover:bg-muted group-hover/calendar-resize:bg-muted",
       )}
     >
-      <span className="h-1 w-10 rounded-full bg-[#3a4050] transition-colors group-hover/calendar-resize:bg-[#5a6170]" />
+      <span className="h-1 w-10 rounded-full bg-border transition-colors group-hover/calendar-resize:bg-muted-foreground" />
     </button>
   );
 }

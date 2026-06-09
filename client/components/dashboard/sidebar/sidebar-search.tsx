@@ -13,9 +13,9 @@ export function SidebarSearch() {
         <Input
           id="sidebar-search"
           defaultValue="Redesign App"
-          className="h-10 rounded-2xl border-sidebar-border bg-background/50 pl-9 pr-9 dark:bg-[#121318]"
+          className="h-10 rounded-2xl border-sidebar-border bg-background/50 pl-9 pr-9 dark:bg-secondary"
         />
-        <Star className="absolute top-1/2 right-3 size-4 -translate-y-1/2 fill-amber-400 text-amber-400" />
+        <Star className="absolute top-1/2 right-3 size-4 -translate-y-1/2 fill-amber-400 text-amber-700 dark:text-amber-400" />
       </div>
     </div>
   );

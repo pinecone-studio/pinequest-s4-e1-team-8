@@ -387,14 +387,15 @@ export async function fetchRepoAssignees(owner: string, repo: string) {
   return data.assignees;
 }
 
-export async function syncGithubIssues() {
-  const repo = getGithubRepo();
-  if (!repo) return;
-  await clientApi.post("/integrations/github/sync", {
-    userId: uid(),
-    owner: repo.owner,
-    repo: repo.repo,
-  });
+export async function syncGithubIssues(
+  owner: string,
+  repo: string,
+): Promise<{ synced: number }> {
+  const { data } = await clientApi.post<{ synced: number }>(
+    "/integrations/github/sync",
+    { userId: uid(), owner, repo },
+  );
+  return data;
 }
 
 export type GithubProject = {

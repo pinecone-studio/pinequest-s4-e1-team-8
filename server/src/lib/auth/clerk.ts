@@ -13,6 +13,7 @@ const AUTHORIZED_PARTIES = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://brisk-pm.vercel.app",
+  "https://brisk-client.danny-otgontsetseg.workers.dev",
 ];
 
 export function extractBearerToken(c: AuthContext): string | null {

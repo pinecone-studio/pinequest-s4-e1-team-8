@@ -14,12 +14,15 @@ const AuthSetup = () => {
 
 export const AppShell = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
-  const hideSidebar = pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+  const hideSidebar =
+    pathname === "/onboarding" ||
+    pathname.startsWith("/onboarding/") ||
+    pathname.startsWith("/invite/");
 
   return (
     <MeetingChannelPresenceProvider>
       <MeetingSessionProvider>
-        <div className="flex min-h-screen bg-[#121212]">
+        <div className="flex min-h-screen bg-background">
           <AuthSetup />
           <UserSync />
           {hideSidebar ? null : <DashboardSidebar />}

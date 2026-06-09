@@ -46,7 +46,7 @@ export function PrMergeBox({
   }
 
   return (
-    <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-5">
+    <div className="rounded-xl border border-violet-300 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/5 p-5">
       <div className="flex items-start gap-3">
         {toneIcon}
         <div className="min-w-0 flex-1">

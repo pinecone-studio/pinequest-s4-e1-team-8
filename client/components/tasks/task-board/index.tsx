@@ -15,6 +15,7 @@ export function TaskBoard({
   onUpdateTask,
 }: TaskBoardProps) {
   const {
+    activeId,
     activeTask,
     handleDragCancel,
     handleDragEnd,
@@ -23,6 +24,8 @@ export function TaskBoard({
     items,
     sensors,
   } = useTaskBoardDnd(tasks, onUpdateTask);
+
+  const isBoardDragging = activeId !== null;
 
   return (
     <DndContext
@@ -41,6 +44,7 @@ export function TaskBoard({
             tasks={tasks}
             taskIds={items[status]}
             selectedTaskId={selectedTaskId}
+            isBoardDragging={isBoardDragging}
             onSelectTask={onSelectTask}
             onUpdateTask={onUpdateTask}
             onAddTask={onAddTask}
@@ -48,12 +52,7 @@ export function TaskBoard({
         ))}
       </div>
 
-      <DragOverlay
-        dropAnimation={{
-          duration: 250,
-          easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
-        }}
-      >
+      <DragOverlay dropAnimation={null}>
         {activeTask ? (
           <DragOverlayCard
             task={activeTask}

@@ -33,19 +33,19 @@ export function TaskDetailPanel({
   const isDone = task.status === "done";
 
   return (
-    <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[680px] flex-col border-l border-border/60 bg-[#1e1f21] shadow-2xl animate-in slide-in-from-right duration-300">
+    <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[680px] flex-col border-l border-border/60 bg-card shadow-2xl animate-in slide-in-from-right duration-300">
       <div className="flex items-center justify-between gap-4 border-b border-border/50 px-8 py-4">
         <button
           type="button"
           className={cn(
             "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
             isDone
-              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-              : "border-border/60 text-foreground hover:bg-[#25262b]",
+              ? "border-emerald-500/40 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+              : "border-border/60 text-foreground hover:bg-muted",
           )}
           onClick={() => update({ status: isDone ? "doing" : "done" })}
         >
-          <CheckCircle2 className={cn("size-4", isDone && "text-emerald-400")} />
+          <CheckCircle2 className={cn("size-4", isDone && "text-emerald-700 dark:text-emerald-400")} />
           {isDone ? "Completed" : "Mark complete"}
         </button>
 
@@ -74,10 +74,10 @@ export function TaskDetailPanel({
             </HeaderIconButton>
 
             {menuOpen ? (
-              <div className="absolute right-0 top-9 z-10 min-w-40 rounded-lg border border-border/60 bg-[#25262b] py-1 shadow-xl">
+              <div className="absolute right-0 top-9 z-10 min-w-40 rounded-lg border border-border/60 bg-muted py-1 shadow-xl">
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-300 hover:bg-muted/20"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-800 dark:text-rose-300 hover:bg-muted/20"
                   onClick={() => {
                     setMenuOpen(false);
                     onDelete(task.id);
@@ -117,7 +117,7 @@ function HeaderIconButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-[#25262b] hover:text-foreground"
+      className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     >
       {children}
     </button>

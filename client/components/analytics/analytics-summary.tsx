@@ -120,7 +120,7 @@ export function AnalyticsSummary() {
             }
           />
         ) : (
-          <div className="flex min-h-[400px] items-center justify-center rounded-xl border border-dashed border-border/60 bg-[#16171b]/60 px-4 py-8 text-center text-sm text-muted-foreground">
+          <div className="flex min-h-[400px] items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/60 px-4 py-8 text-center text-sm text-muted-foreground">
             Select a team from the dropdown to view its schedule and progress
             timeline.
           </div>

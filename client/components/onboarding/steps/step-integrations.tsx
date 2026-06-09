@@ -1,13 +1,20 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
-import { fetchAsanaStatus, getAsanaConnectUrl } from "@/lib/integrations/asana";
+import { useInternalUserId } from "@/hooks/use-internal-user-id";
+import {
+  fetchAsanaStatus,
+  getAsanaConnectUrl,
+  setAsanaUserId,
+} from "@/lib/integrations/asana";
+import { cn } from "@/lib/utils";
 import { Check, ArrowRight } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 function GithubMark() {
   return (
-    <div className="grid h-6 w-6 place-items-center rounded-full bg-white/10 text-[13px] font-bold text-white">
+    <div className="grid h-6 w-6 place-items-center rounded-full bg-muted/50 text-[13px] font-bold text-foreground">
       GH
     </div>
   );
@@ -29,6 +36,7 @@ interface IntegrationCardProps {
   logo: React.ReactNode;
   connected: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 }
 
 function IntegrationCard({
@@ -37,35 +45,34 @@ function IntegrationCard({
   logo,
   connected,
   onToggle,
+  disabled = false,
 }: IntegrationCardProps) {
   return (
     <div
-      className="flex flex-1 flex-col gap-3 rounded-xl border p-4 transition-[border-color,background]"
-      style={{
-        borderColor: connected ? "rgba(34,197,94,0.45)" : "rgba(255,255,255,0.1)",
-        background: connected ? "rgba(34,197,94,0.08)" : "#121318",
-      }}
+      className={cn(
+        "flex flex-1 flex-col gap-3 rounded-xl border p-4 transition-[border-color,background]",
+        connected
+          ? "border-emerald-500/40 bg-emerald-50 dark:border-emerald-500/45 dark:bg-emerald-500/10"
+          : "border-border bg-muted/40 dark:bg-secondary",
+      )}
     >
       <div className="flex items-center gap-2.5">
-        <div className="grid h-[42px] w-[42px] flex-none place-items-center rounded-[10px] border border-white/10 bg-[#1a1b1f]">
+        <div className="grid h-[42px] w-[42px] flex-none place-items-center rounded-[10px] border border-border bg-card">
           {logo}
         </div>
         <div>
-          <div className="text-[15px] font-semibold text-white">{name}</div>
-          <div className="text-[12.5px] text-[#8e8e93]">{desc}</div>
+          <div className="text-[15px] font-semibold text-foreground">{name}</div>
+          <div className="text-[12.5px] text-foreground">{desc}</div>
         </div>
       </div>
       <button
-        className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-[13px] font-semibold transition-colors"
-        style={
+        className={cn(
+          "flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
           connected
-            ? {
-                background: "rgba(34,197,94,0.12)",
-                border: "1px solid rgba(34,197,94,0.35)",
-                color: "#86efac",
-              }
-            : { background: "#7c3aed", color: "#fff" }
-        }
+            ? "border-emerald-500/35 bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
+            : "border-transparent bg-violet-600 text-white hover:bg-violet-500",
+        )}
+        disabled={disabled || connected}
         onClick={onToggle}
       >
         {connected ? (
@@ -81,16 +88,35 @@ function IntegrationCard({
   );
 }
 
+const ASANA_ERROR_MESSAGES: Record<string, string> = {
+  not_configured:
+    "Asana is not set up yet (missing ASANA_CLIENT_ID in .env.local). Use Skip for now.",
+  missing_client_credentials:
+    "Asana credentials are incomplete. Use Skip for now or ask your teammate to add them.",
+  missing_user: "Could not start Asana sign-in. Refresh and try again.",
+};
+
+function asanaErrorMessage(code: string | null) {
+  if (!code) return null;
+  return ASANA_ERROR_MESSAGES[code] ?? `Asana connection failed (${code}). You can skip this step.`;
+}
+
 export function StepIntegrations() {
+  const { userId, isLoaded: userReady } = useInternalUserId();
+  const searchParams = useSearchParams();
   const {
     step3,
     toggleGithubConnection,
     setAsanaConnected,
     advanceFromStep3,
     skipStep3,
+    setStep,
   } = useOnboardingStore();
+  const [asanaMessage, setAsanaMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!userReady) return;
+    setAsanaUserId(userId);
     fetchAsanaStatus()
       .then((status) => {
         if (status.connected) {
@@ -100,25 +126,57 @@ export function StepIntegrations() {
       .catch(() => {
         // API unavailable or not connected yet.
       });
-  }, [setAsanaConnected]);
+  }, [setAsanaConnected, userReady, userId]);
+
+  useEffect(() => {
+    const connected = searchParams.get("asana_connected");
+    const error = searchParams.get("asana_error");
+
+    if (connected === "1") {
+      setAsanaConnected(true);
+      setAsanaMessage("Asana connected successfully.");
+      setStep(2);
+      window.history.replaceState({}, "", "/onboarding");
+      return;
+    }
+
+    if (error) {
+      setAsanaMessage(asanaErrorMessage(error));
+      setStep(2);
+      window.history.replaceState({}, "", "/onboarding");
+    }
+  }, [searchParams, setAsanaConnected, setStep]);
 
   const handleAsanaConnect = () => {
-    if (step3.asanaConnected) return;
-    window.location.href = getAsanaConnectUrl();
+    if (step3.asanaConnected || !userReady) return;
+    setAsanaUserId(userId);
+    window.location.href = getAsanaConnectUrl("/onboarding");
   };
 
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-white">
+        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-foreground">
           Connect your tools
         </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-[#8e8e93]">
+        <p className="mt-1.5 text-sm leading-relaxed text-foreground">
           Link the services your team already uses. Brisk keeps everything in sync.
         </p>
       </div>
 
-      <div className="flex gap-3.5">
+      {asanaMessage ? (
+        <p
+          className={`mb-4 rounded-lg px-3 py-2 text-[13px] ${
+            step3.asanaConnected
+              ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+              : "bg-amber-100 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200"
+          }`}
+        >
+          {asanaMessage}
+        </p>
+      ) : null}
+
+      <div className="flex flex-col gap-3.5 sm:flex-row">
         <IntegrationCard
           name="GitHub"
           desc="Sync commits, PRs & issues"
@@ -132,8 +190,14 @@ export function StepIntegrations() {
           logo={<AsanaMark />}
           connected={step3.asanaConnected}
           onToggle={handleAsanaConnect}
+          disabled={!userReady}
         />
       </div>
+
+      <p className="mt-3 text-[12px] text-foreground/80">
+        GitHub is a demo toggle for now. Asana needs developer keys — optional during
+        onboarding.
+      </p>
 
       <div className="mt-7 flex items-center">
         <button
@@ -144,7 +208,7 @@ export function StepIntegrations() {
           <ArrowRight size={17} />
         </button>
         <button
-          className="ml-auto px-1.5 text-[13.5px] font-medium text-[#8e8e93] transition-colors hover:text-violet-400"
+          className="ml-auto px-1.5 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-violet-800 dark:hover:text-violet-400"
           onClick={skipStep3}
         >
           Skip for now

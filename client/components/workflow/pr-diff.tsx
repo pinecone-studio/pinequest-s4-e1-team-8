@@ -18,10 +18,10 @@ function DiffLine({ line }: { line: string }) {
     <div
       className={cn(
         "whitespace-pre font-mono text-[11px] leading-5",
-        isAdd && "bg-emerald-500/15 text-emerald-300",
-        isDel && "bg-red-500/15 text-red-300",
-        isHunk && "bg-violet-500/20 text-violet-300",
-        !isAdd && !isDel && !isHunk && "text-zinc-400",
+        isAdd && "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
+        isDel && "bg-red-100 dark:bg-red-500/15 text-red-300",
+        isHunk && "bg-violet-200 dark:bg-violet-500/20 text-violet-800 dark:text-violet-300",
+        !isAdd && !isDel && !isHunk && "text-muted-foreground",
       )}
     >
       {line || " "}
@@ -33,7 +33,7 @@ export function PrDiff({ files, loading }: PrDiffProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="size-5 animate-spin text-violet-500" />
+        <Loader2 className="size-5 animate-spin text-violet-700 dark:text-violet-500" />
       </div>
     );
   }
@@ -52,13 +52,13 @@ export function PrDiff({ files, loading }: PrDiffProps) {
           className="overflow-hidden rounded-xl border border-border/60 bg-zinc-950"
         >
           <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-2.5">
-            <div className="flex items-center gap-2 text-sm text-zinc-200">
-              <FileCode className="size-4 text-violet-400" />
+            <div className="flex items-center gap-2 text-sm text-foreground/80">
+              <FileCode className="size-4 text-violet-700 dark:text-violet-400" />
               <span className="font-mono text-xs">{file.filename}</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <span className="rounded bg-zinc-800 px-2 py-0.5 text-zinc-400">{file.status}</span>
-              <span className="text-emerald-400">+{file.additions}</span>
+              <span className="rounded bg-zinc-800 px-2 py-0.5 text-muted-foreground">{file.status}</span>
+              <span className="text-emerald-700 dark:text-emerald-400">+{file.additions}</span>
               <span className="text-red-400">-{file.deletions}</span>
             </div>
           </div>

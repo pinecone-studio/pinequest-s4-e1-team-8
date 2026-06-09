@@ -192,7 +192,7 @@ export function PrDetail({
           {tab === "commits" ? (
             loading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="size-5 animate-spin text-violet-500" />
+                <Loader2 className="size-5 animate-spin text-violet-700 dark:text-violet-500" />
               </div>
             ) : commits.length === 0 ? (
               <p className="py-12 text-center text-sm text-muted-foreground">No commits</p>
@@ -203,7 +203,7 @@ export function PrDetail({
                     key={c.sha}
                     className="flex items-start gap-3 rounded-xl border border-border/60 px-4 py-3"
                   >
-                    <GitCommit className="mt-0.5 size-4 shrink-0 text-violet-500" />
+                    <GitCommit className="mt-0.5 size-4 shrink-0 text-violet-700 dark:text-violet-500" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">
                         {c.commit.message.split("\n")[0]}
@@ -221,7 +221,7 @@ export function PrDetail({
           {tab === "checks" ? (
             loading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="size-5 animate-spin text-violet-500" />
+                <Loader2 className="size-5 animate-spin text-violet-700 dark:text-violet-500" />
               </div>
             ) : !checks ? (
               <p className="py-12 text-center text-sm text-muted-foreground">No checks</p>
@@ -242,10 +242,10 @@ export function PrDetail({
                         className={cn(
                           "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
                           run.conclusion === "success"
-                            ? "bg-emerald-500/10 text-emerald-600"
+                            ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600"
                             : run.conclusion === "failure"
                               ? "bg-destructive/10 text-destructive"
-                              : "bg-amber-500/10 text-amber-600",
+                              : "bg-amber-100 dark:bg-amber-500/10 text-amber-600",
                         )}
                       >
                         {run.conclusion ?? run.status}

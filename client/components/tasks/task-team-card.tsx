@@ -29,7 +29,7 @@ export function TaskTeamCard({ team, active, onClick }: TaskTeamCardProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        "min-w-[240px] shrink-0 rounded-xl border bg-card p-4 text-left shadow-sm transition-colors dark:bg-[#1f2024]",
+        "min-w-[240px] shrink-0 rounded-xl border bg-card p-4 text-left shadow-sm transition-colors ",
         active
           ? "border-violet-500 border-dashed ring-1 ring-violet-500/40"
           : "border-border/70 hover:border-violet-400/40",
@@ -60,7 +60,7 @@ export function TaskTeamCard({ team, active, onClick }: TaskTeamCardProps) {
           <span
             key={`${team.name}-${member}-${index}`}
             className={cn(
-              "grid size-8 place-items-center rounded-full border-2 border-card text-[11px] font-semibold text-white dark:border-[#1f2024]",
+              "grid size-8 place-items-center rounded-full border-2 border-card text-[11px] font-semibold text-white border-elevated",
               index > 0 && "-ml-2",
               memberColors[index % memberColors.length],
             )}
@@ -87,13 +87,13 @@ export function TaskTeamCard({ team, active, onClick }: TaskTeamCardProps) {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/10 px-2.5 py-1 text-xs font-medium text-sky-300">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 dark:bg-sky-500/10 px-2.5 py-1 text-xs font-medium text-sky-800 dark:text-sky-300">
           <Clock className="size-3.5" />
           {team.timeLeft}
         </span>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
-            <MessageCircle className="size-3.5 text-violet-400" />
+            <MessageCircle className="size-3.5 text-violet-700 dark:text-violet-400" />
             {team.doneCount}
           </span>
           <span className="inline-flex items-center gap-1">

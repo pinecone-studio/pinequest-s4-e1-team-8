@@ -22,7 +22,7 @@ export function SidebarThemeToggle() {
         aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
         title={isDark ? "Light mode" : "Dark mode"}
         onClick={() => setTheme(isDark ? "light" : "dark")}
-        className="mx-auto flex size-10 items-center justify-center rounded-full bg-[#1a1a1e] text-white transition-colors hover:bg-[#222228]"
+        className="mx-auto flex size-10 items-center justify-center rounded-full bg-muted text-foreground transition-colors hover:bg-accent"
       >
         {isDark ? (
           <Moon className="size-4 stroke-[1.75]" />
@@ -34,7 +34,7 @@ export function SidebarThemeToggle() {
   }
 
   return (
-    <div className="flex rounded-full bg-[#1a1a1e] p-1">
+    <div className="flex rounded-full bg-muted p-1">
       <button
         type="button"
         aria-pressed={!isDark}
@@ -43,7 +43,7 @@ export function SidebarThemeToggle() {
           "flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-[12px] font-medium transition-colors",
           !isDark
             ? "bg-[#7c3aed] text-white"
-            : "text-[#6b6b73] hover:text-[#9a9aa3]",
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Sun className="size-3.5 stroke-[1.75]" />
@@ -57,7 +57,7 @@ export function SidebarThemeToggle() {
           "flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-[12px] font-medium transition-colors",
           isDark
             ? "bg-[#7c3aed] text-white shadow-[0_2px_12px_-2px_rgba(124,58,237,0.5)]"
-            : "text-[#6b6b73] hover:text-[#9a9aa3]",
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         <Moon className="size-3.5 stroke-[1.75]" />

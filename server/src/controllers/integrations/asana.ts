@@ -344,14 +344,45 @@ export const postAsanaSync = async (c: Context<{ Bindings: Bindings }>) => {
     const db = useDB(c);
     await ensureTaskDefaults(db);
 
-    await db
-      .delete(tasks)
+    const existingRows = await db
+      .select()
+      .from(tasks)
       .where(
         and(eq(tasks.source, "asana"), eq(tasks.workspaceId, DEFAULT_WORKSPACE_ID)),
       );
+    const existingById = new Map(existingRows.map((row) => [row.id, row]));
+    const syncedIds = new Set<string>();
 
-    for (const row of rows) {
-      await db.insert(tasks).values(row);
+    for (const mapped of rows) {
+      syncedIds.add(mapped.id);
+      const existing = existingById.get(mapped.id);
+      const status =
+        mapped.status === "DONE" ? "DONE" : (existing?.status ?? mapped.status);
+
+      if (existing) {
+        await db
+          .update(tasks)
+          .set({
+            title: mapped.title,
+            description: mapped.description,
+            dueDate: mapped.dueDate,
+            status,
+            tool: mapped.tool,
+            membersJson: mapped.membersJson,
+            progress: status === "DONE" ? 100 : existing.progress,
+            doneCount: status === "DONE" ? 1 : existing.doneCount,
+            timeLeft: mapped.timeLeft,
+          })
+          .where(eq(tasks.id, mapped.id));
+      } else {
+        await db.insert(tasks).values({ ...mapped, status });
+      }
+    }
+
+    for (const existing of existingRows) {
+      if (!syncedIds.has(existing.id)) {
+        await db.delete(tasks).where(eq(tasks.id, existing.id));
+      }
     }
 
     return c.json({ synced: rows.length });

@@ -27,6 +27,7 @@ export const projects = sqliteTable("projects", {
   isAsanaDisconnected: integer("is_asana_disconnected", { mode: "boolean" })
     .notNull()
     .default(false),
+  inviteToken: text("invite_token").unique(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

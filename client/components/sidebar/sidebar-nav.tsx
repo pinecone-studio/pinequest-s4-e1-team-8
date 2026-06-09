@@ -25,7 +25,7 @@ export const SidebarNav = () => {
       )}
     >
       {!collapsed && (
-        <p className="mb-2.5 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b73]">
+        <p className="mb-2.5 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Overview
         </p>
       )}
@@ -44,7 +44,7 @@ export const SidebarNav = () => {
       </ul>
 
       {!collapsed && (
-        <p className="mb-2.5 mt-5 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b73]">
+        <p className="mb-2.5 mt-5 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Workflow
         </p>
       )}

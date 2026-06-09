@@ -20,17 +20,17 @@ const levelConfig: Record<
   high: {
     bar: "bg-rose-900/80",
     label: "High",
-    text: "text-rose-300/80",
+    text: "text-rose-800 dark:text-rose-300/80",
   },
   medium: {
     bar: "bg-amber-900/70",
     label: "Medium",
-    text: "text-amber-200/70",
+    text: "text-amber-900 dark:text-amber-200/70",
   },
   low: {
-    bar: "bg-slate-600/80",
+    bar: "bg-slate-500 dark:bg-slate-600/80",
     label: "Low",
-    text: "text-slate-400/80",
+    text: "text-slate-600 dark:text-slate-400/80",
   },
 };
 
@@ -112,7 +112,7 @@ function RiskStatRing({
   const colors = statRingConfig[tone];
 
   return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-border/60 bg-[#1c1d22] px-3 py-3">
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-border/60 bg-secondary px-3 py-3">
       <RiskRing
         value={fillPct}
         stroke={colors.ring}
@@ -146,7 +146,7 @@ function TopRisksChart({ items }: { items: AnalyticsRiskItem[] }) {
   ];
 
   return (
-    <div className="flex h-full flex-col rounded-lg border border-border/50 bg-[#18191d]/60 p-4">
+    <div className="flex h-full flex-col rounded-lg border border-border/50 bg-card/60 p-4">
       <div>
         <p className="text-xs font-medium text-muted-foreground">
           Breakdown by severity
@@ -238,9 +238,9 @@ export function AnalyticsRisksPanel() {
     <div className="flex flex-col gap-5">
       <AnalyticsPulseOverview />
 
-      <section className="rounded-xl border border-border/60 bg-[#16171b] p-4 shadow-sm">
+      <section className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
         <AnalyticsSectionHeader
-          icon={<AlertTriangle className="size-3.5 text-amber-400/70" />}
+          icon={<AlertTriangle className="size-3.5 text-amber-700 dark:text-amber-400/70" />}
           title="Risk management"
         />
 
@@ -277,7 +277,7 @@ export function AnalyticsRisksPanel() {
               />
             </div>
 
-            <div className="rounded-lg border border-border/60 bg-[#1c1d22] p-4">
+            <div className="rounded-lg border border-border/60 bg-secondary p-4">
               <p className="text-xs font-medium text-muted-foreground">
                 Top risks
               </p>

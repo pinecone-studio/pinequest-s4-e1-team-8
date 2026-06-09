@@ -27,7 +27,8 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const prefs = readLayoutPreferences();
-    setCollapsedState(prefs.sidebarCollapsed);
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    setCollapsedState(isMobile ? true : prefs.sidebarCollapsed);
     setHydrated(true);
   }, []);
 

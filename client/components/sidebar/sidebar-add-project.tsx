@@ -20,7 +20,7 @@ export function SidebarAddProject() {
   }
 
   return (
-    <div className="rounded-2xl border border-dashed border-white/[0.12] bg-transparent px-4 py-5 text-center">
+    <div className="rounded-2xl border border-dashed border-border bg-transparent px-4 py-5 text-center">
       <button
         type="button"
         aria-label="Add new project"
@@ -28,14 +28,14 @@ export function SidebarAddProject() {
       >
         <Plus className="size-[18px] stroke-[2]" />
       </button>
-      <p className="text-[13px] font-semibold text-white">Add New Project</p>
-      <p className="mt-1 text-[11px] text-[#6b6b73]">
+      <p className="text-[13px] font-semibold text-sidebar-foreground">Add New Project</p>
+      <p className="mt-1 text-[11px] text-muted-foreground">
         Or use{" "}
         <a
-          href="#"
+          href="/onboarding"
           className="font-medium text-[#a78bfa] underline underline-offset-2 hover:text-[#c4b5fd]"
         >
-          invite link
+          new project
         </a>
       </p>
     </div>

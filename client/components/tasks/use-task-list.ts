@@ -52,6 +52,7 @@ export function useTaskList() {
       );
       const next = mapTasksFromApi(data.tasks);
       setTasks(next);
+      saveStoredTasks(next);
       return next;
     } catch {
       const fallback = readStoredTasks() ?? [];
@@ -92,15 +93,24 @@ export function useTaskList() {
     [loadTasks, tasks],
   );
 
-  const updateTask = useCallback((taskId: string, update: TaskUpdate) => {
-    setTasks((current) => {
-      const next = current.map((task) =>
-        task.id === taskId ? { ...task, ...update } : task,
-      );
-      saveStoredTasks(next);
-      return next;
-    });
-  }, []);
+  const updateTask = useCallback(
+    (taskId: string, update: TaskUpdate) => {
+      setTasks((current) => {
+        const next = current.map((task) =>
+          task.id === taskId ? { ...task, ...update } : task,
+        );
+        saveStoredTasks(next);
+        return next;
+      });
+
+      void clientApi
+        .patch(`${TASKS_API_BASE}/${taskId}`, update)
+        .catch(() => {
+          void loadTasks();
+        });
+    },
+    [loadTasks],
+  );
 
   const addTaskToColumn = useCallback(
     (status: TaskStatus) => {
