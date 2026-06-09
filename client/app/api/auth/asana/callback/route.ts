@@ -104,8 +104,8 @@ export async function GET(request: Request) {
     console.error("[asana callback] token exchange failed:", err);
     let errorCode = "token_exchange_failed";
     try {
-      const parsed = JSON.parse(err) as { error?: string };
-      if (parsed.error === "invalid_client") errorCode = "invalid_client";
+      const parsedError = JSON.parse(err) as { error?: string };
+      if (parsedError.error === "invalid_client") errorCode = "invalid_client";
     } catch {
       // keep generic code
     }
@@ -137,10 +137,7 @@ export async function GET(request: Request) {
   if (!saveRes.ok) {
     const err = await saveRes.text();
     console.error("[asana callback] save integration failed:", err);
-    const hint =
-      saveRes.status === 404
-        ? "api_not_found"
-        : "save_failed";
+    const hint = saveRes.status === 404 ? "api_not_found" : "save_failed";
     return redirect(
       withQuery(
         returnTo,

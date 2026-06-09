@@ -32,9 +32,7 @@ export async function GET(request: Request) {
 
   const clientId = process.env.ASANA_CLIENT_ID?.trim();
   if (!clientId) {
-    return redirect(
-      withQuery(safeReturnTo, "asana_error=not_configured"),
-    );
+    return redirect(withQuery(safeReturnTo, "asana_error=not_configured"));
   }
 
   const userId = url.searchParams.get("userId");

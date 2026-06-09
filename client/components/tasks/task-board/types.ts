@@ -15,6 +15,7 @@ export type BoardColumnProps = {
   tasks: TaskListItem[];
   taskIds: string[];
   selectedTaskId: string | null;
+  isBoardDragging?: boolean;
   onSelectTask: (taskId: string) => void;
   onUpdateTask: (taskId: string, update: TaskUpdate) => void;
   onAddTask: (status: TaskStatus) => void;
@@ -23,6 +24,7 @@ export type BoardColumnProps = {
 export type SortableTaskCardProps = {
   task: TaskListItem;
   selected: boolean;
+  isBoardDragging?: boolean;
   onSelect: (taskId: string) => void;
   onUpdate: (taskId: string, update: TaskUpdate) => void;
 };

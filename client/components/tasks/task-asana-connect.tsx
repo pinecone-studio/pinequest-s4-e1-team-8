@@ -2,20 +2,38 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useInternalUserId } from "@/hooks/use-internal-user-id";
+import {
   disconnectAsana,
   fetchAsanaProjects,
   fetchAsanaStatus,
   fetchAsanaWorkspaces,
   getAsanaConnectUrl,
   selectAsanaProject,
+  setAsanaUserId,
   syncAsanaTasks,
   type AsanaProject,
   type AsanaStatus,
   type AsanaWorkspace,
 } from "@/lib/integrations/asana";
 import { cn } from "@/lib/utils";
-import { Loader2, RefreshCw, Unplug } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Briefcase, ChevronDown, Loader2, LogOut } from "lucide-react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 const oauthErrorMessages: Record<string, string> = {
   api_not_found:
@@ -30,12 +48,48 @@ const oauthErrorMessages: Record<string, string> = {
     "ASANA_CLIENT_ID / ASANA_CLIENT_SECRET тохируулаагүй байна.",
 };
 
-type TaskAsanaConnectProps = {
+type TaskAsanaContextValue = {
+  userId: string;
+  userReady: boolean;
+  status: AsanaStatus | null;
+  workspaces: AsanaWorkspace[];
+  projects: AsanaProject[];
+  workspaceGid: string;
+  projectGid: string;
+  isLoading: boolean;
+  isSyncing: boolean;
+  disconnecting: boolean;
+  error: string | null;
+  selectedProjectName: string;
+  selectedWorkspaceName: string;
+  handleWorkspaceChange: (workspaceGid: string) => Promise<void>;
+  handleProjectChange: (projectGid: string) => Promise<void>;
+  handleDisconnect: () => Promise<void>;
+  handleConnect: () => void;
+};
+
+const TaskAsanaContext = createContext<TaskAsanaContextValue | null>(null);
+
+function useTaskAsana() {
+  const context = useContext(TaskAsanaContext);
+  if (!context) {
+    throw new Error("TaskAsana components must be used within TaskAsanaProvider");
+  }
+  return context;
+}
+
+type TaskAsanaProviderProps = {
+  children: ReactNode;
   onSynced?: () => void;
   oauthError?: string | null;
 };
 
-export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps) {
+export function TaskAsanaProvider({
+  children,
+  onSynced,
+  oauthError,
+}: TaskAsanaProviderProps) {
+  const { userId, isLoaded: userReady } = useInternalUserId();
   const [status, setStatus] = useState<AsanaStatus | null>(null);
   const [workspaces, setWorkspaces] = useState<AsanaWorkspace[]>([]);
   const [projects, setProjects] = useState<AsanaProject[]>([]);
@@ -43,6 +97,7 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
   const [projectGid, setProjectGid] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
   const [error, setError] = useState<string | null>(
     oauthError ? oauthErrorMessages[oauthError] ?? oauthError : null,
   );
@@ -151,59 +206,56 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
   }, [loadWorkspacesAndProjects]);
 
   useEffect(() => {
+    if (!userReady) return;
+    setAsanaUserId(userId);
     void loadStatus();
-  }, [loadStatus]);
+  }, [userReady, userId, loadStatus]);
 
-  const handleWorkspaceChange = async (nextWorkspaceGid: string) => {
-    setWorkspaceGid(nextWorkspaceGid);
-    setProjectGid("");
-    setProjects([]);
+  const handleWorkspaceChange = useCallback(
+    async (nextWorkspaceGid: string) => {
+      setWorkspaceGid(nextWorkspaceGid);
+      setProjectGid("");
+      setProjects([]);
 
-    if (!nextWorkspaceGid) return;
+      if (!nextWorkspaceGid) return;
 
-    try {
-      const nextProjects = await fetchAsanaProjects(nextWorkspaceGid);
-      setProjects(nextProjects);
+      try {
+        const nextProjects = await fetchAsanaProjects(nextWorkspaceGid);
+        setProjects(nextProjects);
 
-      const firstProject = nextProjects[0]?.gid ?? "";
-      setProjectGid(firstProject);
+        const firstProject = nextProjects[0]?.gid ?? "";
+        setProjectGid(firstProject);
 
-      if (firstProject) {
-        await syncProject(
-          nextWorkspaceGid,
-          firstProject,
-          nextProjects[0]?.name ?? "Asana",
-          { force: true },
-        );
+        if (firstProject) {
+          await syncProject(
+            nextWorkspaceGid,
+            firstProject,
+            nextProjects[0]?.name ?? "Asana",
+            { force: true },
+          );
+        }
+      } catch (err) {
+        setError(extractLocalError(err, "Failed to load projects"));
       }
-    } catch (err) {
-      setError(extractLocalError(err, "Failed to load projects"));
-    }
-  };
+    },
+    [syncProject],
+  );
 
-  const handleProjectChange = async (nextProjectGid: string) => {
-    setProjectGid(nextProjectGid);
-    if (!workspaceGid || !nextProjectGid) return;
+  const handleProjectChange = useCallback(
+    async (nextProjectGid: string) => {
+      setProjectGid(nextProjectGid);
+      if (!workspaceGid || !nextProjectGid) return;
 
-    const project = projects.find((entry) => entry.gid === nextProjectGid);
-    await syncProject(workspaceGid, nextProjectGid, project?.name ?? "Asana", {
-      force: true,
-    });
-  };
+      const project = projects.find((entry) => entry.gid === nextProjectGid);
+      await syncProject(workspaceGid, nextProjectGid, project?.name ?? "Asana", {
+        force: true,
+      });
+    },
+    [projects, syncProject, workspaceGid],
+  );
 
-  const handleSync = async () => {
-    if (!workspaceGid || !projectGid) {
-      setError("Select a workspace and project first.");
-      return;
-    }
-
-    const project = projects.find((entry) => entry.gid === projectGid);
-    await syncProject(workspaceGid, projectGid, project?.name ?? "Asana", {
-      force: true,
-    });
-  };
-
-  const handleDisconnect = async () => {
+  const handleDisconnect = useCallback(async () => {
+    setDisconnecting(true);
     try {
       await disconnectAsana();
       lastSyncedKeyRef.current = null;
@@ -214,116 +266,208 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
       await loadStatus();
     } catch (err) {
       setError(extractLocalError(err, "Failed to disconnect Asana"));
+    } finally {
+      setDisconnecting(false);
     }
+  }, [loadStatus]);
+
+  const handleConnect = useCallback(() => {
+    setAsanaUserId(userId);
+    window.location.href = getAsanaConnectUrl();
+  }, [userId]);
+
+  const selectedProjectName =
+    projects.find((project) => project.gid === projectGid)?.name ??
+    status?.projectName ??
+    "Select project";
+
+  const selectedWorkspaceName =
+    workspaces.find((workspace) => workspace.gid === workspaceGid)?.name ??
+    "Workspace";
+
+  const value: TaskAsanaContextValue = {
+    userId,
+    userReady,
+    status,
+    workspaces,
+    projects,
+    workspaceGid,
+    projectGid,
+    isLoading,
+    isSyncing,
+    disconnecting,
+    error,
+    selectedProjectName,
+    selectedWorkspaceName,
+    handleWorkspaceChange,
+    handleProjectChange,
+    handleDisconnect,
+    handleConnect,
   };
 
-  if (isLoading) {
+  return (
+    <TaskAsanaContext.Provider value={value}>{children}</TaskAsanaContext.Provider>
+  );
+}
+
+/** Connected pill — place to the left of Risk alert. */
+export function TaskAsanaHeaderBadge() {
+  const { userReady, status, isLoading, isSyncing, handleConnect } = useTaskAsana();
+
+  if (!userReady || isLoading) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-[#18191d] px-4 py-3 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" />
-        Checking Asana connection...
       </div>
     );
   }
 
   if (!status?.connected) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border/60 bg-[#18191d] px-4 py-4">
-        <div>
-          <p className="text-sm font-medium">Connect Asana</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sign in with Asana OAuth to import tasks from your workspace.
-          </p>
-          {error ? <p className="mt-2 text-sm text-rose-400">{error}</p> : null}
-        </div>
-        <Button
-          type="button"
-          className="rounded-lg"
-          onClick={() => {
-            window.location.href = getAsanaConnectUrl();
-          }}
-        >
-          Connect Asana
-        </Button>
-      </div>
+      <Button type="button" size="sm" className="rounded-lg" onClick={handleConnect}>
+        Connect Asana
+      </Button>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-border/60 bg-[#18191d] px-4 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium">
-            Connected as {status.asanaUserName ?? "Asana user"}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isSyncing
-              ? "Syncing tasks..."
-              : status.projectName
-                ? `Showing tasks from ${status.projectName}`
-                : "Select a project to load tasks."}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-lg"
-            disabled={isSyncing}
-            onClick={() => void handleSync()}
-          >
-            <RefreshCw className={cn("size-4", isSyncing && "animate-spin")} />
-            Sync Asana
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-lg"
-            onClick={() => void handleDisconnect()}
-          >
-            <Unplug className="size-4" />
-            Disconnect
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-          Workspace
-          <select
-            className="h-9 rounded-lg border border-border/60 bg-[#25262b] px-3 text-sm outline-none"
-            value={workspaceGid}
-            onChange={(event) => void handleWorkspaceChange(event.target.value)}
-          >
-            <option value="">Select workspace</option>
-            {workspaces.map((workspace) => (
-              <option key={workspace.gid} value={workspace.gid}>
-                {workspace.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-          Project
-          <select
-            className="h-9 rounded-lg border border-border/60 bg-[#25262b] px-3 text-sm outline-none"
-            value={projectGid}
-            onChange={(event) => void handleProjectChange(event.target.value)}
-          >
-            <option value="">Select project</option>
-            {projects.map((project) => (
-              <option key={project.gid} value={project.gid}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm",
+        "border-emerald-500/30 bg-emerald-500/5",
+      )}
+    >
+      <span className="size-2 rounded-full bg-emerald-500" />
+      <span className="font-medium text-emerald-700 dark:text-emerald-400">
+        Asana Connected
+      </span>
+      {status.asanaUserName ? (
+        <span className="text-muted-foreground">
+          @{formatAsanaHandle(status.asanaUserName)}
+        </span>
+      ) : null}
+      {isSyncing ? (
+        <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+      ) : null}
     </div>
   );
+}
+
+/** Disconnect — below Risk alert / Refresh in the header. */
+export function TaskAsanaHeaderActions() {
+  const { status, userReady, isLoading, disconnecting, handleDisconnect } =
+    useTaskAsana();
+
+  if (!userReady || isLoading || !status?.connected) {
+    return null;
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={disconnecting}
+      onClick={() => void handleDisconnect()}
+      title="Disconnect Asana"
+    >
+      {disconnecting ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <LogOut className="size-4" />
+      )}
+      Disconnect
+    </Button>
+  );
+}
+
+/** Project picker — below GitHub / Asana / Internal tabs. */
+export function TaskAsanaProjectBar() {
+  const {
+    status,
+    userReady,
+    isLoading,
+    workspaces,
+    projects,
+    workspaceGid,
+    projectGid,
+    selectedProjectName,
+    selectedWorkspaceName,
+    handleWorkspaceChange,
+    handleProjectChange,
+  } = useTaskAsana();
+
+  if (!userReady || isLoading || !status?.connected) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {workspaces.length > 1 ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="flex h-9 min-w-40 items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+          >
+            <span className="truncate">{selectedWorkspaceName}</span>
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="max-h-72 w-(--anchor-width)">
+            <DropdownMenuRadioGroup
+              value={workspaceGid}
+              onValueChange={(value) => void handleWorkspaceChange(value)}
+            >
+              {workspaces.map((workspace) => (
+                <DropdownMenuRadioItem key={workspace.gid} value={workspace.gid}>
+                  {workspace.name}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="flex h-9 min-w-48 items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <Briefcase className="size-4 shrink-0 text-muted-foreground" />
+            <span className="truncate">{selectedProjectName}</span>
+          </span>
+          <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="max-h-72 w-(--anchor-width)">
+          {projects.length === 0 ? (
+            <DropdownMenuLabel className="text-muted-foreground">
+              No projects found
+            </DropdownMenuLabel>
+          ) : (
+            <DropdownMenuRadioGroup
+              value={projectGid}
+              onValueChange={(value) => void handleProjectChange(value)}
+            >
+              <DropdownMenuLabel>Projects</DropdownMenuLabel>
+              {projects.map((project) => (
+                <DropdownMenuRadioItem key={project.gid} value={project.gid}>
+                  <Briefcase className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{project.name}</span>
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+export function TaskAsanaErrorMessage() {
+  const { error } = useTaskAsana();
+  if (!error) return null;
+  return <p className="text-sm text-rose-400">{error}</p>;
+}
+
+function formatAsanaHandle(name: string) {
+  return name.trim().replace(/\s+/g, "");
 }
 
 function extractLocalError(err: unknown, fallback: string) {

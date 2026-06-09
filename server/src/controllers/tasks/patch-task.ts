@@ -34,25 +34,25 @@ export const updateTask = async (c: Context<{ Bindings: Bindings }>) => {
     return c.json({ error: "Task not found" }, 404);
   }
 
-  if (existing.source !== "internal") {
+  if (existing.source === "github") {
     return c.json(
-      {
-        error:
-          "Only internal tasks can be updated. GitHub and Asana tasks are read-only until sync is implemented.",
-      },
+      { error: "GitHub tasks are read-only until two-way sync is implemented." },
       403,
     );
   }
 
   const status = uiStatusToDb(body.status);
   const priority = uiPriorityToDb(body.priority);
+  const isDone = status === "DONE";
+  const wasDone = existing.status === "DONE";
 
   const [row] = await db
     .update(tasks)
     .set({
       ...(body.title !== undefined && { title: body.title.trim() }),
       ...(body.description !== undefined && { description: body.description }),
-      ...(body.tool !== undefined && { tool: body.tool }),
+      ...(existing.source === "internal" &&
+        body.tool !== undefined && { tool: body.tool }),
       ...(status !== undefined && { status }),
       ...(priority !== undefined && { priority }),
       ...(body.blocked !== undefined && { blocked: body.blocked }),
@@ -64,9 +64,27 @@ export const updateTask = async (c: Context<{ Bindings: Bindings }>) => {
       ...(body.members !== undefined && {
         membersJson: serializeMembers(body.members),
       }),
-      ...(body.projectId !== undefined && { projectId: body.projectId }),
-      ...(body.subTeamId !== undefined && { subTeamId: body.subTeamId }),
-      ...(body.assigneeId !== undefined && { assigneeId: body.assigneeId }),
+      ...(existing.source === "internal" && body.projectId !== undefined && {
+        projectId: body.projectId,
+      }),
+      ...(existing.source === "internal" && body.subTeamId !== undefined && {
+        subTeamId: body.subTeamId,
+      }),
+      ...(existing.source === "internal" && body.assigneeId !== undefined && {
+        assigneeId: body.assigneeId,
+      }),
+      ...(status !== undefined &&
+        isDone && {
+          progress: 100,
+          doneCount: 1,
+          timeLeft: "Completed",
+        }),
+      ...(status !== undefined &&
+        wasDone &&
+        !isDone && {
+          progress: 40,
+          doneCount: 0,
+        }),
     })
     .where(eq(tasks.id, id))
     .returning();

@@ -3,16 +3,17 @@ import type { TaskListItemDto } from "./task-api.types";
 
 const STATUS_TO_UI: Record<TaskStatus, string> = {
   BACKLOG: "backlog",
-  TODO: "todo",
-  IN_PROGRESS: "in progress",
-  DONE: "completed",
+  TODO: "review",
+  IN_PROGRESS: "doing",
+  DONE: "done",
 };
 
 const UI_TO_STATUS: Record<string, TaskStatus> = {
   backlog: "BACKLOG",
-  todo: "TODO",
+  todo: "BACKLOG",
   doing: "IN_PROGRESS",
-  "in progress": "IN_PROGRESS",
+  review: "TODO",
+  "in progress": "TODO",
   completed: "DONE",
   done: "DONE",
 };

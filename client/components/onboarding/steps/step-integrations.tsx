@@ -1,7 +1,12 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
-import { fetchAsanaStatus, getAsanaConnectUrl } from "@/lib/integrations/asana";
+import { useInternalUserId } from "@/hooks/use-internal-user-id";
+import {
+  fetchAsanaStatus,
+  getAsanaConnectUrl,
+  setAsanaUserId,
+} from "@/lib/integrations/asana";
 import { Check, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -99,6 +104,7 @@ function asanaErrorMessage(code: string | null) {
 }
 
 export function StepIntegrations() {
+  const { userId, isLoaded: userReady } = useInternalUserId();
   const searchParams = useSearchParams();
   const {
     step3,
@@ -111,6 +117,8 @@ export function StepIntegrations() {
   const [asanaMessage, setAsanaMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!userReady) return;
+    setAsanaUserId(userId);
     fetchAsanaStatus()
       .then((status) => {
         if (status.connected) {
@@ -120,7 +128,26 @@ export function StepIntegrations() {
       .catch(() => {
         // API unavailable or not connected yet.
       });
-  }, [setAsanaConnected]);
+  }, [setAsanaConnected, userReady, userId]);
+
+  useEffect(() => {
+    const connected = searchParams.get("asana_connected");
+    const error = searchParams.get("asana_error");
+
+    if (connected === "1") {
+      setAsanaConnected(true);
+      setAsanaMessage("Asana connected successfully.");
+      setStep(2);
+      window.history.replaceState({}, "", "/onboarding");
+      return;
+    }
+
+    if (error) {
+      setAsanaMessage(asanaErrorMessage(error));
+      setStep(2);
+      window.history.replaceState({}, "", "/onboarding");
+    }
+  }, [searchParams, setAsanaConnected, setStep]);
 
   useEffect(() => {
     const connected = searchParams.get("asana_connected");
@@ -142,7 +169,8 @@ export function StepIntegrations() {
   }, [searchParams, setAsanaConnected, setStep]);
 
   const handleAsanaConnect = () => {
-    if (step3.asanaConnected) return;
+    if (step3.asanaConnected || !userReady) return;
+    setAsanaUserId(userId);
     window.location.href = getAsanaConnectUrl("/onboarding");
   };
 
@@ -183,6 +211,7 @@ export function StepIntegrations() {
           logo={<AsanaMark />}
           connected={step3.asanaConnected}
           onToggle={handleAsanaConnect}
+          disabled={!userReady}
         />
       </div>
 

@@ -135,6 +135,7 @@ export function useTaskBoardDnd(
   };
 
   return {
+    activeId,
     activeTask,
     handleDragCancel,
     handleDragEnd,

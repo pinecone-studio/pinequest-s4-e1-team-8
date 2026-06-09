@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 import { SortableTaskCard } from "./sortable-task-card";
 import type { BoardColumnProps } from "./types";
 
@@ -16,6 +16,7 @@ export function BoardColumn({
   tasks,
   taskIds,
   selectedTaskId,
+  isBoardDragging = false,
   onSelectTask,
   onUpdateTask,
   onAddTask,
@@ -58,27 +59,26 @@ export function BoardColumn({
         )}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          {taskIds.map((taskId, index) => {
+          {taskIds.map((taskId) => {
             const task = taskMap.get(taskId);
             if (!task) return null;
 
             return (
-              <Fragment key={taskId}>
-                <SortableTaskCard
-                  task={task}
-                  selected={selectedTaskId === taskId}
-                  onSelect={onSelectTask}
-                  onUpdate={onUpdateTask}
-                />
-                {index === 0 ? (
-                  <TaskAiInsight
-                    text={getColumnAiInsight(columnTasks, status)}
-                  />
-                ) : null}
-              </Fragment>
+              <SortableTaskCard
+                key={taskId}
+                task={task}
+                selected={selectedTaskId === taskId}
+                isBoardDragging={isBoardDragging}
+                onSelect={onSelectTask}
+                onUpdate={onUpdateTask}
+              />
             );
           })}
         </SortableContext>
+
+        {!isBoardDragging && columnTasks.length > 0 ? (
+          <TaskAiInsight text={getColumnAiInsight(columnTasks, status)} />
+        ) : null}
 
         <button
           type="button"

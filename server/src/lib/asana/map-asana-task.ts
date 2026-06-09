@@ -52,7 +52,7 @@ export function mapAsanaTaskToTask(
     parentId: null,
     title: task.name,
     description: trimDescription(task.notes),
-    status: task.completed ? "DONE" : "IN_PROGRESS",
+    status: task.completed ? "DONE" : "TODO",
     priority: "MEDIUM",
     source: "asana",
     tool: projectName || "Asana",
