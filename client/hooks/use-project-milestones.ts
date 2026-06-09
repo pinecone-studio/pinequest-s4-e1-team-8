@@ -3,11 +3,13 @@
 import { fetchTasks, type ApiTaskRecord } from "@/lib/api/tasks";
 import { useOnboardingData } from "@/hooks/use-onboarding-data";
 import { GITHUB_SYNCED_EVENT } from "@/lib/integrations/github";
+import {
+  mapScopedMilestonesToProjectMilestones,
+  type ProjectMilestone,
+} from "@/lib/onboarding/scoped-milestones";
 import { useCallback, useEffect, useState } from "react";
 
-export type ProjectMilestone = ApiTaskRecord & {
-  subtaskCount: number;
-};
+export type { ProjectMilestone };
 
 function isMilestoneTask(task: ApiTaskRecord) {
   if (task.parentId !== null) {
@@ -23,8 +25,27 @@ export function useProjectMilestones() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const applyScopedMilestoneFallback = useCallback(() => {
+    if (!data?.scopedMilestones?.length || !data.projectId) {
+      return false;
+    }
+
+    setMilestones(
+      mapScopedMilestonesToProjectMilestones(
+        data.scopedMilestones,
+        data.projectId,
+      ),
+    );
+    setError(null);
+    return true;
+  }, [data?.projectId, data?.scopedMilestones]);
+
   const loadMilestones = useCallback(async () => {
     if (!data?.projectId) {
+      if (applyScopedMilestoneFallback()) {
+        setIsLoading(false);
+        return;
+      }
       setMilestones([]);
       return;
     }
@@ -50,21 +71,30 @@ export function useProjectMilestones() {
         {},
       );
 
-      setMilestones(
-        milestoneTasks.map((milestone) => ({
-          ...milestone,
-          subtaskCount: subtaskCounts[milestone.id] ?? 0,
-        })),
-      );
+      if (milestoneTasks.length > 0) {
+        setMilestones(
+          milestoneTasks.map((milestone) => ({
+            ...milestone,
+            subtaskCount: subtaskCounts[milestone.id] ?? 0,
+          })),
+        );
+        return;
+      }
+
+      if (!applyScopedMilestoneFallback()) {
+        setMilestones([]);
+      }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load milestones.";
-      setError(message);
-      setMilestones([]);
+      if (!applyScopedMilestoneFallback()) {
+        const message =
+          err instanceof Error ? err.message : "Failed to load milestones.";
+        setError(message);
+        setMilestones([]);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [data?.projectId]);
+  }, [applyScopedMilestoneFallback, data?.projectId]);
 
   useEffect(() => {
     if (!loaded) {

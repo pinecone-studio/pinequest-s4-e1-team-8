@@ -26,10 +26,13 @@ function OnboardingWizardContent() {
     setSaving(true);
     setError(null);
 
-    const localData = toOnboardingData();
+    const payload = toInitializePayload();
+    const localData = {
+      ...toOnboardingData(),
+      scopedMilestones: payload.step4.milestoneDrafts,
+    };
 
     try {
-      const payload = toInitializePayload();
       const result = await initializeProject(payload);
       const members = result.members.map((member) => ({
         email: member.email,
