@@ -15,6 +15,7 @@ const AuthSetup = () => {
 export const AppShell = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const hideSidebar =
+    pathname === "/login" ||
     pathname === "/onboarding" ||
     pathname.startsWith("/onboarding/") ||
     pathname.startsWith("/invite/");
