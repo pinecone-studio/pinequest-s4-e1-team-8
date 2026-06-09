@@ -19,6 +19,8 @@ export type TaskListItemDto = {
   doneCount: number;
   blockedCount: number;
   members: TaskMember[];
+  sequenceOrder: number;
+  dependencyTaskIds: string[];
 };
 
 export type CreateTaskBody = {

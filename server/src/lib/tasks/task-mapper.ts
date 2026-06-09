@@ -52,6 +52,17 @@ function normalizeMember(value: unknown): TaskMember | null {
   return null;
 }
 
+export function parseDependenciesJson(value: string | null | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return (parsed as unknown[]).filter((id): id is string => typeof id === "string");
+  } catch {
+    return [];
+  }
+}
+
 export function parseMembersJson(value: string | null | undefined): TaskMember[] {
   if (!value) return [];
   try {
@@ -92,6 +103,8 @@ export function toTaskListItem(row: Task): TaskListItemDto {
     doneCount: row.doneCount ?? 0,
     blockedCount: row.blockedCount ?? 0,
     members: parseMembersJson(row.membersJson),
+    sequenceOrder: row.sequenceOrder ?? 0,
+    dependencyTaskIds: parseDependenciesJson(row.dependenciesJson),
   };
 }
 
