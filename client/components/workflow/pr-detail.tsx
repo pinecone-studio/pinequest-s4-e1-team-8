@@ -84,9 +84,10 @@ export function PrDetail({
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-4">
-      <div className="rounded-2xl border border-border/60 bg-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-card">
+        <div className="shrink-0 p-3 pb-0">
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             {editing ? (
               <div className="space-y-3">
@@ -113,7 +114,7 @@ export function PrDetail({
             ) : (
               <>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-foreground">
+                  <h2 className="text-base font-semibold leading-snug text-foreground">
                     #{pull.number} {pull.title}
                   </h2>
                   {pull.draft ? (
@@ -156,14 +157,14 @@ export function PrDetail({
           </a>
         </div>
 
-        <div className="mt-4 flex gap-1 border-b border-border/60">
+        <div className="mt-3 flex gap-1 border-b border-border/60">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
               className={cn(
-                "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                "border-b-2 px-3 py-1.5 text-xs font-medium transition-colors",
                 tab === t.id
                   ? "border-violet-500 text-violet-600"
                   : "border-transparent text-muted-foreground hover:text-foreground",
@@ -176,8 +177,9 @@ export function PrDetail({
             </button>
           ))}
         </div>
+        </div>
 
-        <div className="mt-4">
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 pt-2">
           {tab === "conversation" ? (
             <PrConversation
               pull={pull}
@@ -267,6 +269,7 @@ export function PrDetail({
         </div>
       </div>
 
+      <div className="shrink-0">
       <PrMergeBox
         pull={pull}
         mergeMethod={mergeMethod}
@@ -277,6 +280,7 @@ export function PrDetail({
         onClose={onClose}
         onMarkReady={onMarkReady}
       />
+      </div>
     </div>
   );
 }

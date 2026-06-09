@@ -158,15 +158,37 @@
   background-color: var(--muted-foreground);
 }
 
+/* Slightly wider scrollbar for main content panels (e.g. workflow feed). */
+.scrollbar-default {
+  scrollbar-width: auto;
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
+}
+.scrollbar-default::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scrollbar-default::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-default::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.scrollbar-default::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   html {
-    @apply min-h-full font-sans;
+    @apply h-full overflow-hidden font-sans;
   }
   body {
-    @apply min-h-full bg-background font-sans text-foreground;
+    @apply h-full overflow-hidden bg-background font-sans text-foreground;
   }
 }
 

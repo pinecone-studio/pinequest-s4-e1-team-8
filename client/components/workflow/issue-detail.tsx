@@ -99,9 +99,9 @@ export function IssueDetail({
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-4">
-      <div className="rounded-2xl border border-border/60 bg-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-card">
+      <div className="shrink-0 border-b border-border/60 p-4 pb-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             {editing ? (
               <div className="space-y-3">
@@ -316,8 +316,10 @@ export function IssueDetail({
             </Button>
           </div>
         </div>
+      </div>
 
-        <div className="mt-6 space-y-3">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 pt-3">
+        <div className="space-y-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Comments
           </p>
@@ -365,7 +367,7 @@ export function IssueDetail({
             </div>
           ) : null}
         </div>
-      </div>
+        </div>
     </div>
   );
 }

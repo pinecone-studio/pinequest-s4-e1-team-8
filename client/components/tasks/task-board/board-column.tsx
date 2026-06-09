@@ -2,7 +2,7 @@
 
 import { TaskAiInsight } from "@/components/tasks/task-ai-insight";
 import { getColumnAiInsight } from "@/components/tasks/task-ai-insight-utils";
-import { taskColumnConfig } from "@/components/tasks/task-types";
+import type { TaskStatus } from "@/components/tasks/task-types";
 import { cn } from "@/lib/utils";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -11,8 +11,21 @@ import { useMemo } from "react";
 import { SortableTaskCard } from "./sortable-task-card";
 import type { BoardColumnProps } from "./types";
 
+function columnMinHeight(taskCount: number) {
+  const header = 40;
+  const addButton = 44;
+  const insight = taskCount > 0 ? 72 : 0;
+  const perTask = 96;
+  const padding = 16;
+
+  return Math.max(
+    300,
+    header + padding + addButton + insight + taskCount * perTask,
+  );
+}
+
 export function BoardColumn({
-  status,
+  column,
   tasks,
   taskIds,
   selectedTaskId,
@@ -20,9 +33,9 @@ export function BoardColumn({
   onSelectTask,
   onUpdateTask,
   onAddTask,
-}: BoardColumnProps) {
-  const column = taskColumnConfig[status];
-  const { setNodeRef, isOver } = useDroppable({ id: status });
+  addTaskStatus,
+}: BoardColumnProps & { addTaskStatus: TaskStatus }) {
+  const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
   const taskMap = useMemo(
     () => new Map(tasks.map((task) => [task.id, task])),
@@ -38,10 +51,13 @@ export function BoardColumn({
   );
 
   return (
-    <section className="flex min-h-[28rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-card">
+    <section
+      className="flex flex-col rounded-lg border border-border/60 bg-card"
+      style={{ minHeight: columnMinHeight(taskIds.length) }}
+    >
       <header
         className={cn(
-          "px-4 py-3 text-center text-sm font-semibold tracking-tight",
+          "px-3 py-2 text-center text-xs font-semibold tracking-tight",
           column.headerClassName,
         )}
       >
@@ -54,7 +70,7 @@ export function BoardColumn({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-[12rem] flex-1 flex-col gap-3 p-3 transition-colors duration-200",
+          "flex flex-1 flex-col gap-2 p-2 transition-colors duration-200",
           isOver && "bg-violet-50 dark:bg-violet-500/5",
         )}
       >
@@ -77,13 +93,13 @@ export function BoardColumn({
         </SortableContext>
 
         {!isBoardDragging && columnTasks.length > 0 ? (
-          <TaskAiInsight text={getColumnAiInsight(columnTasks, status)} />
+          <TaskAiInsight text={getColumnAiInsight(columnTasks, addTaskStatus)} />
         ) : null}
 
         <button
           type="button"
-          onClick={() => onAddTask(status)}
-          className="mt-auto flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground"
+          onClick={() => onAddTask(addTaskStatus)}
+          className="flex w-full shrink-0 items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground"
         >
           <Plus className="size-4" />
           Add task

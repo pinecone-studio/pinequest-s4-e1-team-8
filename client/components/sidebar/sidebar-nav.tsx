@@ -2,20 +2,13 @@
 
 import { MeetingSidebarSection } from "@/app/meeting/components/meeting-sidebar-section";
 import { SidebarNavItem } from "@/components/sidebar/sidebar-nav-item";
-import { SidebarTree } from "@/components/sidebar/sidebar-tree";
 import { useSidebar } from "@/components/sidebar/sidebar-context";
 import { sidebarNavItems, sidebarWorkflowItems } from "@/lib/dashboard/data";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
 
-const meetingSummaryNavItem = {
-  href: "/meeting-summaries",
-  label: "Meeting Summaries",
-} as const;
-
 export const SidebarNav = () => {
   const { collapsed } = useSidebar();
-  const overviewNavItems = [...sidebarNavItems, meetingSummaryNavItem];
 
   return (
     <nav
@@ -30,12 +23,9 @@ export const SidebarNav = () => {
         </p>
       )}
       <ul className="space-y-0.5">
-        {overviewNavItems.map((item) => (
+        {sidebarNavItems.map((item) => (
           <li key={item.label}>
             <SidebarNavItem item={item} />
-            {!collapsed && "expandable" in item && item.expandable && (
-              <SidebarTree />
-            )}
           </li>
         ))}
         <Suspense fallback={null}>

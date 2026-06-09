@@ -94,7 +94,7 @@ export function TaskCard({
       ref={cardRef}
       data-task-id={task.id}
       className={cn(
-        "group relative w-full rounded-lg border bg-card text-card-foreground shadow-sm transition-colors ",
+        "group relative w-full max-w-full shrink-0 rounded-lg border bg-card text-card-foreground shadow-sm transition-colors",
         "hover:border-violet-400/50",
         selected
           ? "border-violet-500 ring-1 ring-violet-500"
@@ -134,23 +134,24 @@ export function TaskCard({
           <button
             type="button"
             onClick={() => onSelect(task.id)}
-            className="w-full p-3 pr-10 text-left"
+            className="w-full p-2.5 pr-9 text-left"
           >
-            <h3 className="truncate text-sm font-semibold leading-snug">
+            <h3 className="text-xs font-semibold leading-snug">
               {task.title}
             </h3>
-            <p className="mt-1 truncate text-xs text-muted-foreground">
+            <p className="mt-1 truncate text-[11px] text-muted-foreground">
               {task.tool}
             </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {formatDueDate(task.dueDate)}
-            </p>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">
+                {formatDueDate(task.dueDate)}
+              </p>
 
             {primaryMember ? (
-              <div className="mt-3 flex justify-end">
+              <div className="flex justify-end">
                 <span
                   className={cn(
-                    "grid size-8 place-items-center rounded-full text-[11px] font-semibold text-white",
+                    "grid size-6 place-items-center rounded-full text-[10px] font-semibold text-white",
                     memberColors[
                       primaryMember.initials.charCodeAt(0) % memberColors.length
                     ],
@@ -161,6 +162,7 @@ export function TaskCard({
                 </span>
               </div>
             ) : null}
+            </div>
           </button>
 
           <button

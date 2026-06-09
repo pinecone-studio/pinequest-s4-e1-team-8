@@ -47,7 +47,7 @@ export function ProjectBoard({
 
   if (projectsLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center py-24">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <Loader2 className="size-6 animate-spin text-violet-700 dark:text-violet-500" />
       </div>
     );
@@ -55,7 +55,7 @@ export function ProjectBoard({
 
   if (projects.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 py-24 text-center">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-center">
         <p className="text-sm font-medium text-foreground">No GitHub Projects found</p>
         <p className="max-w-sm text-sm text-muted-foreground">
           Create a Project at github.com, then make sure your token has the{" "}
@@ -70,8 +70,8 @@ export function ProjectBoard({
     statusField.name.toLowerCase() !== STATUS_FIELD_NAME.toLowerCase();
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      <div className="flex shrink-0 flex-wrap items-center gap-3">
         <select
           value={selectedProjectId}
           onChange={(e) => onSelectProject(e.target.value)}
@@ -91,11 +91,11 @@ export function ProjectBoard({
       </div>
 
       {boardLoading ? (
-        <div className="flex flex-1 items-center justify-center py-24">
+        <div className="flex min-h-0 flex-1 items-center justify-center">
           <Loader2 className="size-6 animate-spin text-violet-700 dark:text-violet-500" />
         </div>
       ) : !statusField ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 py-24 text-center">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-center">
           <p className="text-sm font-medium text-foreground">No status field</p>
           <p className="max-w-sm text-sm text-muted-foreground">
             This project has no single-select “Status” field. Add one in the project
@@ -103,7 +103,7 @@ export function ProjectBoard({
           </p>
         </div>
       ) : (
-        <div className="flex flex-1 gap-3 overflow-x-auto pb-2">
+        <div className="flex min-h-0 flex-1 gap-2 overflow-x-auto overflow-y-hidden pb-1">
           {columns.map((col) => (
             <BoardColumn
               key={col.optionId ?? "__no_status__"}

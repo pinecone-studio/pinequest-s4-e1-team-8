@@ -1,15 +1,37 @@
-import type { NewTask } from "../../schema/task.model";
+import type { NewTask, TaskStatus } from "../../schema/task.model";
 import type { GithubIssue, GithubMilestone } from "./github";
+import { NO_STATUS_COLUMN, githubStatusNameToDbStatus } from "./project-status";
 import { DEFAULT_PROJECT_ID, DEFAULT_WORKSPACE_ID } from "../tasks/task-defaults";
 import { serializeMembers } from "../tasks/task-mapper";
 
 const MAX_DESCRIPTION_LENGTH = 500;
+const MAX_TITLE_LENGTH = 500;
 
 function trimDescription(body: string | null): string | null {
   if (!body) return null;
   return body.length > MAX_DESCRIPTION_LENGTH
     ? `${body.slice(0, MAX_DESCRIPTION_LENGTH)}…`
     : body;
+}
+
+function trimTitle(title: string): string {
+  const normalized = title.trim();
+  if (normalized.length <= MAX_TITLE_LENGTH) {
+    return normalized;
+  }
+  return `${normalized.slice(0, MAX_TITLE_LENGTH)}…`;
+}
+
+function githubTaskDefaults(): Pick<
+  NewTask,
+  "sequenceOrder" | "dependenciesJson" | "dependencyTaskIdsJson" | "syncState"
+> {
+  return {
+    sequenceOrder: 0,
+    dependenciesJson: "[]",
+    dependencyTaskIdsJson: "[]",
+    syncState: "Synced",
+  };
 }
 
 export function githubMilestoneTaskId(
@@ -41,7 +63,7 @@ export function mapGithubMilestoneToTask(
     subTeamId: null,
     assigneeId: null,
     parentId: null,
-    title: milestone.title,
+    title: trimTitle(milestone.title),
     description: trimDescription(milestone.description),
     status: closed ? "DONE" : "IN_PROGRESS",
     priority: "MEDIUM",
@@ -54,6 +76,7 @@ export function mapGithubMilestoneToTask(
     blockedCount: 0,
     timeLeft: closed ? "Completed" : "Open",
     membersJson: serializeMembers([]),
+    ...githubTaskDefaults(),
   };
 }
 
@@ -63,12 +86,20 @@ export function mapGithubIssueToTask(
   repo: string,
   projectId: string = DEFAULT_PROJECT_ID,
   workspaceId: string = DEFAULT_WORKSPACE_ID,
+  projectStatusName?: string | null,
 ): NewTask {
   const closed = issue.state === "closed";
   const members = issue.assignees.map((a) => ({
     initials: a.login.slice(0, 2).toUpperCase(),
     avatarUrl: a.avatar_url,
   }));
+
+  const boardColumn = projectStatusName?.trim() || null;
+  const status: TaskStatus = boardColumn
+    ? githubStatusNameToDbStatus(boardColumn, closed)
+    : closed
+      ? "DONE"
+      : "IN_PROGRESS";
 
   return {
     id: `github-${owner}-${repo}-${issue.number}`,
@@ -79,9 +110,9 @@ export function mapGithubIssueToTask(
     parentId: issue.milestone
       ? githubMilestoneTaskId(owner, repo, issue.milestone.number)
       : null,
-    title: issue.title,
+    title: trimTitle(issue.title),
     description: trimDescription(issue.body),
-    status: closed ? "DONE" : "IN_PROGRESS",
+    status,
     priority: "MEDIUM",
     source: "github",
     tool: issue.labels[0]?.name ?? "GitHub",
@@ -92,5 +123,7 @@ export function mapGithubIssueToTask(
     blockedCount: 0,
     timeLeft: closed ? "Completed" : "Open",
     membersJson: serializeMembers(members),
+    boardColumn: boardColumn ?? NO_STATUS_COLUMN,
+    ...githubTaskDefaults(),
   };
 }

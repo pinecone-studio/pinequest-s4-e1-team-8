@@ -15,8 +15,22 @@ import {
   TaskAsanaProjectBar,
   TaskAsanaProvider,
 } from "@/components/tasks/task-asana-connect";
+import {
+  deriveGithubColumnsFromTasks,
+  readGithubBoardColumns,
+  readGithubSyncRepo,
+  repoStorageKey,
+  toBoardColumnDefinitions,
+} from "@/components/tasks/task-board/github-columns";
 import { TaskGithubConnect } from "@/components/tasks/task-github-connect";
+import type { BoardColumnDefinition } from "@/components/tasks/task-types";
+import { GITHUB_SYNCED_EVENT } from "@/lib/integrations/github";
 import { TaskBoard } from "@/components/tasks/task-board";
+import {
+  TaskAiAssistant,
+  TaskAiAssistantTrigger,
+} from "@/components/tasks/task-ai-assistant";
+import { TaskMilestoneFilter } from "@/components/tasks/task-milestone-filter";
 import { TaskRiskAlert } from "@/components/tasks/task-risk-alert";
 import { TaskTeamFilter } from "@/components/tasks/task-team-filter";
 import {
@@ -28,29 +42,75 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ListTodo, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 export function TaskList() {
   const {
+    activeMilestoneId,
     activeSource,
     activeTeam,
     addTaskToColumn,
     deleteTask,
     focusTask,
+    hasMilestones,
     isLoading,
     loadTasks,
     selectedTask,
     selectedTaskId,
     selectSource,
+    setActiveMilestoneId,
     setActiveTeam,
     setSelectedTaskId,
     sourceTasks,
+    teamFilterTasks,
     updateTask,
     visibleTasks,
   } = useTaskList();
   const [viewMode, setViewMode] = useState<TaskViewMode>("board");
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [githubBoardColumns, setGithubBoardColumns] = useState<
+    BoardColumnDefinition[] | null
+  >(null);
   const searchParams = useSearchParams();
+
+  const githubRepoKey = useMemo(() => {
+    const syncedRepo = readGithubSyncRepo();
+    return syncedRepo ? repoStorageKey(syncedRepo) : null;
+  }, [sourceTasks]);
+
+  useEffect(() => {
+    if (activeSource !== "github") {
+      setGithubBoardColumns(null);
+      return;
+    }
+
+    if (githubRepoKey) {
+      const stored = readGithubBoardColumns(githubRepoKey);
+      if (stored?.length) {
+        setGithubBoardColumns(toBoardColumnDefinitions(stored));
+        return;
+      }
+    }
+
+    const derived = deriveGithubColumnsFromTasks(
+      visibleTasks.map((task) => task.boardColumn),
+    );
+    setGithubBoardColumns(derived.length > 0 ? derived : null);
+  }, [activeSource, githubRepoKey, visibleTasks]);
+
+  useEffect(() => {
+    const refreshGithubColumns = () => {
+      if (activeSource !== "github" || !githubRepoKey) return;
+      const stored = readGithubBoardColumns(githubRepoKey);
+      if (stored?.length) {
+        setGithubBoardColumns(toBoardColumnDefinitions(stored));
+      }
+    };
+
+    window.addEventListener(GITHUB_SYNCED_EVENT, refreshGithubColumns);
+    return () => window.removeEventListener(GITHUB_SYNCED_EVENT, refreshGithubColumns);
+  }, [activeSource, githubRepoKey]);
 
   useEffect(() => {
     if (
@@ -63,7 +123,7 @@ export function TaskList() {
 
   const card = (
     <Card className="rounded-lg border border-border/60 bg-card shadow-none">
-      <CardHeader className="border-b border-border/60">
+      <CardHeader className="shrink-0 border-b border-border/60">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <ListTodo className="size-5 text-violet-700 dark:text-violet-400" />
@@ -72,6 +132,10 @@ export function TaskList() {
           <div className="flex flex-col items-end gap-2">
             <div className="flex flex-wrap items-center justify-end gap-2">
               {activeSource === "asana" ? <TaskAsanaHeaderBadge /> : null}
+              <TaskAiAssistantTrigger
+                open={assistantOpen}
+                onOpenChange={setAssistantOpen}
+              />
               <TaskRiskAlert onFocusTask={focusTask} />
               <Button
                 type="button"
@@ -94,8 +158,8 @@ export function TaskList() {
         ) : null}
       </CardHeader>
 
-      <CardContent className="space-y-4 p-4">
-        <div className="flex flex-wrap gap-2">
+      <CardContent className="flex flex-col gap-4 p-4">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {taskSources.map((source) => (
             <button
               key={source}
@@ -114,56 +178,90 @@ export function TaskList() {
         </div>
 
         {activeSource === "github" ? (
-          <TaskGithubConnect onSynced={() => void loadTasks()} />
+          <div className="shrink-0">
+            <TaskGithubConnect
+              onSynced={() => void loadTasks()}
+              onBoardColumnsChange={setGithubBoardColumns}
+            />
+          </div>
         ) : null}
 
-        {activeSource === "asana" ? <TaskAsanaProjectBar /> : null}
-
-        {activeSource === "internal" ? (
-          <TaskTeamFilter
-            activeTeam={activeTeam}
-            tasks={sourceTasks}
-            onChange={setActiveTeam}
-          />
+        {activeSource === "asana" ? (
+          <div className="shrink-0">
+            <TaskAsanaProjectBar />
+          </div>
         ) : null}
 
-        <div className="flex justify-end">
+        <div className="shrink-0">
+          {hasMilestones ? (
+            <TaskMilestoneFilter
+              activeMilestoneId={activeMilestoneId}
+              tasks={sourceTasks}
+              onChange={setActiveMilestoneId}
+            />
+          ) : (
+            <TaskTeamFilter
+              activeTeam={activeTeam}
+              tasks={teamFilterTasks}
+              onChange={setActiveTeam}
+            />
+          )}
+        </div>
+
+        <div className="flex shrink-0 justify-end">
           <TaskViewToggle value={viewMode} onChange={setViewMode} />
         </div>
 
-        {isLoading ? (
-          viewMode === "board" ? (
-            <TaskListSkeleton />
-          ) : (
-            <TaskListTableSkeleton />
-          )
-        ) : visibleTasks.length === 0 ? (
-          <EmptyTasks source={sourceLabels[activeSource]} />
-        ) : viewMode === "board" ? (
-          <div className="min-h-[28rem] overflow-x-auto">
-            <TaskBoard
-              tasks={visibleTasks}
-              selectedTaskId={selectedTaskId}
-              onSelectTask={setSelectedTaskId}
-              onAddTask={addTaskToColumn}
-              onUpdateTask={updateTask}
-            />
+        <div className="flex gap-3">
+          <div className="min-w-0 flex-1">
+            {isLoading ? (
+              viewMode === "board" ? (
+                <TaskListSkeleton />
+              ) : (
+                <TaskListTableSkeleton />
+              )
+            ) : visibleTasks.length === 0 ? (
+              <EmptyTasks source={sourceLabels[activeSource]} />
+            ) : viewMode === "board" ? (
+              <TaskBoard
+                tasks={visibleTasks}
+                selectedTaskId={selectedTaskId}
+                onSelectTask={setSelectedTaskId}
+                onAddTask={addTaskToColumn}
+                onUpdateTask={updateTask}
+                columns={
+                  activeSource === "github" ? githubBoardColumns ?? undefined : undefined
+                }
+              />
+            ) : (
+              <TaskListView
+                tasks={visibleTasks}
+                selectedTaskId={selectedTaskId}
+                onSelectTask={setSelectedTaskId}
+                onUpdateTask={updateTask}
+                onDeleteTask={deleteTask}
+              />
+            )}
           </div>
-        ) : (
-          <TaskListView
-            tasks={visibleTasks}
-            selectedTaskId={selectedTaskId}
-            onSelectTask={setSelectedTaskId}
-            onUpdateTask={updateTask}
-            onDeleteTask={deleteTask}
-          />
-        )}
+
+          {assistantOpen ? (
+            <TaskAiAssistant
+              embedded
+              open={assistantOpen}
+              onOpenChange={setAssistantOpen}
+              tasks={visibleTasks}
+              activeSource={activeSource}
+              activeTeam={activeTeam}
+              selectedTask={selectedTask}
+            />
+          ) : null}
+        </div>
       </CardContent>
     </Card>
   );
 
   return (
-    <>
+    <div className="flex flex-col">
       {activeSource === "asana" ? (
         <TaskAsanaProvider
           oauthError={searchParams.get("asana_error")}
@@ -191,6 +289,6 @@ export function TaskList() {
           />
         </>
       ) : null}
-    </>
+    </div>
   );
 }

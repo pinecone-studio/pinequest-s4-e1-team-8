@@ -9,6 +9,7 @@ export function createTask(
   return {
     id: `${source}-new-${Date.now()}`,
     source,
+    parentId: null,
     team,
     title: `New Task ${index}`,
     tool: "Manual",

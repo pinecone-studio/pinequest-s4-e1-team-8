@@ -54,10 +54,12 @@ export type TaskMember = {
 export type TaskListItem = {
   id: string;
   source: TaskSource;
+  parentId?: string | null;
   team: string;
   title: string;
   tool: string;
   status: TaskStatus;
+  boardColumn?: string | null;
   priority: TaskPriority;
   blocked: boolean;
   dueDate: string;
@@ -69,13 +71,51 @@ export type TaskListItem = {
   description?: string;
 };
 
+export type BoardColumnDefinition = {
+  id: string;
+  label: string;
+  headerClassName: string;
+};
+
 export type TaskUpdate = Partial<
   Pick<
     TaskListItem,
-    "title" | "tool" | "status" | "priority" | "blocked" | "dueDate" | "description"
+    | "title"
+    | "tool"
+    | "status"
+    | "boardColumn"
+    | "priority"
+    | "blocked"
+    | "dueDate"
+    | "description"
   >
 >;
 
+export function getTaskBoardColumnKey(
+  task: Pick<TaskListItem, "source" | "status" | "boardColumn">,
+  useGithubColumns: boolean,
+): string {
+  if (useGithubColumns && task.source === "github" && task.boardColumn) {
+    return task.boardColumn;
+  }
+
+  return task.status;
+}
+
 export function getTaskTeam(task: Pick<TaskListItem, "team" | "title">) {
   return task.team || task.title;
+}
+
+export function isMilestoneTask(
+  task: Pick<TaskListItem, "id" | "parentId" | "tool">,
+): boolean {
+  if (task.parentId != null && task.parentId !== "") {
+    return false;
+  }
+
+  return (
+    task.id.startsWith("github-milestone-") ||
+    task.id.startsWith("milestone-") ||
+    task.tool === "Milestone"
+  );
 }

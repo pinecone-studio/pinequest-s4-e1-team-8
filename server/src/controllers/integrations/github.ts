@@ -3,6 +3,7 @@ import { Context } from "hono";
 import { nanoid } from "nanoid";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
+import { runD1Statements } from "../../lib/db/d1-batch";
 import {
   addProjectDraftItem,
   addProjectItemById,
@@ -44,9 +45,48 @@ import {
   mapGithubIssueToTask,
   mapGithubMilestoneToTask,
 } from "../../lib/github/map-github-issue";
+import { mergeGithubMilestones } from "../../lib/github/merge-github-milestones";
+import {
+  buildBoardColumns,
+  buildIssueStatusMap,
+  findStatusField,
+  NO_STATUS_COLUMN,
+} from "../../lib/github/project-status";
+import { resolveGithubBoardProjectId } from "../../lib/github/resolve-board-project";
 import { resolveGithubSyncProject } from "../../lib/github/resolve-sync-project";
+import { ensureTaskSyncTargets } from "../../lib/tasks/ensure-task-sync-targets";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
+import type { NewTask } from "../../schema/task.model";
 import { githubIntegrations, tasks } from "../../schema/schema";
+
+function sanitizeGithubTaskRows(
+  milestoneRows: NewTask[],
+  issueRows: NewTask[],
+): { milestoneRows: NewTask[]; issueRows: NewTask[] } {
+  const milestoneIds = new Set(milestoneRows.map((row) => row.id));
+
+  return {
+    milestoneRows,
+    issueRows: issueRows.map((row) => ({
+      ...row,
+      parentId:
+        row.parentId && milestoneIds.has(row.parentId) ? row.parentId : null,
+    })),
+  };
+}
+
+function formatSyncError(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return "Sync failed";
+  }
+
+  const cause = "cause" in error ? error.cause : undefined;
+  if (cause instanceof Error && cause.message.trim()) {
+    return `${error.message}: ${cause.message}`;
+  }
+
+  return error.message;
+}
 
 type GithubAuthContext = {
   accessToken: string;
@@ -104,11 +144,25 @@ export const getGithubStatus = async (c: Context<{ Bindings: Bindings }>) => {
     return c.json({ connected: false });
   }
 
+  let githubProjectId: string | null = null;
+  try {
+    const db = useDB(c);
+    const [integration] = await db
+      .select({ githubProjectId: githubIntegrations.githubProjectId })
+      .from(githubIntegrations)
+      .where(eq(githubIntegrations.userId, userId))
+      .limit(1);
+    githubProjectId = integration?.githubProjectId ?? null;
+  } catch {
+    // ignore
+  }
+
   return c.json({
     connected: true,
     githubLogin: auth.githubLogin,
     repoOwner: auth.repoOwner,
     repoName: auth.repoName,
+    githubProjectId,
   });
 };
 
@@ -807,6 +861,7 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
     owner?: string;
     repo?: string;
     projectId?: string;
+    githubProjectId?: string;
   } | null;
 
   if (!body?.userId || !body.owner || !body.repo) {
@@ -843,12 +898,41 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
     }
 
     const { projectId, workspaceId, resolvedFrom } = syncProject;
+    await ensureTaskSyncTargets(db, projectId, workspaceId);
+
+    const githubBoardProjectId = await resolveGithubBoardProjectId(
+      integration.accessToken,
+      integration,
+      owner,
+      repo,
+      body.githubProjectId,
+    );
+
+    let boardColumns: { id: string; name: string }[] = [];
+    let issueStatusMap = new Map<number, { statusName: string; optionId: string }>();
+
+    if (githubBoardProjectId) {
+      const projectDetail = await fetchProjectDetail(
+        integration.accessToken,
+        githubBoardProjectId,
+      );
+      const statusField = findStatusField(projectDetail.fields);
+      boardColumns = buildBoardColumns(statusField);
+      issueStatusMap = buildIssueStatusMap(projectDetail.items, statusField);
+
+      if (boardColumns.length > 0) {
+        boardColumns.push({ id: NO_STATUS_COLUMN, name: NO_STATUS_COLUMN });
+      }
+    }
+
     const [milestones, issues] = await Promise.all([
       fetchRepoMilestones(integration.accessToken, owner, repo),
       fetchRepoIssues(integration.accessToken, owner, repo),
     ]);
 
-    const milestoneRows = milestones.map((milestone) =>
+    const mergedMilestones = mergeGithubMilestones(milestones, issues);
+
+    const milestoneRows = mergedMilestones.map((milestone) =>
       mapGithubMilestoneToTask(
         milestone,
         owner,
@@ -857,46 +941,56 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
         workspaceId,
       ),
     );
-    const issueRows = issues.map((issue) =>
-      mapGithubIssueToTask(issue, owner, repo, projectId, workspaceId),
+    const issueRows = issues.map((issue) => {
+      const projectStatus = issueStatusMap.get(issue.number)?.statusName ?? null;
+      return mapGithubIssueToTask(
+        issue,
+        owner,
+        repo,
+        projectId,
+        workspaceId,
+        projectStatus,
+      );
+    });
+
+    const sanitized = sanitizeGithubTaskRows(milestoneRows, issueRows);
+    const syncedIds = [...sanitized.milestoneRows, ...sanitized.issueRows].map(
+      (row) => row.id,
     );
 
-    const syncedIds = [...milestoneRows, ...issueRows].map((row) => row.id);
-
-    // Task ids are repo-scoped, not project-scoped — clear old copies from prior syncs
-    // that may still live under a different project_id.
     if (syncedIds.length > 0) {
       await db.delete(tasks).where(inArray(tasks.id, syncedIds));
     }
 
     await db
       .delete(tasks)
-      .where(
-        and(eq(tasks.source, "github"), eq(tasks.projectId, projectId)),
-      );
+      .where(and(eq(tasks.source, "github"), eq(tasks.projectId, projectId)));
 
-    for (const row of milestoneRows) {
-      await db.insert(tasks).values(row);
-    }
-
-    for (const row of issueRows) {
-      await db.insert(tasks).values(row);
-    }
+    await runD1Statements(db, [
+      ...sanitized.milestoneRows.map((row) => db.insert(tasks).values(row)),
+      ...sanitized.issueRows.map((row) => db.insert(tasks).values(row)),
+    ]);
 
     await db
       .update(githubIntegrations)
-      .set({ repoOwner: owner, repoName: repo })
+      .set({
+        repoOwner: owner,
+        repoName: repo,
+        githubProjectId: githubBoardProjectId,
+      })
       .where(eq(githubIntegrations.id, integration.id));
 
     return c.json({
-      synced: milestoneRows.length + issueRows.length,
-      milestones: milestoneRows.length,
-      issues: issueRows.length,
+      synced: sanitized.milestoneRows.length + sanitized.issueRows.length,
+      milestones: sanitized.milestoneRows.length,
+      issues: sanitized.issueRows.length,
       projectId,
       resolvedFrom,
+      githubProjectId: githubBoardProjectId,
+      columns: boardColumns,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Sync failed";
+    const message = formatSyncError(error);
     return c.json({ error: message }, 502);
   }
 };

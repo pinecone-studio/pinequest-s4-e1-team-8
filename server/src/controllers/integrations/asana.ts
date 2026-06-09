@@ -25,7 +25,7 @@ type AsanaAuthContext = {
   asanaUserName?: string | null;
 };
 
-async function resolveAsanaAuth(
+export async function resolveAsanaAuth(
   c: Context<{ Bindings: Bindings }>,
   userId: string,
 ): Promise<AsanaAuthContext | null> {

@@ -26,9 +26,9 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${montserrat.variable} dark min-h-full font-sans antialiased`}
+      className={`${montserrat.variable} dark h-full font-sans antialiased`}
     >
-      <body className="min-h-full font-sans">
+      <body className="h-full font-sans">
         <ClerkProvider appearance={{ theme: shadcn }}>
           <ThemeProvider>
             <AppShell>{children}</AppShell>

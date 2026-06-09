@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 
 export function TaskListSkeleton() {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {taskStatuses.map((status) => (
         <div
           key={status}
-          className="flex min-h-[28rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-card"
+          className="flex min-h-[280px] flex-col rounded-lg border border-border/60 bg-card"
         >
           <div
             className={cn(

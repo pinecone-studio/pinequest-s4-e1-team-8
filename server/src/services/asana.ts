@@ -172,3 +172,13 @@ export const createTask = (
     method: "POST",
     body: JSON.stringify({ data: payload }),
   });
+
+export const updateAsanaTask = (
+  token: string,
+  taskGid: string,
+  payload: Partial<AsanaTaskPayload>,
+): Promise<AsanaTask> =>
+  asanaFetch<AsanaTask>(`/tasks/${taskGid}`, token, {
+    method: "PUT",
+    body: JSON.stringify({ data: payload }),
+  });

@@ -77,37 +77,40 @@ const PROJECT_FIELDS_FRAGMENT = `
   }
 `;
 
-const PROJECT_ITEMS_FRAGMENT = `
-  items(first: 100) {
+const PROJECT_ITEM_NODE = `
+  id
+  type
+  fieldValues(first: 20) {
     nodes {
-      id
-      type
-      fieldValues(first: 20) {
-        nodes {
-          ... on ProjectV2ItemFieldTextValue {
-            text
-            field { ... on ProjectV2Field { id name } }
-          }
-          ... on ProjectV2ItemFieldNumberValue {
-            number
-            field { ... on ProjectV2Field { id name } }
-          }
-          ... on ProjectV2ItemFieldDateValue {
-            date
-            field { ... on ProjectV2Field { id name } }
-          }
-          ... on ProjectV2ItemFieldSingleSelectValue {
-            name optionId
-            field { ... on ProjectV2SingleSelectField { id name } }
-          }
-        }
+      ... on ProjectV2ItemFieldTextValue {
+        text
+        field { ... on ProjectV2Field { id name } }
       }
-      content {
-        ... on Issue { id title number state url body }
-        ... on PullRequest { id title number state url }
-        ... on DraftIssue { id title body }
+      ... on ProjectV2ItemFieldNumberValue {
+        number
+        field { ... on ProjectV2Field { id name } }
+      }
+      ... on ProjectV2ItemFieldDateValue {
+        date
+        field { ... on ProjectV2Field { id name } }
+      }
+      ... on ProjectV2ItemFieldSingleSelectValue {
+        name optionId
+        field { ... on ProjectV2SingleSelectField { id name } }
       }
     }
+  }
+  content {
+    ... on Issue { id title number state url body }
+    ... on PullRequest { id title number state url }
+    ... on DraftIssue { id title body }
+  }
+`;
+
+const PROJECT_ITEMS_FRAGMENT = `
+  items(first: 100) {
+    pageInfo { hasNextPage endCursor }
+    nodes { ${PROJECT_ITEM_NODE} }
   }
 `;
 
@@ -162,6 +165,83 @@ function parseContent(raw: RawItem): GithubProjectItemContent {
   return { type: "DraftIssue", id: c.id, title: c.title, body: c.body };
 }
 
+function mapProjectFields(nodes: RawField[]): GithubProjectField[] {
+  return nodes.map((f) => ({
+    id: f.id,
+    name: f.name,
+    dataType: f.dataType,
+    options: f.options,
+  }));
+}
+
+function mapProjectItems(nodes: RawItem[]): GithubProjectItem[] {
+  return nodes.map((item) => ({
+    id: item.id,
+    type: item.type as GithubProjectItem["type"],
+    content: parseContent(item),
+    fieldValues: item.fieldValues.nodes
+      .map(parseFieldValue)
+      .filter((v): v is GithubProjectFieldValue => v !== null),
+  }));
+}
+
+async function fetchProjectItemsPage(
+  token: string,
+  projectId: string,
+  after?: string,
+): Promise<{ items: GithubProjectItem[]; hasNextPage: boolean; endCursor: string | null }> {
+  const data = await githubGraphQL<{
+    node: {
+      items: {
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: RawItem[];
+      };
+    } | null;
+  }>(
+    token,
+    `query($id: ID!, $after: String) {
+      node(id: $id) {
+        ... on ProjectV2 {
+          items(first: 100, after: $after) {
+            pageInfo { hasNextPage endCursor }
+            nodes { ${PROJECT_ITEM_NODE} }
+          }
+        }
+      }
+    }`,
+    { id: projectId, after: after ?? null },
+  );
+
+  if (!data.node) throw new Error("Project not found");
+
+  return {
+    items: mapProjectItems(data.node.items.nodes),
+    hasNextPage: data.node.items.pageInfo.hasNextPage,
+    endCursor: data.node.items.pageInfo.endCursor,
+  };
+}
+
+export async function fetchAllProjectItems(
+  token: string,
+  projectId: string,
+): Promise<GithubProjectItem[]> {
+  const items: GithubProjectItem[] = [];
+  let cursor: string | undefined;
+
+  for (let page = 0; page < 50; page += 1) {
+    const pageResult = await fetchProjectItemsPage(token, projectId, cursor);
+    items.push(...pageResult.items);
+
+    if (!pageResult.hasNextPage || !pageResult.endCursor) {
+      break;
+    }
+
+    cursor = pageResult.endCursor;
+  }
+
+  return items;
+}
+
 export async function fetchProjectDetail(
   token: string,
   projectId: string,
@@ -169,7 +249,10 @@ export async function fetchProjectDetail(
   const data = await githubGraphQL<{
     node: {
       fields: { nodes: RawField[] };
-      items: { nodes: RawItem[] };
+      items: {
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: RawItem[];
+      };
     } | null;
   }>(
     token,
@@ -179,19 +262,20 @@ export async function fetchProjectDetail(
 
   if (!data.node) throw new Error("Project not found");
 
-  const fields: GithubProjectField[] = data.node.fields.nodes.map((f) => ({
-    id: f.id,
-    name: f.name,
-    dataType: f.dataType,
-    options: f.options,
-  }));
+  const fields = mapProjectFields(data.node.fields.nodes);
+  let items = mapProjectItems(data.node.items.nodes);
 
-  const items: GithubProjectItem[] = data.node.items.nodes.map((item) => ({
-    id: item.id,
-    type: item.type as GithubProjectItem["type"],
-    content: parseContent(item),
-    fieldValues: item.fieldValues.nodes.map(parseFieldValue).filter((v): v is GithubProjectFieldValue => v !== null),
-  }));
+  let cursor = data.node.items.pageInfo.endCursor;
+  while (data.node.items.pageInfo.hasNextPage && cursor) {
+    const pageResult = await fetchProjectItemsPage(token, projectId, cursor);
+    items = [...items, ...pageResult.items];
+
+    if (!pageResult.hasNextPage || !pageResult.endCursor) {
+      break;
+    }
+
+    cursor = pageResult.endCursor;
+  }
 
   return { fields, items };
 }

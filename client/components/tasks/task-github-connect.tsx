@@ -1,19 +1,27 @@
 "use client";
 
+import {
+  rememberGithubSyncRepo,
+  repoStorageKey,
+  saveGithubBoardColumns,
+  toBoardColumnDefinitions,
+} from "@/components/tasks/task-board/github-columns";
+import type { BoardColumnDefinition } from "@/components/tasks/task-types";
 import { Button } from "@/components/ui/button";
 import { useGithubUserId } from "@/hooks/use-github-user-id";
 import { useOnboardingData } from "@/hooks/use-onboarding-data";
 import {
   connectGithubPAT,
   disconnectGithub,
+  fetchGithubProjects,
   fetchGithubRepos,
   fetchGithubStatus,
   getGithubRepo,
-  extractApiError,
   GITHUB_SYNCED_EVENT,
   GITHUB_TOKEN_URL,
   setGithubUserId,
   syncGithubIssues,
+  type GithubProject,
   type GithubRepoOption,
   type GithubStatus,
 } from "@/lib/integrations/github";
@@ -23,61 +31,88 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type TaskGithubConnectProps = {
   onSynced?: () => void;
+  onBoardColumnsChange?: (columns: BoardColumnDefinition[] | null) => void;
 };
 
-function formatGithubError(err: unknown, fallback: string) {
-  const message = extractApiError(err, fallback);
-  if (message.includes("401") || message.includes("Bad credentials")) {
-    return "GitHub token expired or was revoked. Disconnect, create a new classic PAT with repo scope, and connect again.";
-  }
-  return message;
+function logGithubError(context: string, err: unknown) {
+  console.error(context, err);
 }
 
-export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
+export function TaskGithubConnect({
+  onSynced,
+  onBoardColumnsChange,
+}: TaskGithubConnectProps) {
   const { userId, isLoaded } = useGithubUserId();
   const { data: onboardingData, refresh: refreshOnboarding } = useOnboardingData();
   const [status, setStatus] = useState<GithubStatus | null>(null);
   const [repos, setRepos] = useState<GithubRepoOption[]>([]);
+  const [projects, setProjects] = useState<GithubProject[]>([]);
   const [selectedRepo, setSelectedRepo] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   const [patValue, setPatValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [lastSyncedCount, setLastSyncedCount] = useState<number | null>(null);
   const syncRequestRef = useRef(0);
   const lastSyncedKeyRef = useRef<string | null>(null);
 
+  const publishBoardColumns = useCallback(
+    (columns: BoardColumnDefinition[] | null) => {
+      onBoardColumnsChange?.(columns);
+    },
+    [onBoardColumnsChange],
+  );
+
   const syncRepo = useCallback(
-    async (fullName: string, options?: { force?: boolean }) => {
+    async (
+      fullName: string,
+      options?: { force?: boolean; githubProjectId?: string },
+    ) => {
       const parts = fullName.split("/");
       if (parts.length !== 2) return;
       const [owner, repo] = parts;
       if (!owner || !repo) return;
 
-      const syncKey = fullName;
+      const githubProjectId = options?.githubProjectId ?? selectedProjectId;
+      const syncKey = `${fullName}:${githubProjectId || "auto"}`;
       if (!options?.force && lastSyncedKeyRef.current === syncKey) {
         return;
       }
 
       const requestId = ++syncRequestRef.current;
       setIsSyncing(true);
-      setError(null);
       try {
-        const result = await syncGithubIssues(
-          owner,
-          repo,
-          onboardingData?.projectId,
-        );
+        const result = await syncGithubIssues(owner, repo, {
+          projectId: onboardingData?.projectId,
+          githubProjectId: githubProjectId || undefined,
+        });
         if (requestId !== syncRequestRef.current) return;
 
         lastSyncedKeyRef.current = syncKey;
+        rememberGithubSyncRepo(fullName);
         setLastSyncedCount(result.synced);
+
+        if (result.githubProjectId) {
+          setSelectedProjectId(result.githubProjectId);
+        }
+
+        if (result.columns?.length) {
+          saveGithubBoardColumns(repoStorageKey(fullName), result.columns);
+          publishBoardColumns(toBoardColumnDefinitions(result.columns));
+        }
+
         setStatus((current) =>
           current
-            ? { ...current, repoOwner: owner, repoName: repo }
+            ? {
+                ...current,
+                repoOwner: owner,
+                repoName: repo,
+                githubProjectId: result.githubProjectId ?? current.githubProjectId,
+              }
             : current,
         );
+
         if (
           result.projectId &&
           result.resolvedFrom &&
@@ -89,7 +124,7 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
         onSynced?.();
       } catch (err) {
         if (requestId === syncRequestRef.current) {
-          setError(formatGithubError(err, "Failed to sync GitHub issues"));
+          logGithubError("GitHub issue sync failed", err);
         }
       } finally {
         if (requestId === syncRequestRef.current) {
@@ -97,8 +132,26 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
         }
       }
     },
-    [onSynced, onboardingData?.projectId, refreshOnboarding],
+    [
+      onSynced,
+      onboardingData?.projectId,
+      publishBoardColumns,
+      refreshOnboarding,
+      selectedProjectId,
+    ],
   );
+
+  const loadProjects = useCallback(async (owner: string) => {
+    try {
+      const projectList = await fetchGithubProjects(owner);
+      setProjects(projectList);
+      return projectList;
+    } catch (err) {
+      logGithubError("Could not load GitHub projects", err);
+      setProjects([]);
+      return [];
+    }
+  }, []);
 
   const loadReposAndSync = useCallback(
     async (saved?: GithubStatus) => {
@@ -118,19 +171,29 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
           "";
 
         setSelectedRepo(initial);
+
         if (initial) {
-          await syncRepo(initial);
+          const [owner] = initial.split("/");
+          const projectList = owner ? await loadProjects(owner) : [];
+          const initialProjectId =
+            saved?.githubProjectId ??
+            projectList.find((project) => !project.closed)?.id ??
+            projectList[0]?.id ??
+            "";
+          setSelectedProjectId(initialProjectId);
+          await syncRepo(initial, {
+            githubProjectId: initialProjectId || undefined,
+          });
         }
       } catch (err) {
-        setError(formatGithubError(err, "Could not load GitHub repositories"));
+        logGithubError("Could not load GitHub repositories", err);
       }
     },
-    [syncRepo],
+    [loadProjects, syncRepo],
   );
 
   const loadStatus = useCallback(async () => {
     setIsLoading(true);
-    setError(null);
     try {
       const next = await fetchGithubStatus();
       setStatus(next);
@@ -138,7 +201,7 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
         await loadReposAndSync(next);
       }
     } catch (err) {
-      setError(formatGithubError(err, "Failed to load GitHub status"));
+      logGithubError("Failed to load GitHub status", err);
     } finally {
       setIsLoading(false);
     }
@@ -153,13 +216,12 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
   const handleConnect = async () => {
     if (!patValue.trim()) return;
     setIsConnecting(true);
-    setError(null);
     try {
       await connectGithubPAT(patValue.trim());
       setPatValue("");
       await loadStatus();
     } catch (err) {
-      setError(formatGithubError(err, "Invalid token — use a classic PAT with the repo scope."));
+      logGithubError("GitHub connect failed", err);
     } finally {
       setIsConnecting(false);
     }
@@ -168,15 +230,33 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
   const handleRepoChange = async (fullName: string) => {
     setSelectedRepo(fullName);
     if (!fullName) return;
-    await syncRepo(fullName, { force: true });
+
+    const [owner] = fullName.split("/");
+    const projectList = owner ? await loadProjects(owner) : [];
+    const nextProjectId =
+      projectList.find((project) => !project.closed)?.id ??
+      projectList[0]?.id ??
+      "";
+    setSelectedProjectId(nextProjectId);
+
+    await syncRepo(fullName, {
+      force: true,
+      githubProjectId: nextProjectId || undefined,
+    });
+  };
+
+  const handleProjectChange = async (projectId: string) => {
+    setSelectedProjectId(projectId);
+    if (!selectedRepo) return;
+    await syncRepo(selectedRepo, { force: true, githubProjectId: projectId });
   };
 
   const handleSync = async () => {
-    if (!selectedRepo) {
-      setError("Select a repository first.");
-      return;
-    }
-    await syncRepo(selectedRepo, { force: true });
+    if (!selectedRepo) return;
+    await syncRepo(selectedRepo, {
+      force: true,
+      githubProjectId: selectedProjectId || undefined,
+    });
   };
 
   const handleDisconnect = async () => {
@@ -185,11 +265,14 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
       lastSyncedKeyRef.current = null;
       setLastSyncedCount(null);
       setRepos([]);
+      setProjects([]);
       setSelectedRepo("");
+      setSelectedProjectId("");
+      publishBoardColumns(null);
       setPatValue("");
       await loadStatus();
     } catch (err) {
-      setError(formatGithubError(err, "Failed to disconnect GitHub"));
+      logGithubError("Failed to disconnect GitHub", err);
     }
   };
 
@@ -238,10 +321,11 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
             <ExternalLink className="size-3" />
           </a>
         </div>
-        {error ? <p className="text-sm text-rose-400">{error}</p> : null}
       </div>
     );
   }
+
+  const selectedProject = projects.find((project) => project.id === selectedProjectId);
 
   return (
     <div className="space-y-3 rounded-lg border border-border/60 bg-card px-4 py-4">
@@ -255,8 +339,10 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
               ? "Syncing issues..."
               : selectedRepo
                 ? lastSyncedCount !== null
-                  ? `Showing ${lastSyncedCount} issue${lastSyncedCount === 1 ? "" : "s"} from ${selectedRepo}`
-                  : `Select a repository to load issues.`
+                  ? `Showing ${lastSyncedCount} issue${lastSyncedCount === 1 ? "" : "s"} from ${selectedRepo}${
+                      selectedProject ? ` · board: ${selectedProject.title}` : ""
+                    }`
+                  : "Select a repository to load issues."
                 : "Select a repository to load issues."}
           </p>
         </div>
@@ -283,24 +369,44 @@ export function TaskGithubConnect({ onSynced }: TaskGithubConnectProps) {
         </div>
       </div>
 
-      <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-        Repository
-        <select
-          className="h-9 rounded-lg border border-border/60 bg-muted px-3 text-sm outline-none"
-          value={selectedRepo}
-          onChange={(event) => void handleRepoChange(event.target.value)}
-          disabled={isSyncing}
-        >
-          <option value="">Select repository</option>
-          {repos.map((repo) => (
-            <option key={repo.fullName} value={repo.fullName}>
-              {repo.fullName}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+          Repository
+          <select
+            className="h-9 rounded-lg border border-border/60 bg-muted px-3 text-sm outline-none"
+            value={selectedRepo}
+            onChange={(event) => void handleRepoChange(event.target.value)}
+            disabled={isSyncing}
+          >
+            <option value="">Select repository</option>
+            {repos.map((repo) => (
+              <option key={repo.fullName} value={repo.fullName}>
+                {repo.fullName}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+        <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+          GitHub Project board
+          <select
+            className="h-9 rounded-lg border border-border/60 bg-muted px-3 text-sm outline-none"
+            value={selectedProjectId}
+            onChange={(event) => void handleProjectChange(event.target.value)}
+            disabled={isSyncing || projects.length === 0}
+          >
+            <option value="">
+              {projects.length === 0 ? "No projects found" : "Select project"}
+            </option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.title}
+                {project.closed ? " (closed)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
     </div>
   );
 }

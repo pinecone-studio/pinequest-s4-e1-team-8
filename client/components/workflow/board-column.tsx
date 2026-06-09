@@ -63,7 +63,7 @@ export function BoardColumn({
         onDropCard(optionId);
       }}
       className={cn(
-        "flex w-72 shrink-0 flex-col gap-2 rounded-2xl border bg-muted/30 p-3 transition-colors",
+        "flex h-full min-h-0 w-72 shrink-0 flex-col gap-2 rounded-xl border bg-muted/30 p-2.5 transition-colors",
         over && droppable
           ? "border-violet-500/50 ring-1 ring-violet-400 dark:ring-violet-500/30"
           : dragActive && droppable
@@ -123,7 +123,7 @@ export function BoardColumn({
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
         {items.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border/60 px-3 py-6 text-center text-xs text-muted-foreground">
             No items

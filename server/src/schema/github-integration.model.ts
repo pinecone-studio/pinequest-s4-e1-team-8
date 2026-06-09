@@ -12,6 +12,7 @@ export const githubIntegrations = sqliteTable("github_integrations", {
   githubLogin: text("github_login"),
   repoOwner: text("repo_owner"),
   repoName: text("repo_name"),
+  githubProjectId: text("github_project_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

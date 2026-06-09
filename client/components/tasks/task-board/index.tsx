@@ -1,11 +1,13 @@
 "use client";
 
-import { taskStatuses } from "@/components/tasks/task-types";
+import { getTaskBoardColumnKey } from "@/components/tasks/task-types";
 import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
+import { useMemo } from "react";
 import { BoardColumn } from "./board-column";
 import { DragOverlayCard } from "./drag-overlay-card";
 import type { TaskBoardProps } from "./types";
 import { useTaskBoardDnd } from "./use-task-board-dnd";
+import { defaultBoardColumns, mapBoardColumnToTaskStatus } from "./utils";
 
 export function TaskBoard({
   tasks,
@@ -13,7 +15,19 @@ export function TaskBoard({
   onSelectTask,
   onAddTask,
   onUpdateTask,
+  columns,
+  getTaskColumnKey,
 }: TaskBoardProps) {
+  const useGithubColumns = Boolean(columns?.length);
+  const boardColumns = columns?.length ? columns : defaultBoardColumns;
+  const resolveColumnKey = useMemo(
+    () =>
+      getTaskColumnKey ??
+      ((task: (typeof tasks)[number]) =>
+        getTaskBoardColumnKey(task, useGithubColumns)),
+    [getTaskColumnKey, tasks, useGithubColumns],
+  );
+
   const {
     activeId,
     activeTask,
@@ -23,9 +37,17 @@ export function TaskBoard({
     handleDragStart,
     items,
     sensors,
-  } = useTaskBoardDnd(tasks, onUpdateTask);
+  } = useTaskBoardDnd(tasks, onUpdateTask, {
+    columns: boardColumns,
+    getTaskColumnKey: resolveColumnKey,
+    useBoardColumnUpdates: useGithubColumns,
+  });
 
   const isBoardDragging = activeId !== null;
+  const gridClassName =
+    boardColumns.length <= 3
+      ? "grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3"
+      : "grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-4";
 
   return (
     <DndContext
@@ -36,18 +58,19 @@ export function TaskBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {taskStatuses.map((status) => (
+      <div className={gridClassName}>
+        {boardColumns.map((column) => (
           <BoardColumn
-            key={status}
-            status={status}
+            key={column.id}
+            column={column}
             tasks={tasks}
-            taskIds={items[status]}
+            taskIds={items[column.id] ?? []}
             selectedTaskId={selectedTaskId}
             isBoardDragging={isBoardDragging}
             onSelectTask={onSelectTask}
             onUpdateTask={onUpdateTask}
-            onAddTask={onAddTask}
+            onAddTask={(status) => onAddTask(status)}
+            addTaskStatus={mapBoardColumnToTaskStatus(column.id)}
           />
         ))}
       </div>

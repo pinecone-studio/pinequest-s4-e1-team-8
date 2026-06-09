@@ -122,6 +122,7 @@ export function toTaskListItem(row: Task): TaskListItemDto {
     members: parseMembersJson(row.membersJson),
     sequenceOrder: row.sequenceOrder ?? 0,
     dependencyTaskIds: parseDependenciesJson(row.dependenciesJson),
+    boardColumn: row.boardColumn ?? null,
   };
 }
 

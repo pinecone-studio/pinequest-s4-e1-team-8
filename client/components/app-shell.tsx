@@ -19,15 +19,25 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
     pathname === "/onboarding" ||
     pathname.startsWith("/onboarding/") ||
     pathname.startsWith("/invite/");
+  const scrollableMain =
+    pathname === "/tasks" || pathname.startsWith("/tasks/");
 
   return (
     <MeetingChannelPresenceProvider>
       <MeetingSessionProvider>
-        <div className="flex min-h-screen bg-background">
+        <div className="flex h-screen overflow-hidden bg-background">
           <AuthSetup />
           <UserSync />
           {hideSidebar ? null : <DashboardSidebar />}
-          <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+          <main
+            className={
+              scrollableMain
+                ? "flex min-w-0 flex-1 flex-col overflow-y-auto"
+                : "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+            }
+          >
+            {children}
+          </main>
         </div>
       </MeetingSessionProvider>
     </MeetingChannelPresenceProvider>

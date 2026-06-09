@@ -1,4 +1,9 @@
-import type { TaskListItem, TaskStatus, TaskUpdate } from "@/components/tasks/task-types";
+import type {
+  BoardColumnDefinition,
+  TaskListItem,
+  TaskStatus,
+  TaskUpdate,
+} from "@/components/tasks/task-types";
 
 export type TaskBoardProps = {
   tasks: TaskListItem[];
@@ -6,12 +11,14 @@ export type TaskBoardProps = {
   onSelectTask: (taskId: string) => void;
   onAddTask: (status: TaskStatus) => void;
   onUpdateTask: (taskId: string, update: TaskUpdate) => void;
+  columns?: BoardColumnDefinition[];
+  getTaskColumnKey?: (task: TaskListItem) => string;
 };
 
-export type ColumnItems = Record<TaskStatus, string[]>;
+export type ColumnItems = Record<string, string[]>;
 
 export type BoardColumnProps = {
-  status: TaskStatus;
+  column: BoardColumnDefinition;
   tasks: TaskListItem[];
   taskIds: string[];
   selectedTaskId: string | null;

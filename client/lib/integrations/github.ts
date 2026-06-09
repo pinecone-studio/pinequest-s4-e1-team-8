@@ -16,6 +16,7 @@ export type GithubStatus = {
   githubLogin?: string;
   repoOwner?: string;
   repoName?: string;
+  githubProjectId?: string | null;
 };
 
 export type GithubRepoOption = {
@@ -389,18 +390,28 @@ export async function fetchRepoAssignees(owner: string, repo: string) {
   return data.assignees;
 }
 
+export type GithubBoardColumn = {
+  id: string;
+  name: string;
+};
+
 export type GithubSyncResult = {
   synced: number;
   milestones?: number;
   issues?: number;
   projectId?: string;
   resolvedFrom?: "requested" | "accessible" | "default";
+  githubProjectId?: string | null;
+  columns?: GithubBoardColumn[];
 };
 
 export async function syncGithubIssues(
   owner: string,
   repo: string,
-  projectId?: string,
+  options?: {
+    projectId?: string;
+    githubProjectId?: string;
+  },
 ): Promise<GithubSyncResult> {
   const { data } = await clientApi.post<GithubSyncResult>(
     "/integrations/github/sync",
@@ -408,7 +419,10 @@ export async function syncGithubIssues(
       userId: uid(),
       owner,
       repo,
-      ...(projectId ? { projectId } : {}),
+      ...(options?.projectId ? { projectId: options.projectId } : {}),
+      ...(options?.githubProjectId
+        ? { githubProjectId: options.githubProjectId }
+        : {}),
     },
   );
   return data;

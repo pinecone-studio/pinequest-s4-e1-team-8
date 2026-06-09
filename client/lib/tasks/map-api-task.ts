@@ -11,9 +11,11 @@ type ApiTaskMember = string | TaskMember;
 export type ApiTaskListItem = {
   id: string;
   source: TaskSource;
+  parentId?: string | null;
   title: string;
   tool: string;
   status: string;
+  boardColumn?: string | null;
   priority: string;
   blocked: boolean;
   dueDate: string;
@@ -54,18 +56,28 @@ function normalizePriority(priority: string): TaskPriority {
 }
 
 export function mapApiTaskToListItem(task: ApiTaskListItem): TaskListItem {
+  const isMilestone =
+    !task.parentId &&
+    (task.id.startsWith("github-milestone-") ||
+      task.id.startsWith("milestone-") ||
+      task.tool === "Milestone");
+
   const team =
     task.source === "asana"
       ? task.tool || "Asana"
-      : task.team ?? task.title ?? task.tool ?? "General";
+      : isMilestone
+        ? "Milestones"
+        : task.team ?? task.tool ?? "General";
 
   return {
     id: task.id,
     source: task.source,
+    parentId: task.parentId ?? null,
     team,
     title: task.title,
     tool: task.tool,
     status: normalizeTaskStatus(task.status),
+    boardColumn: task.boardColumn ?? null,
     priority: normalizePriority(task.priority),
     blocked: task.blocked,
     dueDate: task.dueDate,

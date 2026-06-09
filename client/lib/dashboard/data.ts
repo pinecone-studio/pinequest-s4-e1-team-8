@@ -2,10 +2,7 @@ export const sidebarNavItems = [
   { label: "Dashboard", href: "/dashboard", dot: true },
   { label: "Tasks", href: "/tasks" },
   { label: "Analytics", href: "/analytics" },
-  { label: "Project Board", href: "#", expandable: true },
-  { label: "Schedule", href: "#" },
-  { label: "Activities", href: "#" },
-  { label: "Inbox", href: "#" },
+  { label: "Meeting Summaries", href: "/meeting-summaries" },
 ] as const;
 
 export const sidebarWorkflowItems = [

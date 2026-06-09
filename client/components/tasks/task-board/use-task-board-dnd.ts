@@ -1,6 +1,6 @@
 "use client";
 
-import { taskStatuses, type TaskListItem, type TaskUpdate } from "@/components/tasks/task-types";
+import type { BoardColumnDefinition, TaskListItem, TaskUpdate } from "@/components/tasks/task-types";
 import {
   KeyboardSensor,
   PointerSensor,
@@ -13,14 +13,31 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useEffect, useMemo, useState } from "react";
 import type { ColumnItems } from "./types";
-import { buildColumnItems, findContainer, resolveOverContainer } from "./utils";
+import {
+  buildColumnItems,
+  findContainer,
+  mapBoardColumnToTaskStatus,
+  resolveOverContainer,
+} from "./utils";
+
+type UseTaskBoardDndOptions = {
+  columns: BoardColumnDefinition[];
+  getTaskColumnKey: (task: TaskListItem) => string;
+  useBoardColumnUpdates?: boolean;
+};
 
 export function useTaskBoardDnd(
   tasks: TaskListItem[],
   onUpdateTask: (taskId: string, update: TaskUpdate) => void,
+  options: UseTaskBoardDndOptions,
 ) {
+  const { columns, getTaskColumnKey, useBoardColumnUpdates = false } = options;
+  const columnIds = useMemo(() => columns.map((column) => column.id), [columns]);
+
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [items, setItems] = useState<ColumnItems>(() => buildColumnItems(tasks));
+  const [items, setItems] = useState<ColumnItems>(() =>
+    buildColumnItems(tasks, columns, getTaskColumnKey),
+  );
 
   const taskMap = useMemo(
     () => new Map(tasks.map((task) => [task.id, task])),
@@ -31,9 +48,9 @@ export function useTaskBoardDnd(
 
   useEffect(() => {
     if (!activeId) {
-      setItems(buildColumnItems(tasks));
+      setItems(buildColumnItems(tasks, columns, getTaskColumnKey));
     }
-  }, [activeId, tasks]);
+  }, [activeId, columns, getTaskColumnKey, tasks]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -54,8 +71,8 @@ export function useTaskBoardDnd(
 
     const activeItemId = String(active.id);
     const overItemId = String(over.id);
-    const activeContainer = findContainer(items, activeItemId);
-    const overContainer = resolveOverContainer(items, over.id);
+    const activeContainer = findContainer(items, columnIds, activeItemId);
+    const overContainer = resolveOverContainer(items, columnIds, over.id);
 
     if (!activeContainer || !overContainer || activeContainer === overContainer) {
       return;
@@ -67,7 +84,7 @@ export function useTaskBoardDnd(
       const overIndex = overItems.indexOf(overItemId);
 
       let nextIndex: number;
-      if (taskStatuses.includes(overItemId as (typeof taskStatuses)[number])) {
+      if (columnIds.includes(overItemId)) {
         nextIndex = overItems.length;
       } else {
         const isBelowOverItem =
@@ -96,33 +113,54 @@ export function useTaskBoardDnd(
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     const draggedId = String(active.id);
+    let nextItems = items;
 
     if (over) {
-      const activeContainer = findContainer(items, draggedId);
-      const overContainer = resolveOverContainer(items, over.id);
+      nextItems = { ...items };
+      const activeContainer = findContainer(items, columnIds, draggedId);
+      const overContainer = resolveOverContainer(items, columnIds, over.id);
 
-      if (activeContainer && overContainer && activeContainer === overContainer) {
+      if (
+        activeContainer &&
+        overContainer &&
+        activeContainer === overContainer
+      ) {
         const columnItems = items[activeContainer];
         const oldIndex = columnItems.indexOf(draggedId);
         const newIndex = columnItems.indexOf(String(over.id));
 
         if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-          setItems((current) => ({
-            ...current,
-            [activeContainer]: arrayMove(
-              current[activeContainer],
-              oldIndex,
-              newIndex,
-            ),
-          }));
+          nextItems = {
+            ...items,
+            [activeContainer]: arrayMove(items[activeContainer], oldIndex, newIndex),
+          };
         }
+      } else if (activeContainer && overContainer) {
+        const activeItems = [...items[activeContainer]];
+        const overItems = [...items[overContainer]];
+        nextItems = {
+          ...items,
+          [activeContainer]: activeItems.filter((id) => id !== draggedId),
+          [overContainer]: [...overItems, draggedId],
+        };
       }
 
-      const task = taskMap.get(draggedId);
-      const finalContainer = findContainer(items, draggedId);
+      setItems(nextItems);
+    }
 
-      if (task && finalContainer && task.status !== finalContainer) {
-        onUpdateTask(draggedId, { status: finalContainer });
+    const task = taskMap.get(draggedId);
+    const finalContainer = findContainer(nextItems, columnIds, draggedId);
+
+    if (task && finalContainer) {
+      const currentColumn = getTaskColumnKey(task);
+      if (currentColumn !== finalContainer) {
+        const update: TaskUpdate = useBoardColumnUpdates
+          ? {
+              boardColumn: finalContainer,
+              status: mapBoardColumnToTaskStatus(finalContainer),
+            }
+          : { status: mapBoardColumnToTaskStatus(finalContainer) };
+        onUpdateTask(draggedId, update);
       }
     }
 
@@ -131,7 +169,7 @@ export function useTaskBoardDnd(
 
   const handleDragCancel = () => {
     setActiveId(null);
-    setItems(buildColumnItems(tasks));
+    setItems(buildColumnItems(tasks, columns, getTaskColumnKey));
   };
 
   return {

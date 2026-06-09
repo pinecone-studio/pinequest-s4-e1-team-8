@@ -14,7 +14,6 @@ type PrFeedProps = {
   selectedIssue: GithubIssueItem | null;
   feedTab: FeedTab;
   prFilter: PrFilter;
-  repoName: string;
   onFeedTabChange: (tab: FeedTab) => void;
   onPrFilterChange: (filter: PrFilter) => void;
   onSelectPull: (pull: GithubPullItem) => void;
@@ -34,15 +33,14 @@ export function PrFeed({
   selectedIssue,
   feedTab,
   prFilter,
-  repoName,
   onFeedTabChange,
   onPrFilterChange,
   onSelectPull,
   onSelectIssue,
 }: PrFeedProps) {
   return (
-    <section className="flex w-full flex-col gap-3 lg:w-[340px] lg:shrink-0">
-      <div className="flex gap-2">
+    <section className="flex min-h-0 w-full shrink-0 flex-col gap-2 overflow-hidden sm:w-[280px]">
+      <div className="flex shrink-0 gap-2">
         <button
           type="button"
           onClick={() => onFeedTabChange("pulls")}
@@ -70,7 +68,7 @@ export function PrFeed({
       </div>
 
       {feedTab === "pulls" ? (
-        <div className="flex gap-1">
+        <div className="flex shrink-0 gap-1">
           {FILTERS.map((f) => (
             <button
               key={f.value}
@@ -89,7 +87,7 @@ export function PrFeed({
         </div>
       ) : null}
 
-      <div className="flex max-h-[520px] flex-col gap-2 overflow-y-auto pr-1">
+      <div className="scrollbar-default flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain pr-0.5">
         {feedTab === "pulls" ? (
           pulls.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border/80 px-4 py-8 text-center text-sm text-muted-foreground">
@@ -106,17 +104,16 @@ export function PrFeed({
                   type="button"
                   onClick={() => onSelectPull(pull)}
                   className={cn(
-                    "rounded-xl border bg-card p-4 text-left transition-colors",
+                    "shrink-0 rounded-lg border bg-card p-2.5 text-left transition-colors",
                     isSelected
                       ? "border-violet-500/50 ring-1 ring-violet-400 dark:ring-violet-500/30"
                       : "border-border/60 hover:border-border",
                   )}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                      <GitPullRequest className="size-3.5 text-violet-700 dark:text-violet-500" />
-                      #{pull.number}
-                      <span className="font-normal text-muted-foreground">{repoName}</span>
+                    <div className="flex min-w-0 items-center gap-1 text-xs font-semibold text-foreground">
+                      <GitPullRequest className="size-3 shrink-0 text-violet-700 dark:text-violet-500" />
+                      <span className="truncate">#{pull.number}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       {pull.draft ? (
@@ -134,12 +131,14 @@ export function PrFeed({
                       </span>
                     </div>
                   </div>
-                  <p className="mt-1.5 line-clamp-2 text-sm text-foreground">{pull.title}</p>
-                  <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                    <GitBranch className="size-3" />
-                    {pull.head.ref} → {pull.base.ref}
+                  <p className="mt-1 line-clamp-2 text-xs leading-snug text-foreground">{pull.title}</p>
+                  <p className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <GitBranch className="size-3 shrink-0" />
+                    <span className="truncate">
+                      {pull.head.ref} → {pull.base.ref}
+                    </span>
                   </p>
-                  <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>{formatRelativeTime(pull.created_at)}</span>
                     {pull.mergeable_state === "clean" ? (
                       <CheckCircle2 className="size-3.5 text-emerald-500" />
@@ -168,17 +167,14 @@ export function PrFeed({
                 type="button"
                 onClick={() => onSelectIssue(issue)}
                 className={cn(
-                  "rounded-xl border bg-card p-4 text-left transition-colors",
+                  "shrink-0 rounded-lg border bg-card p-2.5 text-left transition-colors",
                   isSelected
                     ? "border-violet-500/50 ring-1 ring-violet-400 dark:ring-violet-500/30"
                     : "border-border/60 hover:border-border",
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="text-sm font-semibold text-foreground">
-                    #{issue.number}
-                    <span className="ml-1.5 font-normal text-muted-foreground">{repoName}</span>
-                  </div>
+                  <div className="text-xs font-semibold text-foreground">#{issue.number}</div>
                   <span
                     className={cn(
                       "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
@@ -188,7 +184,7 @@ export function PrFeed({
                     {badge.label}
                   </span>
                 </div>
-                <p className="mt-1.5 line-clamp-2 text-sm text-foreground">{issue.title}</p>
+                <p className="mt-1 line-clamp-2 text-xs leading-snug text-foreground">{issue.title}</p>
                 {issue.labels.length > 0 ? (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {issue.labels.slice(0, 3).map((l) => (

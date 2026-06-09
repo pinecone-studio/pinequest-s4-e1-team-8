@@ -733,7 +733,7 @@ export function WorkflowContent() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="flex flex-1 items-center justify-center py-24">
+      <div className="flex flex-1 items-center justify-center">
         <Loader2 className="size-6 animate-spin text-violet-700 dark:text-violet-500" />
       </div>
     );
@@ -741,79 +741,80 @@ export function WorkflowContent() {
 
   if (!connected) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-500/10">
-          <GitPullRequest className="size-7 text-violet-700 dark:text-violet-500" />
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">Connect GitHub</h2>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {error ?? "Paste a personal access token to create issues and pull requests directly from this workflow."}
-          </p>
-        </div>
-        <div className="flex w-full max-w-sm flex-col gap-2">
-          <a
-            href={GITHUB_TOKEN_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-700"
-          >
-            Connect GitHub
-            <ExternalLink className="size-4" />
-          </a>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" />
-            <span>then paste the generated token</span>
-            <div className="h-px flex-1 bg-border" />
+      <div className="flex flex-1 items-center justify-center px-6 py-10">
+        <div className="mx-auto flex w-full max-w-md flex-col items-center gap-6 text-center">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-500/10">
+            <GitPullRequest className="size-7 text-violet-700 dark:text-violet-500" />
           </div>
-          <input
-            type="password"
-            placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-            value={patValue}
-            onChange={(e) => setPatValue(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
-          />
-          {patError && <p className="text-xs text-destructive">{patError}</p>}
-          <Button
-            className="bg-violet-600 hover:bg-violet-700"
-            disabled={!patValue.trim() || patLoading}
-            onClick={() => void handlePATConnect()}
-          >
-            {patLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-            Connect with token
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            Generate a <strong>classic</strong> token at github.com/settings/tokens with the full <code className="text-xs">repo</code> scope (add <code className="text-xs">project</code> for Projects).
-          </p>
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold text-foreground">Connect GitHub</h2>
+            <p className="text-sm text-muted-foreground">
+              {error ??
+                "Paste a personal access token to create issues and pull requests directly from this workflow."}
+            </p>
+          </div>
+          <div className="flex w-full flex-col gap-2">
+            <a
+              href={GITHUB_TOKEN_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-700"
+            >
+              Connect GitHub
+              <ExternalLink className="size-4" />
+            </a>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              <span>then paste the generated token</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <input
+              type="password"
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              value={patValue}
+              onChange={(e) => setPatValue(e.target.value)}
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+            />
+            {patError ? <p className="text-left text-xs text-destructive">{patError}</p> : null}
+            <Button
+              className="bg-violet-600 hover:bg-violet-700"
+              disabled={!patValue.trim() || patLoading}
+              onClick={() => void handlePATConnect()}
+            >
+              {patLoading ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+              Connect with token
+            </Button>
+            <p className="text-left text-xs text-muted-foreground">
+              Generate a <strong>classic</strong> token at github.com/settings/tokens with the full{" "}
+              <code className="text-xs">repo</code> scope (add <code className="text-xs">project</code>{" "}
+              for Projects).
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      <header className="shrink-0 border-b border-border/60 bg-card px-6 py-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-5 text-violet-700 dark:text-violet-500" />
-              <h1 className="text-xl font-semibold tracking-tight text-foreground">Workflow</h1>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <header className="shrink-0 border-b border-border/60 bg-card px-5 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
+              <Sparkles className="size-3.5 text-violet-600 dark:text-violet-400" />
             </div>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              GitHub pull requests, reviews, and issues
-            </p>
+            <h1 className="text-sm font-semibold tracking-tight text-foreground">Workflow</h1>
+            <span className="hidden text-xs text-muted-foreground lg:block">· Pull requests &amp; issues</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div
               className={cn(
-                "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm",
+                "hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs sm:flex",
                 "border-emerald-500/30 bg-emerald-500/5",
               )}
             >
-              <span className="size-2 rounded-full bg-emerald-500" />
-              <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                GitHub Connected
-              </span>
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span className="font-medium text-emerald-700 dark:text-emerald-400">Connected</span>
               {githubLogin ? (
                 <span className="text-muted-foreground">@{githubLogin}</span>
               ) : null}
@@ -830,11 +831,11 @@ export function WorkflowContent() {
               ) : (
                 <LogOut className="size-4" />
               )}
-              Disconnect
+              <span className="hidden sm:inline">Disconnect</span>
             </Button>
             <DropdownMenu onOpenChange={handleSelectorOpenChange}>
               <DropdownMenuTrigger
-                className="flex h-9 min-w-48 items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+                className="flex h-8 min-w-40 items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
               >
                 <span className="flex min-w-0 items-center gap-2">
                   {activeView === "board" ? (
@@ -902,36 +903,38 @@ export function WorkflowContent() {
       </header>
 
       {activeView === "board" ? (
-        <div className="flex flex-1 flex-col gap-4 p-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3">
           {boardError ? (
-            <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <div className="mb-2 shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {boardError}
             </div>
           ) : null}
-          <ProjectBoard
-            projects={projects}
-            selectedProjectId={selectedProjectId}
-            fields={projectFields}
-            items={projectItems}
-            projectsLoading={projectsLoading}
-            boardLoading={boardLoading}
-            draggingId={draggingId}
-            onSelectProject={setSelectedProjectId}
-            onMoveItem={handleMoveItem}
-            onAddCard={handleAddCard}
-            onDragStart={setDraggingId}
-            onDragEnd={() => setDraggingId(null)}
-          />
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <ProjectBoard
+              projects={projects}
+              selectedProjectId={selectedProjectId}
+              fields={projectFields}
+              items={projectItems}
+              projectsLoading={projectsLoading}
+              boardLoading={boardLoading}
+              draggingId={draggingId}
+              onSelectProject={setSelectedProjectId}
+              onMoveItem={handleMoveItem}
+              onAddCard={handleAddCard}
+              onDragStart={setDraggingId}
+              onDragEnd={() => setDraggingId(null)}
+            />
+          </div>
         </div>
       ) : (
-        <>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {error ? (
-        <div className="mx-6 mt-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mx-3 mt-2 shrink-0 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
       ) : null}
 
-      <div className="flex flex-1 flex-col gap-6 p-6 lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-row gap-3 overflow-hidden p-3">
         <PrFeed
           pulls={pulls}
           issues={issues}
@@ -939,13 +942,13 @@ export function WorkflowContent() {
           selectedIssue={selectedIssue}
           feedTab={feedTab}
           prFilter={prFilter}
-          repoName={selectedRepo}
           onFeedTabChange={setFeedTab}
           onPrFilterChange={(f) => void handlePrFilterChange(f)}
           onSelectPull={selectPull}
           onSelectIssue={selectIssue}
         />
 
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {viewMode === "detail" && selectedPull ? (
           <PrDetail
             pull={selectedPull}
@@ -1068,48 +1071,33 @@ export function WorkflowContent() {
             }}
           />
         )}
+        </div>
       </div>
 
       {applied.length > 0 ? (
-        <div className="border-t border-border/60 px-6 py-4">
-          <div className="rounded-2xl border border-border/60 bg-card p-5">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Recently Created
-            </p>
-            <div className="space-y-2">
-              {applied.map((item) => (
-                <div
-                  key={`${item.kind}-${item.number}-${item.appliedAt.getTime()}`}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/40 px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">
-                      #{item.number} {item.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{item.repo}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1 text-xs font-medium text-violet-600">
-                      <CheckCircle2 className="size-3.5" />
-                      Created
-                    </span>
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      View
-                      <ExternalLink className="size-3" />
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
+        <div className="shrink-0 border-t border-border/60 bg-card/40 px-3 py-2">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Recent
+            </span>
+            {applied.map((item) => (
+              <a
+                key={`${item.kind}-${item.number}-${item.appliedAt.getTime()}`}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs transition-colors hover:border-violet-500/40"
+              >
+                <CheckCircle2 className="size-3 text-violet-600" />
+                <span className="font-medium text-foreground">#{item.number}</span>
+                <span className="max-w-[12rem] truncate text-muted-foreground">{item.title}</span>
+                <ExternalLink className="size-3 text-muted-foreground" />
+              </a>
+            ))}
           </div>
         </div>
       ) : null}
-        </>
+        </div>
       )}
     </div>
   );

@@ -46,8 +46,8 @@ export function PrMergeBox({
   }
 
   return (
-    <div className="rounded-xl border border-violet-300 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/5 p-5">
-      <div className="flex items-start gap-3">
+    <div className="rounded-lg border border-violet-300 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/5 p-3">
+      <div className="flex items-start gap-2">
         {toneIcon}
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground">{status.text}</p>
@@ -59,7 +59,7 @@ export function PrMergeBox({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-violet-500/20 pt-4">
+      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-violet-500/20 pt-2">
         {pull.draft ? (
           <Button
             className="bg-violet-600 hover:bg-violet-700"

@@ -23,11 +23,11 @@ export function TaskTeamFilter({
   }
 
   return (
-    <section className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+    <section className="space-y-2">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         Teams
       </p>
-      <div className="flex gap-3 overflow-x-auto pb-1">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,220px))] gap-2.5">
         {teams.map((team) => (
           <TaskTeamCard
             key={team.name}

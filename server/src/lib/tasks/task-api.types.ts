@@ -21,6 +21,7 @@ export type TaskListItemDto = {
   members: TaskMember[];
   sequenceOrder: number;
   dependencyTaskIds: string[];
+  boardColumn?: string | null;
 };
 
 export type CreateTaskBody = {
@@ -42,4 +43,6 @@ export type CreateTaskBody = {
   description?: string;
 };
 
-export type UpdateTaskBody = Partial<CreateTaskBody>;
+export type UpdateTaskBody = Partial<CreateTaskBody> & {
+  userId?: string;
+};

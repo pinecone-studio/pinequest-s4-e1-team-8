@@ -4,13 +4,9 @@ import { useSidebar } from "@/components/sidebar/sidebar-context";
 import type { sidebarNavItems, sidebarWorkflowItems } from "@/lib/dashboard/data";
 import { cn } from "@/lib/utils";
 import {
-  Activity,
   BarChart3,
-  CalendarDays,
   FileText,
-  Inbox,
   LayoutDashboard,
-  LayoutGrid,
   ListTodo,
   Sparkles,
 } from "lucide-react";
@@ -19,26 +15,22 @@ import { usePathname } from "next/navigation";
 
 type NavItem =
   | (typeof sidebarNavItems)[number]
-  | (typeof sidebarWorkflowItems)[number]
-  | { label: "Meeting Summaries"; href: "/meeting-summaries" };
+  | (typeof sidebarWorkflowItems)[number];
 
-const navIcons = {
-  Dashboard: LayoutDashboard,
-  Tasks: ListTodo,
-  Analytics: BarChart3,
-  "Meeting Summaries": FileText,
-  "Project Board": LayoutGrid,
-  Schedule: CalendarDays,
-  Activities: Activity,
-  Inbox: Inbox,
-  Workflow: Sparkles,
+const navIconsByHref = {
+  "/dashboard": LayoutDashboard,
+  "/tasks": ListTodo,
+  "/analytics": BarChart3,
+  "/meeting-summaries": FileText,
+  "/workflow": Sparkles,
 } as const;
 
 export function SidebarNavItem({ item }: { item: NavItem }) {
   const pathname = usePathname();
   const { collapsed } = useSidebar();
   const isActive = item.href !== "#" && pathname === item.href;
-  const Icon = navIcons[item.label as keyof typeof navIcons];
+  const Icon =
+    navIconsByHref[item.href as keyof typeof navIconsByHref] ?? LayoutDashboard;
   const hasDot = "dot" in item && item.dot;
 
   const className = cn(
