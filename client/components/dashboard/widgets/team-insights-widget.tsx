@@ -95,17 +95,26 @@ export function TeamInsightsWidget() {
             linkLabel="Generate with AI"
           />
         ) : (
-          <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
-            {milestones.map((milestone, index) => (
-              <div
-                key={milestone.id}
-                className="rounded-xl border border-border/60 bg-muted/10 px-3 py-2.5"
-              >
-                <div className="flex items-start gap-2.5">
-                  <div className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-violet-500/15 text-[11px] font-semibold text-violet-300">
+          <div className="max-h-64 space-y-0 overflow-y-auto pr-1">
+            {milestones.map((milestone, index) => {
+              const progress = Math.min(
+                100,
+                Math.max(0, milestone.progress ?? 0),
+              );
+              const isLast = index === milestones.length - 1;
+
+              return (
+                <div key={milestone.id} className="relative flex gap-3 pb-4">
+                  {!isLast ? (
+                    <span
+                      aria-hidden
+                      className="absolute top-8 left-[13px] h-[calc(100%-1rem)] w-px bg-border/70"
+                    />
+                  ) : null}
+                  <div className="relative z-10 mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-violet-500/30 bg-violet-500/10 text-[11px] font-semibold text-violet-300">
                     {index + 1}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 rounded-xl border border-border/50 bg-muted/10 px-3 py-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-medium leading-snug text-foreground">
                         {milestone.title}
@@ -124,14 +133,23 @@ export function TeamInsightsWidget() {
                         {milestone.description}
                       </p>
                     ) : null}
-                    <p className="mt-1.5 text-[11px] text-muted-foreground">
-                      {milestone.subtaskCount} task
-                      {milestone.subtaskCount === 1 ? "" : "s"}
-                    </p>
+                    <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                      <span>
+                        {milestone.subtaskCount} task
+                        {milestone.subtaskCount === 1 ? "" : "s"}
+                      </span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/40">
+                      <div
+                        className="h-full rounded-full bg-violet-500/70 transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

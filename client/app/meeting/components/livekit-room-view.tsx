@@ -232,8 +232,8 @@ export const LivekitRoomView = ({
     participant.isLocal ? "You" : getParticipantDisplayName(participant);
 
   return (
-    <div className="flex min-h-[calc(100vh-3rem)] w-full flex-1 gap-4">
-      <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f14] text-white shadow-2xl shadow-black/30">
+    <div className="flex h-full min-h-0 w-full flex-1 gap-4 overflow-hidden">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0f0f14] text-white shadow-2xl shadow-black/30">
         <header className="flex shrink-0 flex-col gap-3 border-b border-white/[0.08] bg-white/[0.025] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <h2 className="truncate text-base font-semibold tracking-tight">

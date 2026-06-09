@@ -4,10 +4,11 @@ import { ScopingCanvas } from "@/components/onboarding/scoping-canvas";
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
 
 interface StepAiTasksProps {
-  onFinish: () => void;
+  onFinish: () => void | Promise<void>;
+  disabled?: boolean;
 }
 
-export function StepAiTasks({ onFinish }: StepAiTasksProps) {
+export function StepAiTasks({ onFinish, disabled = false }: StepAiTasksProps) {
   const { step4 } = useOnboardingStore();
   const hasDrafts = step4.milestoneDrafts.length > 0;
 
@@ -42,14 +43,15 @@ export function StepAiTasks({ onFinish }: StepAiTasksProps) {
       <div className="mt-6 flex gap-2.5">
         <button
           className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-violet-600 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45"
-          disabled={!hasDrafts}
-          onClick={onFinish}
+          disabled={!hasDrafts || disabled}
+          onClick={() => void onFinish()}
         >
-          Continue to dashboard
+          {disabled ? "Saving…" : "Continue to dashboard"}
         </button>
         <button
-          className="flex h-11 flex-1 items-center justify-center rounded-lg border border-white/10 bg-transparent text-sm font-semibold text-[#c4c4cc] transition-colors hover:border-white/20 hover:bg-white/[0.04]"
-          onClick={onFinish}
+          className="flex h-11 flex-1 items-center justify-center rounded-lg border border-white/10 bg-transparent text-sm font-semibold text-[#c4c4cc] transition-colors hover:border-white/20 hover:bg-white/[0.04] disabled:opacity-50"
+          disabled={disabled}
+          onClick={() => void onFinish()}
         >
           Skip — I&apos;ll add tasks manually
         </button>

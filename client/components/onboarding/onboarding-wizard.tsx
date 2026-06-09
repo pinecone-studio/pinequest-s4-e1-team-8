@@ -5,6 +5,9 @@ import {
   useOnboardingStore,
 } from "@/app/onboarding/use-onboarding-store";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { initializeProject } from "@/lib/api/projects";
+import { clearOnboardingDraft } from "@/lib/onboarding-draft-storage";
 import { saveOnboardingData } from "@/lib/onboarding-storage";
 import { StepHeader } from "./step-header";
 import { StepProjectSetup } from "./steps/step-project-setup";
@@ -14,11 +17,42 @@ import { StepAiTasks } from "./steps/step-ai-tasks";
 
 function OnboardingWizardContent() {
   const router = useRouter();
-  const { step, toOnboardingData } = useOnboardingStore();
+  const { step, toOnboardingData, toInitializePayload } = useOnboardingStore();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const finish = () => {
-    saveOnboardingData(toOnboardingData());
-    router.push("/dashboard");
+  const finish = async () => {
+    setSaving(true);
+    setError(null);
+
+    const localData = toOnboardingData();
+
+    try {
+      const payload = toInitializePayload();
+      const result = await initializeProject(payload);
+      const members = result.members.map((member) => ({
+        email: member.email,
+        name: member.email.split("@")[0] ?? member.email,
+        role: member.role,
+      }));
+
+      saveOnboardingData({
+        ...localData,
+        projectId: result.project.id,
+        workspaceId: result.project.workspaceId,
+        projectName: result.project.name,
+        members,
+      });
+      clearOnboardingDraft();
+      router.push("/dashboard");
+    } catch {
+      saveOnboardingData(localData);
+      clearOnboardingDraft();
+      setError("Saved locally — sign in and retry to sync with your team.");
+      router.push("/dashboard");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -40,14 +74,21 @@ function OnboardingWizardContent() {
         {step === 0 ? <StepProjectSetup /> : null}
         {step === 1 ? <StepInviteTeam /> : null}
         {step === 2 ? <StepIntegrations /> : null}
-        {step === 3 ? <StepAiTasks onFinish={finish} /> : null}
+        {step === 3 ? (
+          <StepAiTasks onFinish={finish} disabled={saving} />
+        ) : null}
       </div>
 
+      {error ? (
+        <p className="mt-3 text-center text-sm text-amber-400">{error}</p>
+      ) : null}
+
       <button
-        className="mt-5 px-1.5 py-1 text-[13px] text-[#6b6b73] transition-colors hover:text-[#a1a1aa]"
-        onClick={finish}
+        className="mt-5 px-1.5 py-1 text-[13px] text-[#6b6b73] transition-colors hover:text-[#a1a1aa] disabled:opacity-50"
+        disabled={saving}
+        onClick={() => void finish()}
       >
-        Skip onboarding →
+        {saving ? "Saving project…" : "Skip onboarding →"}
       </button>
     </div>
   );

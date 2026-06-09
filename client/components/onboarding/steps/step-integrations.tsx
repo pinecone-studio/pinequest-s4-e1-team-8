@@ -149,6 +149,25 @@ export function StepIntegrations() {
     }
   }, [searchParams, setAsanaConnected, setStep]);
 
+  useEffect(() => {
+    const connected = searchParams.get("asana_connected");
+    const error = searchParams.get("asana_error");
+
+    if (connected === "1") {
+      setAsanaConnected(true);
+      setAsanaMessage("Asana connected successfully.");
+      setStep(2);
+      window.history.replaceState({}, "", "/onboarding");
+      return;
+    }
+
+    if (error) {
+      setAsanaMessage(asanaErrorMessage(error));
+      setStep(2);
+      window.history.replaceState({}, "", "/onboarding");
+    }
+  }, [searchParams, setAsanaConnected, setStep]);
+
   const handleAsanaConnect = () => {
     if (step3.asanaConnected || !userReady) return;
     setAsanaUserId(userId);

@@ -14,7 +14,10 @@ const AuthSetup = () => {
 
 export const AppShell = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
-  const hideSidebar = pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+  const hideSidebar =
+    pathname === "/onboarding" ||
+    pathname.startsWith("/onboarding/") ||
+    pathname.startsWith("/invite/");
 
   return (
     <MeetingChannelPresenceProvider>

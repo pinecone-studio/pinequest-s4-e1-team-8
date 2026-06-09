@@ -237,8 +237,8 @@ export function MeetingChat({
   const panel = (
     <aside
       className={cn(
-        "flex min-h-0 flex-col border-white/[0.08] bg-[#111118] text-white shadow-2xl shadow-black/30",
-        "fixed inset-x-0 bottom-0 z-50 h-[76vh] rounded-t-3xl border-t p-0 lg:static lg:h-auto lg:w-[340px] lg:shrink-0 lg:rounded-3xl lg:border",
+        "flex min-h-0 flex-col overflow-hidden border-white/[0.08] bg-[#111118] text-white shadow-2xl shadow-black/30",
+        "fixed inset-x-0 bottom-0 z-50 h-[76vh] rounded-t-3xl border-t p-0 lg:static lg:h-full lg:w-[340px] lg:shrink-0 lg:rounded-3xl lg:border",
         !isOpen && "hidden lg:flex lg:w-14",
       )}
     >
