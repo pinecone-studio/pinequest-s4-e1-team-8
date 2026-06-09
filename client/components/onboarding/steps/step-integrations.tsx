@@ -1,6 +1,7 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
+import { OnboardingGithubConnect } from "@/components/onboarding/onboarding-github-connect";
 import { useInternalUserId } from "@/hooks/use-internal-user-id";
 import {
   fetchAsanaStatus,
@@ -11,14 +12,6 @@ import { cn } from "@/lib/utils";
 import { Check, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-
-function GithubMark() {
-  return (
-    <div className="grid h-6 w-6 place-items-center rounded-full bg-muted/50 text-[13px] font-bold text-foreground">
-      GH
-    </div>
-  );
-}
 
 function AsanaMark() {
   return (
@@ -106,7 +99,6 @@ export function StepIntegrations() {
   const searchParams = useSearchParams();
   const {
     step3,
-    toggleGithubConnection,
     setAsanaConnected,
     advanceFromStep3,
     skipStep3,
@@ -177,13 +169,7 @@ export function StepIntegrations() {
       ) : null}
 
       <div className="flex flex-col gap-3.5 sm:flex-row">
-        <IntegrationCard
-          name="GitHub"
-          desc="Sync commits, PRs & issues"
-          logo={<GithubMark />}
-          connected={step3.githubConnected}
-          onToggle={toggleGithubConnection}
-        />
+        <OnboardingGithubConnect />
         <IntegrationCard
           name="Asana"
           desc="Import tasks & projects"
@@ -195,8 +181,8 @@ export function StepIntegrations() {
       </div>
 
       <p className="mt-3 text-[12px] text-foreground/80">
-        GitHub is a demo toggle for now. Asana needs developer keys — optional during
-        onboarding.
+        GitHub connects with your team lead&apos;s PAT only (from .env.local). Asana is
+        optional during onboarding.
       </p>
 
       <div className="mt-7 flex items-center">

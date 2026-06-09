@@ -5,6 +5,7 @@ import { useOnboardingData } from "@/hooks/use-onboarding-data";
 import { GITHUB_SYNCED_EVENT } from "@/lib/integrations/github";
 import {
   mapScopedMilestonesToProjectMilestones,
+  resolveScopedMilestones,
   type ProjectMilestone,
 } from "@/lib/onboarding/scoped-milestones";
 import { useCallback, useEffect, useState } from "react";
@@ -26,27 +27,24 @@ export function useProjectMilestones() {
   const [error, setError] = useState<string | null>(null);
 
   const applyScopedMilestoneFallback = useCallback(() => {
-    if (!data?.scopedMilestones?.length || !data.projectId) {
-      return false;
-    }
+    const scoped = resolveScopedMilestones(data?.scopedMilestones);
+    const projectId = data?.projectId?.trim() || "demo-project";
 
-    setMilestones(
-      mapScopedMilestonesToProjectMilestones(
-        data.scopedMilestones,
-        data.projectId,
-      ),
-    );
+    setMilestones(mapScopedMilestonesToProjectMilestones(scoped, projectId));
     setError(null);
     return true;
   }, [data?.projectId, data?.scopedMilestones]);
 
   const loadMilestones = useCallback(async () => {
-    if (!data?.projectId) {
-      if (applyScopedMilestoneFallback()) {
-        setIsLoading(false);
-        return;
-      }
+    if (!hasProject) {
       setMilestones([]);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!data?.projectId?.trim()) {
+      applyScopedMilestoneFallback();
+      setIsLoading(false);
       return;
     }
 
@@ -94,21 +92,21 @@ export function useProjectMilestones() {
     } finally {
       setIsLoading(false);
     }
-  }, [applyScopedMilestoneFallback, data?.projectId]);
+  }, [applyScopedMilestoneFallback, data?.projectId, hasProject]);
 
   useEffect(() => {
     if (!loaded) {
       return;
     }
 
-    if (!hasProject || !data?.projectId) {
+    if (!hasProject) {
       setMilestones([]);
       setIsLoading(false);
       return;
     }
 
     void loadMilestones();
-  }, [data?.projectId, hasProject, loadMilestones, loaded]);
+  }, [data?.projectId, data?.scopedMilestones, hasProject, loadMilestones, loaded]);
 
   useEffect(() => {
     const handleGithubSynced = () => {

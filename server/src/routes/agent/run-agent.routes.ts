@@ -6,7 +6,12 @@ import type { Bindings, Variables } from "../../lib/common/types";
 
 const DEPLOYED_CLIENT_ORIGIN =
   "https://brisk-client.danny-otgontsetseg.workers.dev";
-const DEV_ORIGINS = ["http://localhost:3000", "http://localhost:3001"];
+const DEV_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
+];
 
 type HonoEnv = { Bindings: Bindings; Variables: Variables };
 

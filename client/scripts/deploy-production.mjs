@@ -1,36 +1,16 @@
 /**
  * Deploy brisk-client to Cloudflare with production API URLs baked into the build.
- * Reads Clerk/OAuth secrets from client/.env.local (not committed).
+ * Reads secrets from client/.env.local (not committed).
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadClientEnvLocal } from "./load-env-local.mjs";
 
 const clientRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PROD_API_URL = "https://server-preset.danny-otgontsetseg.workers.dev";
 
-function loadEnvFile(relativePath) {
-  const filePath = path.join(clientRoot, relativePath);
-  if (!existsSync(filePath)) return;
-
-  for (const line of readFileSync(filePath, "utf8").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const value = trimmed
-      .slice(eq + 1)
-      .trim()
-      .replace(/^(['"])(.*)\1$/, "$2");
-    if (process.env[key] === undefined) {
-      process.env[key] = value;
-    }
-  }
-}
-
-loadEnvFile(".env.local");
+loadClientEnvLocal();
 
 const env = {
   ...process.env,
@@ -50,10 +30,14 @@ if (missing.length > 0) {
 
 console.log(`Deploying brisk-client with API_URL=${PROD_API_URL}`);
 
-const result = spawnSync("bun", ["run", "deploy"], {
-  cwd: clientRoot,
-  env,
-  stdio: "inherit",
-});
+const result = spawnSync(
+  "bun run build:cf && bunx opennextjs-cloudflare build --skipNextBuild && node scripts/patch-handler-middleware.mjs && bunx opennextjs-cloudflare deploy",
+  {
+    cwd: clientRoot,
+    env,
+    stdio: "inherit",
+    shell: true,
+  },
+);
 
 process.exit(result.status ?? 1);

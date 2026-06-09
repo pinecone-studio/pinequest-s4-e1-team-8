@@ -1,11 +1,9 @@
 "use client";
 
+import { getAgentStreamRunUrl } from "@/lib/api/agent-stream-url";
 import { buildBackendAuthHeaders } from "@/lib/api/backend-auth";
 import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-const getServerBaseUrl = () =>
-  (process.env.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:8787").replace(/\/$/, "");
 
 type AgentStreamMessage = {
   type: string;
@@ -128,7 +126,7 @@ export function useAgentStream() {
 
       try {
         const headers = await buildBackendAuthHeaders(getToken);
-        const response = await fetch(`${getServerBaseUrl()}/api/agent/stream/run`, {
+        const response = await fetch(getAgentStreamRunUrl(), {
           method: "POST",
           headers,
           credentials: "include",

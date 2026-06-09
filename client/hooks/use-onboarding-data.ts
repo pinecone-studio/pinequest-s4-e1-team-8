@@ -7,9 +7,11 @@ import {
 } from "@/lib/api/projects";
 import {
   hasOnboardingProject,
+  hydrateOnboardingData,
   readOnboardingData,
   saveOnboardingData,
 } from "@/lib/onboarding-storage";
+import { resolveScopedMilestones } from "@/lib/onboarding/scoped-milestones";
 import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
 
@@ -20,8 +22,19 @@ export function useOnboardingData() {
   const [inviteToken, setInviteToken] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const local = readOnboardingData();
-    setData(local);
+    const raw = readOnboardingData();
+    const local = hydrateOnboardingData(raw);
+
+    if (local && hasOnboardingProject(local)) {
+      const hadScoped = (raw?.scopedMilestones?.length ?? 0) > 0;
+      if (!hadScoped) {
+        saveOnboardingData(local);
+      }
+      setData(local);
+    } else {
+      setData(local);
+    }
+
     setLoaded(true);
 
     if (!isSignedIn) {
@@ -38,18 +51,19 @@ export function useOnboardingData() {
         projects.find((project) => project.id === local?.projectId) ??
         projects[0];
 
-      const synced = projectToOnboardingData(
-        active,
-        local?.aiGoals ?? "",
+      const synced = hydrateOnboardingData(
+        projectToOnboardingData(active, local?.aiGoals ?? ""),
       );
-      if (local?.scopedMilestones?.length) {
-        synced.scopedMilestones = local.scopedMilestones;
+      if (synced) {
+        synced.scopedMilestones = resolveScopedMilestones(
+          local?.scopedMilestones ?? synced.scopedMilestones,
+        );
+        setData(synced);
+        setInviteToken(active.inviteToken);
+        saveOnboardingData(synced);
       }
-      setData(synced);
-      setInviteToken(active.inviteToken);
-      saveOnboardingData(synced);
     } catch {
-      // Keep local fallback when API is unavailable.
+      // Keep hydrated local fallback when API is unavailable.
     }
   }, [isSignedIn]);
 

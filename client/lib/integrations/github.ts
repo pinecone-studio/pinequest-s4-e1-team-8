@@ -117,9 +117,11 @@ export type WorkflowItem =
 
 export type PrFilter = "open" | "closed" | "all";
 
+const DEFAULT_GITHUB_REPO = "pinecone-studio/pinequest-s4-e1-brisk";
+
 export function getGithubRepo(): { owner: string; repo: string } | null {
-  const value = process.env.NEXT_PUBLIC_GITHUB_REPO;
-  if (!value?.includes("/")) return null;
+  const value = process.env.NEXT_PUBLIC_GITHUB_REPO?.trim() || DEFAULT_GITHUB_REPO;
+  if (!value.includes("/")) return null;
   const [owner, repo] = value.split("/");
   return owner && repo ? { owner, repo } : null;
 }

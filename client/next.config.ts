@@ -8,6 +8,9 @@ const clientRoot = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.resolve(clientRoot, "..");
 const requireFromClient = createRequire(path.join(clientRoot, "package.json"));
 
+// Use .env.local for OpenNext/Wrangler local dev — client has no .dev.vars file.
+process.env.CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV ??= "true";
+
 // Monorepo turbopack root can skip client/.env.local — load it for API routes.
 for (const envFile of [".env.local", ".env"]) {
   const envPath = path.join(clientRoot, envFile);
@@ -52,6 +55,10 @@ const nextConfig: NextConfig = {
       { source: "/users/:path*", destination: `${apiUrl}/users/:path*` },
       { source: "/api/backend/projects", destination: `${apiUrl}/projects` },
       { source: "/api/backend/projects/:path*", destination: `${apiUrl}/projects/:path*` },
+      {
+        source: "/api/backend/agent/stream/:path*",
+        destination: `${apiUrl}/api/agent/stream/:path*`,
+      },
     ];
   },
 };

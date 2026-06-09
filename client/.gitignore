@@ -37,6 +37,10 @@ yarn-error.log*
 .env
 !.env.example
 
+# Wrangler dev secrets — server only (see server/.dev.vars)
+.dev.vars
+.dev.vars.*
+
 # vercel
 .vercel
 
