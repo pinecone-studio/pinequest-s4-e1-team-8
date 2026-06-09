@@ -12,7 +12,7 @@ type FormFieldProps = {
 };
 
 const fieldClass =
-  "w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-violet-400";
+  "w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-violet-400";
 
 export const FormField = ({
   label,
@@ -22,7 +22,7 @@ export const FormField = ({
   value,
   variant = "input",
 }: FormFieldProps) => (
-  <label className="block space-y-1 text-sm font-medium text-zinc-300">
+  <label className="block space-y-1 text-sm font-medium text-muted-foreground">
     <span>{label}</span>
     {variant === "textarea" ? (
       <textarea

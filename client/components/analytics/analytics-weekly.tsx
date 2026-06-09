@@ -195,13 +195,13 @@ export function AnalyticsWeekly({
   return (
     <section
       className={cn(
-        "flex h-full min-h-[400px] flex-col overflow-hidden rounded-xl border border-border/60 bg-[#16171b] shadow-sm",
+        "flex h-full min-h-[400px] flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm",
         className,
       )}
     >
       <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2.5">
-        <div className="grid size-7 place-items-center rounded-full bg-violet-500/15">
-          <Sparkles className="size-3.5 text-violet-400/80" />
+        <div className="grid size-7 place-items-center rounded-full bg-violet-100 dark:bg-violet-500/15">
+          <Sparkles className="size-3.5 text-violet-700 dark:text-violet-400/80" />
         </div>
         <div className="min-w-0">
           <p className="text-xs font-medium text-foreground/90">Weekly assistant</p>
@@ -221,17 +221,17 @@ export function AnalyticsWeekly({
 
         {isLoading ? (
           <div className="flex items-start gap-2">
-            <div className="grid size-6 shrink-0 place-items-center rounded-full bg-violet-500/15">
-              <Bot className="size-3 text-violet-400/80" />
+            <div className="grid size-6 shrink-0 place-items-center rounded-full bg-violet-100 dark:bg-violet-500/15">
+              <Bot className="size-3 text-violet-700 dark:text-violet-400/80" />
             </div>
-            <div className="rounded-2xl rounded-tl-sm bg-[#1c1d22] px-3 py-2 text-xs text-muted-foreground">
+            <div className="rounded-2xl rounded-tl-sm bg-secondary px-3 py-2 text-xs text-muted-foreground">
               Thinking...
             </div>
           </div>
         ) : null}
       </div>
 
-      <div className="shrink-0 border-t border-border/50 bg-[#18191d]/80 px-3 py-2.5">
+      <div className="shrink-0 border-t border-border/50 bg-card/80 px-3 py-2.5">
         <div className="mb-2 flex flex-wrap gap-1.5">
           {quickQuestions.map((question) => (
             <button
@@ -239,7 +239,7 @@ export function AnalyticsWeekly({
               type="button"
               disabled={isLoading}
               onClick={() => void ask(question)}
-              className="rounded-full border border-border/50 bg-[#1c1d22] px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-violet-500/30 hover:text-foreground/80 disabled:opacity-50"
+              className="rounded-full border border-border/50 bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-violet-500/30 hover:text-foreground/80 disabled:opacity-50"
             >
               {question}
             </button>
@@ -247,7 +247,7 @@ export function AnalyticsWeekly({
         </div>
 
         <form
-          className="flex items-center gap-2 rounded-xl border border-border/50 bg-[#1c1d22] px-2 py-1.5"
+          className="flex items-center gap-2 rounded-xl border border-border/50 bg-secondary px-2 py-1.5"
           onSubmit={(event) => {
             event.preventDefault();
             void submit();
@@ -279,8 +279,8 @@ function ChatBubble({ message }: { message: ChatMessage }) {
   return (
     <div className={cn("flex", isUser ? "justify-end" : "items-start gap-2")}>
       {!isUser ? (
-        <div className="grid size-6 shrink-0 place-items-center rounded-full bg-violet-500/15">
-          <Bot className="size-3 text-violet-400/80" />
+        <div className="grid size-6 shrink-0 place-items-center rounded-full bg-violet-100 dark:bg-violet-500/15">
+          <Bot className="size-3 text-violet-700 dark:text-violet-400/80" />
         </div>
       ) : null}
 
@@ -289,7 +289,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           "max-w-[88%] px-3 py-2 text-sm leading-relaxed",
           isUser
             ? "rounded-2xl rounded-tr-sm bg-violet-600/90 text-white"
-            : "rounded-2xl rounded-tl-sm bg-[#1c1d22] text-foreground/85",
+            : "rounded-2xl rounded-tl-sm bg-secondary text-foreground/85",
         )}
       >
         {message.content}

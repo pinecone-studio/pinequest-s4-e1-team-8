@@ -56,18 +56,18 @@ function OnboardingWizardContent() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#121212] px-5 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-5 py-12">
       <div className="mb-6 flex items-center gap-2.5">
         <div className="grid h-[30px] w-[30px] place-items-center rounded-[9px] bg-violet-600 text-base font-bold text-white">
           B
         </div>
-        <span className="text-lg font-semibold tracking-[-0.3px] text-white">
+        <span className="text-lg font-semibold tracking-[-0.3px] text-foreground">
           Brisk
         </span>
       </div>
 
       <div
-        className={`w-full rounded-2xl border border-white/10 bg-[#1a1b1f] p-[28px_30px_30px] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)] ${step === 3 ? "max-w-[640px]" : "max-w-[480px]"}`}
+        className={`w-full rounded-2xl border border-border bg-card p-[28px_30px_30px] shadow-lg dark:shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)] ${step === 3 ? "max-w-[640px]" : "max-w-[480px]"}`}
       >
         <StepHeader step={step} />
 
@@ -80,11 +80,11 @@ function OnboardingWizardContent() {
       </div>
 
       {error ? (
-        <p className="mt-3 text-center text-sm text-amber-400">{error}</p>
+        <p className="mt-3 text-center text-sm text-amber-700 dark:text-amber-400">{error}</p>
       ) : null}
 
       <button
-        className="mt-5 px-1.5 py-1 text-[13px] text-[#6b6b73] transition-colors hover:text-[#a1a1aa] disabled:opacity-50"
+        className="mt-5 px-1.5 py-1 text-[13px] text-foreground/80 transition-colors hover:text-muted-foreground disabled:opacity-50"
         disabled={saving}
         onClick={() => void finish()}
       >

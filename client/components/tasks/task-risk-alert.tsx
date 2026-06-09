@@ -8,9 +8,9 @@ import { AlertTriangle, Bell, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const levelStyles: Record<RiskLevel, string> = {
-  high: "border-rose-500/40 bg-rose-500/10 text-rose-300",
-  medium: "border-amber-500/40 bg-amber-500/10 text-amber-200",
-  low: "border-slate-500/40 bg-slate-500/10 text-slate-300",
+  high: "border-rose-500/40 bg-rose-100 dark:bg-rose-500/10 text-rose-800 dark:text-rose-300",
+  medium: "border-amber-500/40 bg-amber-100 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200",
+  low: "border-slate-400/50 bg-slate-100 text-slate-700 dark:border-slate-500/40 dark:bg-slate-500/10 dark:text-slate-300",
 };
 
 type TaskRiskAlertProps = {
@@ -67,7 +67,7 @@ export function TaskRiskAlert({ onFocusTask }: TaskRiskAlertProps) {
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <Bell className={cn("size-4", hasHighRisk && "text-amber-400")} />
+        <Bell className={cn("size-4", hasHighRisk && "text-amber-700 dark:text-amber-400")} />
         Risk alerts
         {!isLoading && alertCount > 0 ? (
           <span
@@ -82,10 +82,10 @@ export function TaskRiskAlert({ onFocusTask }: TaskRiskAlertProps) {
       </Button>
 
       {open ? (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border/60 bg-[#16171b] shadow-xl sm:w-96">
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border/60 bg-card shadow-xl sm:w-96">
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="size-4 text-amber-400" />
+              <AlertTriangle className="size-4 text-amber-700 dark:text-amber-400" />
               <p className="text-sm font-semibold">Risk alerts</p>
             </div>
             <button
@@ -136,7 +136,7 @@ export function TaskRiskAlert({ onFocusTask }: TaskRiskAlertProps) {
                   <li key={item.id}>
                     <button
                       type="button"
-                      className="flex w-full items-start justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[#1c1d22]"
+                      className="flex w-full items-start justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-secondary"
                       onClick={() => handleSelect(item)}
                     >
                       <div className="min-w-0">
@@ -180,11 +180,11 @@ function AlertStat({
     tone === "rose"
       ? "text-rose-400"
       : tone === "amber"
-        ? "text-amber-400"
-        : "text-violet-400";
+        ? "text-amber-700 dark:text-amber-400"
+        : "text-violet-700 dark:text-violet-400";
 
   return (
-    <div className="rounded-lg border border-border/60 bg-[#1c1d22] px-2 py-2 text-center">
+    <div className="rounded-lg border border-border/60 bg-secondary px-2 py-2 text-center">
       <p className="text-[10px] text-muted-foreground">{label}</p>
       <p className={cn("text-lg font-semibold tabular-nums", toneClass)}>
         {value}

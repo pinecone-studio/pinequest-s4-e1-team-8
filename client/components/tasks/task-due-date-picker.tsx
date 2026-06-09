@@ -147,7 +147,7 @@ export function TaskDueDatePicker({ value, onChange }: TaskDueDatePickerProps) {
       ) : null}
 
       {open ? (
-        <div className="absolute top-full left-0 z-50 mt-2 w-72 rounded-xl border border-border/60 bg-[#25262b] p-3 shadow-xl">
+        <div className="absolute top-full left-0 z-50 mt-2 w-72 rounded-xl border border-border/60 bg-muted p-3 shadow-xl">
           <div className="mb-3 flex items-center justify-between gap-2">
             <button
               type="button"
@@ -187,7 +187,7 @@ export function TaskDueDatePicker({ value, onChange }: TaskDueDatePickerProps) {
                     selectedDate && date.getTime() === selectedDate.getTime()
                       ? "bg-violet-500 font-medium text-white"
                       : date.getTime() === today.getTime()
-                        ? "border border-violet-500/40 text-violet-300 hover:bg-muted/30"
+                        ? "border border-violet-500/40 text-violet-800 dark:text-violet-300 hover:bg-muted/30"
                         : "text-foreground hover:bg-muted/30",
                   )}
                   onClick={() => selectDate(date)}

@@ -89,9 +89,9 @@ export function AnalyticsPulseOverview() {
   const healthyRatio = Math.max(0, 100 - blockedRatio);
 
   return (
-    <section className="rounded-xl border border-border/60 bg-[#16171b] p-4 shadow-sm">
+    <section className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
       <AnalyticsSectionHeader
-        icon={<BarChart3 className="size-3.5 text-violet-400" />}
+        icon={<BarChart3 className="size-3.5 text-violet-700 dark:text-violet-400" />}
         title="Overview"
       />
 
@@ -106,7 +106,7 @@ export function AnalyticsPulseOverview() {
               label={`${metrics.activeTasks} Active tasks`}
               fillPct={activeRatio}
               fillClass="bg-violet-500/80"
-              trackClass="bg-violet-500/15"
+              trackClass="bg-violet-100 dark:bg-violet-500/15"
             />
             <ActivityBar
               label={`${metrics.blockedTasks} Blocked tasks`}
@@ -120,12 +120,12 @@ export function AnalyticsPulseOverview() {
 
           <div className="mt-4 grid divide-y divide-border/50 border-t border-border/50 md:grid-cols-4 md:divide-x md:divide-y-0">
             <OverviewMetric
-              icon={<CheckCircle2 className="size-3.5 text-violet-400/80" />}
+              icon={<CheckCircle2 className="size-3.5 text-violet-700 dark:text-violet-400/80" />}
               value={metrics.completed}
               label="Completed tasks"
             />
             <OverviewMetric
-              icon={<GitPullRequest className="size-3.5 text-emerald-400/80" />}
+              icon={<GitPullRequest className="size-3.5 text-emerald-700 dark:text-emerald-400/80" />}
               value={metrics.inProgress}
               label="In progress"
             />
@@ -135,7 +135,7 @@ export function AnalyticsPulseOverview() {
               label="Blocked tasks"
             />
             <OverviewMetric
-              icon={<Plus className="size-3.5 text-sky-400/80" />}
+              icon={<Plus className="size-3.5 text-sky-700 dark:text-sky-400/80" />}
               value={metrics.startedThisWeek}
               label="Started this week"
             />

@@ -105,7 +105,7 @@ function renderInline(text: string): ReactNode[] {
       return (
         <code
           key={partIndex}
-          className="rounded-md bg-violet-500/10 px-1.5 py-0.5 font-mono text-[0.85em] text-violet-200 ring-1 ring-violet-500/20"
+          className="rounded-md bg-violet-100 dark:bg-violet-500/10 px-1.5 py-0.5 font-mono text-[0.85em] text-violet-800 dark:text-violet-200 ring-1 ring-violet-500/20"
         >
           {part.slice(1, -1)}
         </code>
@@ -114,7 +114,7 @@ function renderInline(text: string): ReactNode[] {
 
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={partIndex} className="font-semibold text-white">
+        <strong key={partIndex} className="font-semibold text-foreground">
           {part.slice(2, -2)}
         </strong>
       );
@@ -131,7 +131,7 @@ function renderHeading(level: number, text: string, blockIndex: number) {
       : level === 2
         ? "text-base font-semibold"
         : "text-sm font-semibold";
-  const headingClass = cn(sizeClass, "text-white");
+  const headingClass = cn(sizeClass, "text-foreground");
 
   if (level === 1) {
     return (
@@ -192,26 +192,26 @@ function StreamMarkdownEmpty({
   workerLabel?: string;
 }) {
   return (
-    <div className="flex min-h-[10rem] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/8 bg-white/[0.02] px-6 py-10 text-center">
+    <div className="flex min-h-[10rem] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 px-6 py-10 text-center">
       <div
         className={cn(
           "flex size-11 items-center justify-center rounded-2xl ring-1 ring-inset",
           isActive
-            ? "bg-violet-500/10 text-violet-300 ring-violet-500/25"
-            : "bg-white/4 text-[#6b6b73] ring-white/6",
+            ? "bg-violet-100 dark:bg-violet-500/10 text-violet-600 ring-violet-400 dark:ring-violet-500/25 dark:text-violet-300"
+            : "bg-muted/30 text-muted-foreground ring-border/40",
         )}
       >
         <Radio className={cn("size-5", isActive && "animate-pulse")} />
       </div>
       <div className="space-y-1">
-        <p className="text-sm font-medium text-[#a1a1ab]">
+        <p className="text-sm font-medium text-muted-foreground">
           {isActive
             ? "Streaming output"
             : workerLabel
               ? `${workerLabel} idle`
               : "No output yet"}
         </p>
-        <p className="max-w-xs text-xs leading-relaxed text-[#5c5c66]">
+        <p className="max-w-xs text-xs leading-relaxed text-muted-foreground">
           {isActive
             ? "Worker is generating content. Tokens will appear here in real time."
             : "Run the orchestration pipeline to populate this worker slot."}
@@ -238,10 +238,10 @@ function StreamMarkdownBlock({
       <pre
         key={blockIndex}
         className={cn(
-          "overflow-x-auto rounded-xl border p-3 font-mono text-xs leading-relaxed text-[#e4e4e7]",
+          "overflow-x-auto rounded-xl border p-3 font-mono text-xs leading-relaxed text-foreground",
           block.complete
-            ? "border-white/8 bg-[#0a0a0c]"
-            : "border-violet-500/25 bg-violet-500/5",
+            ? "border-border bg-background"
+            : "border-violet-300 dark:border-violet-500/25 bg-violet-50 dark:bg-violet-500/5",
         )}
       >
         <code>{block.text}</code>

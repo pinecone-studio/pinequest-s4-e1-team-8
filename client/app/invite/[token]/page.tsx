@@ -63,8 +63,8 @@ export default function InvitePage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#121212] px-6">
-        <div className="max-w-md rounded-2xl border border-white/10 bg-[#1a1b1f] p-8 text-center">
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="max-w-md rounded-2xl border border-border bg-card p-8 text-center">
           <p className="text-sm text-red-400">{error}</p>
           <Button className="mt-4" onClick={() => router.push("/")}>
             Go home
@@ -76,27 +76,27 @@ export default function InvitePage() {
 
   if (!preview) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#121212]">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">Loading invitation…</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#121212] px-6 py-12">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1a1b1f] p-8 text-center shadow-2xl">
-        <div className="mx-auto mb-4 grid size-12 place-items-center rounded-xl bg-violet-500/15 text-violet-400">
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-2xl">
+        <div className="mx-auto mb-4 grid size-12 place-items-center rounded-xl bg-violet-100 dark:bg-violet-500/15 text-violet-800 dark:text-violet-400">
           B
         </div>
-        <h1 className="text-xl font-semibold text-white">
+        <h1 className="text-xl font-semibold text-foreground">
           Join {preview.projectName}
         </h1>
-        <p className="mt-2 text-sm text-[#8e8e93]">
+        <p className="mt-2 text-sm text-muted-foreground">
           Invited by {preview.ownerName}. You&apos;ll get access to the full
           project dashboard, tasks, and milestones.
         </p>
         {preview.description ? (
-          <p className="mt-3 text-sm leading-relaxed text-[#a1a1aa]">
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             {preview.description}
           </p>
         ) : null}
@@ -104,7 +104,7 @@ export default function InvitePage() {
         {!isLoaded ? (
           <p className="mt-6 text-sm text-muted-foreground">Loading…</p>
         ) : isSignedIn ? (
-          <p className="mt-6 text-sm text-violet-300">
+          <p className="mt-6 text-sm text-violet-600 dark:text-violet-300">
             {joining ? "Joining project…" : "Redirecting…"}
           </p>
         ) : (

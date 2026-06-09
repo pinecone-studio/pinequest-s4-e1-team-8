@@ -11,7 +11,7 @@ export function SidebarProfile() {
   if (collapsed) {
     return (
       <Avatar size="lg" className="size-9 after:border-0" title="Walter">
-        <AvatarFallback className="bg-[#7c3aed] text-sm font-semibold text-white">
+        <AvatarFallback className="bg-[#7c3aed] text-sm font-semibold text-foreground">
           W
         </AvatarFallback>
       </Avatar>
@@ -21,13 +21,13 @@ export function SidebarProfile() {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3 px-1">
       <Avatar size="lg" className="size-10 shrink-0 after:border-0">
-        <AvatarFallback className="bg-[#7c3aed] text-sm font-semibold text-white">
+        <AvatarFallback className="bg-[#7c3aed] text-sm font-semibold text-foreground">
           W
         </AvatarFallback>
       </Avatar>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold leading-tight text-white">
+        <p className="truncate text-[15px] font-semibold leading-tight text-sidebar-foreground">
           Walter
         </p>
         <p className="truncate text-[11px] font-medium text-[#a78bfa]">
@@ -39,7 +39,7 @@ export function SidebarProfile() {
         <button
           type="button"
           aria-label="Add"
-          className="flex size-7 items-center justify-center text-[#8e8e93] transition-colors hover:text-white"
+          className="flex size-7 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
         >
           <Plus className="size-4 stroke-[1.75]" />
         </button>
@@ -47,7 +47,7 @@ export function SidebarProfile() {
           type="button"
           aria-label="Settings"
           className={cn(
-            "flex size-7 items-center justify-center text-[#8e8e93] transition-colors hover:text-white",
+            "flex size-7 items-center justify-center text-muted-foreground transition-colors hover:text-foreground",
           )}
         >
           <Settings className="size-4 stroke-[1.75]" />

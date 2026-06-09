@@ -15,7 +15,7 @@ const AV_COLORS = [
 ];
 
 const inputClassName =
-  "rounded-lg border border-white/10 bg-[#121318] text-sm text-white placeholder:text-[#5c5c66] transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20";
+  "rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20";
 
 function avColor(name: string) {
   let hash = 0;
@@ -72,10 +72,10 @@ export function StepInviteTeam() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-white">
+        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-foreground">
           Invite your team
         </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-[#8e8e93]">
+        <p className="mt-1.5 text-sm leading-relaxed text-foreground">
           Add teammates by email and assign their role. They&apos;ll get an invite link.
         </p>
       </div>
@@ -99,7 +99,7 @@ export function StepInviteTeam() {
             onChange={(event) => setRole(event.target.value as CollaboratorRole)}
           >
             {ROLES.map((entry) => (
-              <option key={entry} className="bg-[#1a1b1f] text-white">
+              <option key={entry} className="bg-card text-foreground">
                 {entry}
               </option>
             ))}
@@ -132,7 +132,7 @@ export function StepInviteTeam() {
 
       <div className="min-h-24">
         {step2.collaborators.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-white/10 px-4 py-6 text-center text-[13.5px] text-[#6b6b73]">
+          <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[13.5px] text-foreground/80">
             No members added yet — invite your first teammate above.
           </div>
         ) : (
@@ -143,7 +143,7 @@ export function StepInviteTeam() {
               return (
                 <div
                   key={`${collaborator.email}-${index}`}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#121318] px-3 py-2.5"
+                  className="flex items-center gap-3 rounded-xl border border-border bg-secondary px-3 py-2.5"
                 >
                   <div
                     className="grid h-[34px] w-[34px] flex-none place-items-center rounded-full text-[13px] font-semibold text-white select-none"
@@ -152,10 +152,10 @@ export function StepInviteTeam() {
                     {initials(displayName)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13.5px] font-semibold text-white">
+                    <div className="text-[13.5px] font-semibold text-foreground">
                       {displayName}
                     </div>
-                    <div className="truncate text-[12.5px] text-[#8e8e93]">
+                    <div className="truncate text-[12.5px] text-foreground/80">
                       {collaborator.email}
                     </div>
                   </div>
@@ -166,7 +166,7 @@ export function StepInviteTeam() {
                     {collaborator.role}
                   </span>
                   <button
-                    className="p-1 text-[#6b6b73] transition-colors hover:text-red-400"
+                    className="p-1 text-muted-foreground transition-colors hover:text-red-400"
                     onClick={() => removeCollaborator(index)}
                   >
                     <Trash2 size={17} />
@@ -187,7 +187,7 @@ export function StepInviteTeam() {
           <ArrowRight size={17} />
         </button>
         <button
-          className="ml-auto px-1.5 text-[13.5px] font-medium text-[#8e8e93] transition-colors hover:text-violet-400"
+          className="ml-auto px-1.5 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-violet-800 dark:hover:text-violet-400"
           onClick={() => setStep(2)}
         >
           Skip for now

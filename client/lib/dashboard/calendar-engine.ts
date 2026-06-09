@@ -3,13 +3,13 @@ import type { CalendarEvent } from './calendar-types';
 // ─── Grid constants ────────────────────────────────────────────────────────────
 // Every vertical measurement derives from HOUR_HEIGHT_PX.
 // Change this single value to uniformly rescale the entire grid.
-export const HOUR_HEIGHT_PX = 64;        // px per clock-hour
+export const HOUR_HEIGHT_PX = 80;        // px per clock-hour
 export const GRID_START_HOUR = 0;        // first visible hour (00:00)
 export const GRID_END_HOUR = 24;         // last visible hour  (24:00)
 export const VISIBLE_HOURS = GRID_END_HOUR - GRID_START_HOUR; // 24
-export const TOTAL_GRID_HEIGHT_PX = VISIBLE_HOURS * HOUR_HEIGHT_PX; // 1536 px
-export const QUARTER_HEIGHT_PX = HOUR_HEIGHT_PX / 4; // 16 px — 15-min tick spacing
-export const MIN_CARD_HEIGHT_PX = QUARTER_HEIGHT_PX;  // floor so cards never collapse
+export const TOTAL_GRID_HEIGHT_PX = VISIBLE_HOURS * HOUR_HEIGHT_PX; // 1920 px
+export const QUARTER_HEIGHT_PX = HOUR_HEIGHT_PX / 4; // 20 px — 15-min tick spacing
+export const MIN_CARD_HEIGHT_PX = 32;    // floor so short events stay readable
 
 // ─── Date helpers ──────────────────────────────────────────────────────────────
 

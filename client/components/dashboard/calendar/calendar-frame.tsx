@@ -30,9 +30,9 @@ export function CalendarDayHeader({
   const weekDays = getWeekDays(weekStart, todayMidnight);
 
   return (
-    <div className="flex shrink-0 border-b border-[#1a1d24]">
+    <div className="flex shrink-0 border-b border-border">
       <div
-        className="shrink-0 border-r border-[#1a1d24]"
+        className="shrink-0 border-r border-border"
         style={{ width: CALENDAR_GUTTER_WIDTH }}
       />
       {weekDays.map((day) => (
@@ -40,11 +40,11 @@ export function CalendarDayHeader({
           key={day.dayUnix}
           className={cn(
             "flex flex-1 flex-col items-center justify-center gap-1 py-3",
-            "border-l border-[#1a1d24]",
-            day.isToday && "bg-[#13151c]",
+            "border-l border-border",
+            day.isToday && "bg-muted/30",
           )}
         >
-          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#3d4252]">
+          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             {day.shortDay}
           </span>
           <span
@@ -53,7 +53,7 @@ export function CalendarDayHeader({
               "text-[13px] font-semibold tabular-nums",
               day.isToday
                 ? "bg-[#2563eb] text-white shadow-[0_0_16px_rgba(37,99,235,0.5)]"
-                : "text-[#5a6170]",
+                : "text-muted-foreground",
             )}
           >
             {day.label}
@@ -77,21 +77,21 @@ function CalendarAllDayShelf({
 
   return (
     <div
-      className="flex shrink-0 border-b border-[#1a1d24]"
+      className="flex shrink-0 border-b border-border"
       style={{ minHeight: CALENDAR_ALL_DAY_HEIGHT_PX }}
     >
       <div
-        className="flex shrink-0 items-center justify-center border-r border-[#1a1d24]"
+        className="flex shrink-0 items-center justify-center border-r border-border"
         style={{ width: CALENDAR_GUTTER_WIDTH }}
       >
-        <span className="text-[8px] font-medium uppercase tracking-widest text-[#2e3240]">
+        <span className="text-[8px] font-medium uppercase tracking-widest text-muted-foreground">
           All day
         </span>
       </div>
       {weekDays.map((day) => (
         <div
           key={day.dayUnix}
-          className="flex flex-1 flex-col justify-center gap-[2px] border-l border-[#1a1d24] px-1 py-[3px]"
+          className="flex flex-1 flex-col justify-center gap-1 border-l border-border px-1.5 py-1.5"
         >
           {renderAllDayCell?.(day)}
         </div>
@@ -113,7 +113,7 @@ export function CalendarFrame({
 
   return (
     <div
-      className="flex w-full flex-col overflow-hidden rounded-2xl border border-[#1a1d24] bg-[#0d0e12]"
+      className="flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-popover"
       style={{
         minWidth: CALENDAR_MIN_WIDTH,
         height: shellHeight,

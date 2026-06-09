@@ -14,7 +14,7 @@ export function SidebarCollapseTrigger({ className }: { className?: string }) {
       aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       aria-expanded={!collapsed}
       className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-lg text-[#8e8e93] transition-colors hover:bg-white/[0.06] hover:text-white",
+        "flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
         className,
       )}
     >

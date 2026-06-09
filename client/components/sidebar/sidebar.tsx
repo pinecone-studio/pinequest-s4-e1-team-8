@@ -38,7 +38,7 @@ const DashboardSidebarInner = () => {
     <aside
       data-collapsed={collapsed}
       className={cn(
-        "fixed inset-y-0 left-0 z-40 flex min-h-screen shrink-0 flex-col overflow-hidden bg-[#121214] text-white shadow-2xl transition-[width,transform] duration-300 ease-in-out md:sticky md:top-0 md:self-start md:shadow-none",
+        "fixed inset-y-0 left-0 z-40 flex min-h-screen shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl transition-[width,transform] duration-300 ease-in-out md:sticky md:top-0 md:self-start md:shadow-none",
         collapsed
           ? "w-[272px] -translate-x-full md:w-[72px] md:translate-x-0"
           : "w-[272px] translate-x-0",
@@ -60,7 +60,7 @@ const DashboardSidebarInner = () => {
 
       <div
         className={cn(
-          "h-px bg-white/[0.06] transition-[margin] duration-300",
+          "h-px bg-sidebar-border transition-[margin] duration-300",
           collapsed ? "mx-3" : "mx-4",
         )}
       />
@@ -76,14 +76,14 @@ const DashboardSidebarInner = () => {
         <ActiveMeetingReturnCard />
 
         {!collapsed && (
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b6b73]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Onboarding
           </p>
         )}
 
         <div
           className={cn(
-            "rounded-2xl bg-[#1a1a1e]",
+            "rounded-2xl bg-sidebar-accent",
             collapsed
               ? "flex flex-col items-center gap-1 py-2"
               : "flex items-center gap-2 px-2 py-2",
@@ -103,8 +103,8 @@ const DashboardSidebarInner = () => {
                 title={collapsed ? label : undefined}
                 className={
                   index === 0
-                    ? "flex size-8 items-center justify-center rounded-xl bg-white/[0.08] text-[#c4c4cc]"
-                    : "flex size-8 items-center justify-center rounded-xl text-[#5c5c66] transition-colors hover:bg-white/[0.05] hover:text-[#9a9aa3]"
+                    ? "flex size-8 items-center justify-center rounded-xl bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "flex size-8 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }
               >
                 <Icon className="size-[15px] stroke-[1.75]" />

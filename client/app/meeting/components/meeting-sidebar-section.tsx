@@ -105,7 +105,7 @@ export const MeetingSidebarSection = () => {
       {collapsed ? (
         <Link
           className={cn(
-            "relative flex items-center justify-center rounded-[14px] px-0 py-2.5 text-[#8e8e93] transition-colors hover:bg-white/[0.04] hover:text-[#c4c4cc] focus-visible:ring-2 focus-visible:ring-violet-500/40",
+            "relative flex items-center justify-center rounded-[14px] px-0 py-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground/80 focus-visible:ring-2 focus-visible:ring-violet-500/40",
             isMeetingActive &&
               "bg-[#7c3aed] text-white shadow-[0_4px_24px_-4px_rgba(124,58,237,0.55)]",
           )}
@@ -115,7 +115,7 @@ export const MeetingSidebarSection = () => {
           <Headphones
             className={cn(
               "size-[18px] shrink-0 stroke-[1.75]",
-              isMeetingActive ? "text-white" : "text-[#6b6b73]",
+              isMeetingActive ? "text-white" : "text-muted-foreground",
             )}
           />
         </Link>
@@ -127,7 +127,7 @@ export const MeetingSidebarSection = () => {
               "relative flex min-w-0 flex-1 items-center gap-2.5 rounded-[14px] px-3 py-2.5 text-[13px] font-medium transition-colors",
               isMeetingActive
                 ? "bg-[#7c3aed] text-white shadow-[0_4px_24px_-4px_rgba(124,58,237,0.55)]"
-                : "text-[#8e8e93] hover:bg-white/[0.04] hover:text-[#c4c4cc]",
+                : "text-muted-foreground hover:bg-accent hover:text-foreground/80",
               "focus-visible:ring-2 focus-visible:ring-violet-500/40",
             )}
             onClick={() => setIsSectionExpanded((value) => !value)}
@@ -136,14 +136,14 @@ export const MeetingSidebarSection = () => {
             <Headphones
               className={cn(
                 "size-[17px] shrink-0 stroke-[1.75]",
-                isMeetingActive ? "text-white" : "text-[#6b6b73]",
+                isMeetingActive ? "text-white" : "text-muted-foreground",
               )}
             />
             <span className="min-w-0 flex-1 text-left">Meeting</span>
             {isSectionExpanded ? (
-              <ChevronDown className="size-3 shrink-0 text-[#6b6b73]/60" />
+              <ChevronDown className="size-3 shrink-0 text-muted-foreground/60" />
             ) : (
-              <ChevronRight className="size-3 shrink-0 text-[#6b6b73]/60" />
+              <ChevronRight className="size-3 shrink-0 text-muted-foreground/60" />
             )}
           </button>
         </div>
@@ -172,24 +172,24 @@ export const MeetingSidebarSection = () => {
                     className={cn(
                       "relative flex min-w-0 flex-1 items-center gap-1.5 rounded-[10px] px-2 py-1.5 text-[12px] font-medium leading-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-500/40",
                       isRoomActive
-                        ? "bg-violet-500/15 text-[#dedee6] ring-1 ring-violet-500/25"
-                        : "text-[#6b6b73] hover:bg-white/[0.04] hover:text-[#a0a0aa]",
+                        ? "bg-violet-100 dark:bg-violet-500/15 text-foreground/90 ring-1 ring-violet-400 dark:ring-violet-500/25"
+                        : "text-muted-foreground hover:bg-accent hover:text-muted-foreground",
                       isConnectedRoom &&
-                        "bg-violet-500/10 text-[#dedee6] ring-1 ring-emerald-400/20",
+                        "bg-violet-100 dark:bg-violet-500/10 text-foreground/90 ring-1 ring-emerald-400/20",
                     )}
                     href={getMeetingRoomHref(room)}
                   >
                     <Volume2
                       className={cn(
                         "size-3.5 shrink-0 stroke-[1.75]",
-                        isRoomActive ? "text-violet-300" : "text-[#5c5c66]",
+                        isRoomActive ? "text-violet-800 dark:text-violet-300" : "text-muted-foreground",
                       )}
                     />
                     <span className="min-w-0 flex-1 truncate">
                       {room.roomName}
                     </span>
                     {isConnectedRoom && isSessionConnected ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-emerald-200 ring-1 ring-emerald-400/20">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded bg-emerald-100 dark:bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-400/20">
                         <span className="size-1.5 rounded-full bg-emerald-400" />
                         LIVE ({participants.length})
                       </span>
@@ -205,9 +205,9 @@ export const MeetingSidebarSection = () => {
                       return (
                         <div
                           className={cn(
-                            "flex min-w-0 items-center gap-2 rounded-[10px] px-2 py-1 text-[11px] text-[#8e8e93] transition-colors",
+                            "flex min-w-0 items-center gap-2 rounded-[10px] px-2 py-1 text-[11px] text-muted-foreground transition-colors",
                             participant.isSpeaking &&
-                              "bg-emerald-500/10 text-emerald-100 ring-1 ring-emerald-400/20",
+                              "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-900 dark:text-emerald-100 ring-1 ring-emerald-400/20",
                           )}
                           key={participant.identity}
                         >
@@ -227,9 +227,9 @@ export const MeetingSidebarSection = () => {
                             ) : null}
                             <AvatarFallback
                               className={cn(
-                                "bg-violet-500/15 text-[10px] font-semibold text-violet-100",
+                                "bg-violet-100 dark:bg-violet-500/15 text-[10px] font-semibold text-violet-900 dark:text-violet-100",
                                 participant.isSpeaking &&
-                                  "bg-emerald-500/20 text-emerald-100",
+                                  "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-100",
                               )}
                             >
                               {initial}
@@ -244,32 +244,32 @@ export const MeetingSidebarSection = () => {
                               className="size-2 shrink-0 rounded-full bg-emerald-400"
                             />
                           ) : null}
-                          <span className="flex shrink-0 items-center gap-1 text-[#6b6b73]">
+                          <span className="flex shrink-0 items-center gap-1 text-muted-foreground">
                             {participant.isMicrophoneEnabled ? (
                               <Mic
                                 aria-label="Microphone on"
-                                className="size-3 text-emerald-300"
+                                className="size-3 text-emerald-800 dark:text-emerald-300"
                               />
                             ) : (
                               <MicOff
                                 aria-label="Microphone muted"
-                                className="size-3 text-[#6b6b73]"
+                                className="size-3 text-muted-foreground"
                               />
                             )}
                             {participant.isCameraEnabled ? (
                               <Video
                                 aria-label="Camera on"
-                                className="size-3 text-violet-300"
+                                className="size-3 text-violet-800 dark:text-violet-300"
                               />
                             ) : (
                               <VideoOff
                                 aria-label="Camera off"
-                                className="size-3 text-[#6b6b73]"
+                                className="size-3 text-muted-foreground"
                               />
                             )}
                           </span>
                           {participant.isLocal ? (
-                            <span className="shrink-0 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-emerald-200">
+                            <span className="shrink-0 rounded bg-emerald-100 dark:bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-emerald-800 dark:text-emerald-200">
                               You
                             </span>
                           ) : null}

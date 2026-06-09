@@ -48,9 +48,9 @@ export function AnalyticsMetrics() {
   );
 
   return (
-    <section className="rounded-xl border border-border/60 bg-[#16171b] p-4 shadow-sm">
+    <section className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
       <AnalyticsSectionHeader
-        icon={<BarChart3 className="size-3.5 text-violet-400" />}
+        icon={<BarChart3 className="size-3.5 text-violet-700 dark:text-violet-400" />}
         title="Metrics"
       />
 
@@ -64,7 +64,7 @@ export function AnalyticsMetrics() {
           <SummaryStat
             label="Done"
             value={metrics.done}
-            valueClassName="text-emerald-400"
+            valueClassName="text-emerald-700 dark:text-emerald-400"
           />
           <SummaryStat
             label="Blocked"
@@ -74,7 +74,7 @@ export function AnalyticsMetrics() {
           <SummaryStat
             label="Progress"
             value={`${metrics.progress}%`}
-            valueClassName="text-sky-400"
+            valueClassName="text-sky-700 dark:text-sky-400"
           />
         </div>
       )}
@@ -92,7 +92,7 @@ function SummaryStat({
   valueClassName?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-[#1c1d22] px-3 py-2.5">
+    <div className="rounded-lg border border-border/60 bg-secondary px-3 py-2.5">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p
         className={cn(

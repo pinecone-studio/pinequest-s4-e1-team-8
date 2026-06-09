@@ -28,7 +28,7 @@ export function SidebarAuth() {
               type="button"
               size="icon-sm"
               variant="ghost"
-              className="size-9 text-[#a78bfa] hover:bg-white/10 hover:text-white"
+              className="size-9 text-[#a78bfa] hover:bg-accent hover:text-foreground"
               aria-label="Sign in"
             >
               <LogIn className="size-4 stroke-[1.75]" />
@@ -45,7 +45,7 @@ export function SidebarAuth() {
                   type="button"
                   size="sm"
                   variant="secondary"
-                  className="flex-1 bg-white/10 text-white hover:bg-white/15"
+                  className="flex-1 bg-muted text-foreground hover:bg-accent"
                 >
                   Sign in
                 </Button>

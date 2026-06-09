@@ -34,7 +34,7 @@ export function TaskListView({
   onDeleteTask,
 }: TaskListViewProps) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border/60 bg-[#18191d]">
+    <div className="overflow-hidden rounded-lg border border-border/60 bg-card">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[52rem] text-sm">
           <thead>
@@ -59,7 +59,7 @@ export function TaskListView({
                   data-task-id={task.id}
                   className={cn(
                     "cursor-pointer border-b border-border/40 transition-colors last:border-b-0 hover:bg-muted/10",
-                    selectedTaskId === task.id && "bg-violet-500/10",
+                    selectedTaskId === task.id && "bg-violet-100 dark:bg-violet-500/10",
                   )}
                   onClick={() => onSelectTask(task.id)}
                 >

@@ -162,7 +162,7 @@ export function ShareProjectDialog({
 
           <div className="rounded-xl border border-border/60 bg-muted/10 p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Users className="size-4 text-violet-400" />
+              <Users className="size-4 text-violet-700 dark:text-violet-400" />
               <h3 className="text-sm font-semibold">Mini teams</h3>
             </div>
             <p className="mb-3 text-xs text-muted-foreground">

@@ -20,6 +20,10 @@ import { CalendarViewportProvider } from "./calendar-viewport-context";
 import { ConnectCalendarBanner } from "./connect-calendar";
 import { EventEditPopover } from "./event-edit-popover";
 import { CreateEventPopover } from "./create-event-popover";
+import {
+  CALENDAR_MIN_WIDTH,
+  CALENDAR_SHELL_HEIGHT_PX,
+} from "@/lib/dashboard/calendar-layout";
 
 const DEBOUNCE_MS   = 500;
 const POLL_INTERVAL = 30_000; // 30 s
@@ -27,8 +31,30 @@ const POLL_INTERVAL = 30_000; // 30 s
 interface EditingState  { event: CalendarEvent; pos: { x: number; y: number } }
 interface CreatingState { startUnix: number;    pos: { x: number; y: number } }
 
+function CalendarMountPlaceholder() {
+  return (
+    <div
+      className="flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-popover"
+      style={{ minWidth: CALENDAR_MIN_WIDTH, height: CALENDAR_SHELL_HEIGHT_PX }}
+      aria-hidden
+    >
+      <div className="flex flex-1 animate-pulse flex-col gap-3 p-4">
+        <div className="h-10 rounded-lg bg-muted/40" />
+        <div className="h-6 rounded-lg bg-muted/30" />
+        <div className="flex-1 rounded-lg bg-muted/20" />
+      </div>
+    </div>
+  );
+}
+
 export function CalendarSection() {
-  const todayMidnight = getTodayMidnight();
+  const [calendarReady, setCalendarReady] = useState(false);
+  const [todayMidnight, setTodayMidnight] = useState(() => getTodayMidnight());
+
+  useEffect(() => {
+    setTodayMidnight(getTodayMidnight());
+    setCalendarReady(true);
+  }, []);
 
   // ─── Week ─────────────────────────────────────────────────────────────────
   const [weekStart, setWeekStart] = useState(() => getWeekStart(Date.now()));
@@ -271,14 +297,14 @@ export function CalendarSection() {
         />
 
         <CalendarResizableShell>
-          {connected === null && (
+          {!calendarReady ? (
+            <CalendarMountPlaceholder />
+          ) : connected === null ? (
             <CalendarLoadingGrid
               weekStart={weekStart}
               todayMidnight={todayMidnight}
             />
-          )}
-
-          {connected === false && (
+          ) : connected === false ? (
             <CalendarFrame weekStart={weekStart} todayMidnight={todayMidnight}>
               <div className="flex h-full min-h-full items-center justify-center px-8 py-12">
                 <Suspense>
@@ -286,9 +312,7 @@ export function CalendarSection() {
                 </Suspense>
               </div>
             </CalendarFrame>
-          )}
-
-          {connected === true && (
+          ) : (
             <CalendarGrid
               weekStart={weekStart}
               events={events}

@@ -2,13 +2,14 @@
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
 import { fetchAsanaStatus, getAsanaConnectUrl } from "@/lib/integrations/asana";
+import { cn } from "@/lib/utils";
 import { Check, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 function GithubMark() {
   return (
-    <div className="grid h-6 w-6 place-items-center rounded-full bg-white/10 text-[13px] font-bold text-white">
+    <div className="grid h-6 w-6 place-items-center rounded-full bg-muted/50 text-[13px] font-bold text-foreground">
       GH
     </div>
   );
@@ -43,32 +44,29 @@ function IntegrationCard({
 }: IntegrationCardProps) {
   return (
     <div
-      className="flex flex-1 flex-col gap-3 rounded-xl border p-4 transition-[border-color,background]"
-      style={{
-        borderColor: connected ? "rgba(34,197,94,0.45)" : "rgba(255,255,255,0.1)",
-        background: connected ? "rgba(34,197,94,0.08)" : "#121318",
-      }}
+      className={cn(
+        "flex flex-1 flex-col gap-3 rounded-xl border p-4 transition-[border-color,background]",
+        connected
+          ? "border-emerald-500/40 bg-emerald-50 dark:border-emerald-500/45 dark:bg-emerald-500/10"
+          : "border-border bg-muted/40 dark:bg-secondary",
+      )}
     >
       <div className="flex items-center gap-2.5">
-        <div className="grid h-[42px] w-[42px] flex-none place-items-center rounded-[10px] border border-white/10 bg-[#1a1b1f]">
+        <div className="grid h-[42px] w-[42px] flex-none place-items-center rounded-[10px] border border-border bg-card">
           {logo}
         </div>
         <div>
-          <div className="text-[15px] font-semibold text-white">{name}</div>
-          <div className="text-[12.5px] text-[#8e8e93]">{desc}</div>
+          <div className="text-[15px] font-semibold text-foreground">{name}</div>
+          <div className="text-[12.5px] text-foreground">{desc}</div>
         </div>
       </div>
       <button
-        className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-        style={
+        className={cn(
+          "flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
           connected
-            ? {
-                background: "rgba(34,197,94,0.12)",
-                border: "1px solid rgba(34,197,94,0.35)",
-                color: "#86efac",
-              }
-            : { background: "#7c3aed", color: "#fff" }
-        }
+            ? "border-emerald-500/35 bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
+            : "border-transparent bg-violet-600 text-white hover:bg-violet-500",
+        )}
         disabled={disabled || connected}
         onClick={onToggle}
       >
@@ -149,10 +147,10 @@ export function StepIntegrations() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-white">
+        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-foreground">
           Connect your tools
         </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-[#8e8e93]">
+        <p className="mt-1.5 text-sm leading-relaxed text-foreground">
           Link the services your team already uses. Brisk keeps everything in sync.
         </p>
       </div>
@@ -161,8 +159,8 @@ export function StepIntegrations() {
         <p
           className={`mb-4 rounded-lg px-3 py-2 text-[13px] ${
             step3.asanaConnected
-              ? "bg-emerald-500/10 text-emerald-300"
-              : "bg-amber-500/10 text-amber-200"
+              ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+              : "bg-amber-100 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200"
           }`}
         >
           {asanaMessage}
@@ -186,7 +184,7 @@ export function StepIntegrations() {
         />
       </div>
 
-      <p className="mt-3 text-[12px] text-[#6b6b73]">
+      <p className="mt-3 text-[12px] text-foreground/80">
         GitHub is a demo toggle for now. Asana needs developer keys — optional during
         onboarding.
       </p>
@@ -200,7 +198,7 @@ export function StepIntegrations() {
           <ArrowRight size={17} />
         </button>
         <button
-          className="ml-auto px-1.5 text-[13.5px] font-medium text-[#8e8e93] transition-colors hover:text-violet-400"
+          className="ml-auto px-1.5 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-violet-800 dark:hover:text-violet-400"
           onClick={skipStep3}
         >
           Skip for now

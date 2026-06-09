@@ -157,19 +157,19 @@ export default function AgentWorkspacePage() {
   }, [abort]);
 
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-[#0a0a0c] text-white">
-      <header className="shrink-0 border-b border-white/6 px-6 py-5">
+    <div className="flex min-h-full flex-1 flex-col bg-background text-foreground">
+      <header className="shrink-0 border-b border-border/60 px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/15 ring-1 ring-violet-500/25">
-                <Sparkles className="size-4 text-violet-300" />
+              <div className="flex size-9 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/15 ring-1 ring-violet-400 dark:ring-violet-500/25">
+                <Sparkles className="size-4 text-violet-600 dark:text-violet-300" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold tracking-tight">
                   Agent Workspace
                 </h1>
-                <p className="text-sm text-[#8b8b95]">
+                <p className="text-sm text-muted-foreground">
                   Multi-agent orchestration viewport
                 </p>
               </div>
@@ -188,7 +188,7 @@ export default function AgentWorkspacePage() {
             {isComplete ? (
               <Badge
                 variant="secondary"
-                className="h-7 gap-1.5 rounded-lg bg-emerald-500/15 px-3 text-xs text-emerald-300"
+                className="h-7 gap-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-500/15 px-3 text-xs text-emerald-800 dark:text-emerald-300"
               >
                 <CheckCircle2 className="size-3.5" />
                 Orchestration Complete
@@ -197,7 +197,7 @@ export default function AgentWorkspacePage() {
             {!isLoading && !isComplete ? (
               <Badge
                 variant="outline"
-                className="h-7 rounded-lg border-white/12 px-3 text-xs text-[#8b8b95]"
+                className="h-7 rounded-lg border-border px-3 text-xs text-muted-foreground"
               >
                 Awaiting Input
               </Badge>
@@ -206,16 +206,16 @@ export default function AgentWorkspacePage() {
         </div>
       </header>
 
-      <div className="sticky top-0 z-20 border-b border-white/6 bg-[#0a0a0c]/90 px-6 py-5 backdrop-blur-xl">
+      <div className="sticky top-0 z-20 border-b border-border/60 bg-background/90 px-6 py-5 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-white">Command Center</p>
-              <p className="text-xs text-[#8b8b95]">
+              <p className="text-sm font-medium text-foreground">Command Center</p>
+              <p className="text-xs text-muted-foreground">
                 Direct the supervisor agent pipeline
               </p>
             </div>
-            <span className="text-xs tabular-nums text-[#6b6b73]">
+            <span className="text-xs tabular-nums text-muted-foreground">
               {pipelineProgress}% routed
             </span>
           </div>
@@ -225,7 +225,7 @@ export default function AgentWorkspacePage() {
             placeholder="Describe the orchestration task — metrics review, risk scan, PR draft, and issue generation."
             rows={3}
             disabled={isLoading}
-            className="w-full resize-none rounded-2xl border border-white/8 bg-[#121216] px-4 py-3.5 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-all placeholder:text-[#5c5c66] focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full resize-none rounded-2xl border border-border bg-card px-4 py-3.5 text-sm text-foreground shadow-sm outline-none transition-all placeholder:text-muted-foreground focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
           />
           <div className="flex flex-wrap items-center gap-3">
             <Button
@@ -257,18 +257,18 @@ export default function AgentWorkspacePage() {
         </div>
       </div>
 
-      <section className="shrink-0 border-b border-white/6 px-6 py-6">
+      <section className="shrink-0 border-b border-border/60 px-6 py-6">
         <div className="mx-auto w-full max-w-6xl space-y-5">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-sm font-medium text-white">
+              <h2 className="text-sm font-medium text-foreground">
                 Pipeline Timeline
               </h2>
-              <p className="text-xs text-[#8b8b95]">
+              <p className="text-xs text-muted-foreground">
                 Five specialized worker stages
               </p>
             </div>
-            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-white/6">
+            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-muted/40">
               <div
                 className="h-full rounded-full bg-linear-to-r from-violet-600 to-cyan-500 transition-all duration-500 ease-out"
                 style={{ width: `${pipelineProgress}%` }}
@@ -301,7 +301,7 @@ export default function AgentWorkspacePage() {
                         "absolute top-6 right-0 z-0 hidden h-px w-full translate-x-1/2 md:block",
                         status === "done"
                           ? "bg-emerald-500/40"
-                          : "bg-white/10",
+                          : "bg-muted/50",
                       )}
                       style={{ width: "calc(100% - 3rem)", left: "calc(50% + 1.5rem)" }}
                     />
@@ -310,11 +310,11 @@ export default function AgentWorkspacePage() {
                     className={cn(
                       "relative z-10 flex h-full flex-col gap-3 rounded-2xl border p-4 transition-all duration-300",
                       status === "running" &&
-                        "animate-pulse border-violet-500/70 bg-violet-500/10 shadow-[0_0_32px_rgba(139,92,246,0.2)] ring-1 ring-violet-400/40",
+                        "animate-pulse border-violet-500/70 bg-violet-100 dark:bg-violet-500/10 shadow-[0_0_32px_rgba(139,92,246,0.2)] ring-1 ring-violet-400/40",
                       status === "done" &&
                         "border-emerald-500/35 bg-emerald-500/5",
                       status === "pending" &&
-                        "border-white/6 bg-[#121216]/80",
+                        "border-border/60 bg-card/80",
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -322,11 +322,11 @@ export default function AgentWorkspacePage() {
                         className={cn(
                           "flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset transition-colors",
                           status === "running" &&
-                            "bg-violet-500/20 text-violet-200 ring-violet-500/30",
+                            "bg-violet-200 dark:bg-violet-500/20 text-violet-800 dark:text-violet-200 ring-violet-400 dark:ring-violet-500/30",
                           status === "done" &&
-                            "bg-emerald-500/15 text-emerald-300 ring-emerald-500/25",
+                            "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 ring-emerald-500/25",
                           status === "pending" &&
-                            "bg-white/4 text-[#8b8b95] ring-white/6",
+                            "bg-muted/30 text-muted-foreground ring-border/40",
                         )}
                       >
                         {status === "running" ? (
@@ -343,21 +343,21 @@ export default function AgentWorkspacePage() {
                           "rounded-lg text-[10px] uppercase tracking-wide",
                           status === "running" && "bg-violet-600",
                           status === "done" &&
-                            "bg-emerald-500/15 text-emerald-300",
+                            "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
                         )}
                       >
                         {statusLabel(status)}
                       </Badge>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium text-foreground">
                         {node.label}
                       </p>
-                      <p className="text-[11px] leading-relaxed text-[#8b8b95]">
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">
                         {node.description}
                       </p>
                     </div>
-                    <p className="mt-auto font-mono text-[10px] text-[#5c5c66]">
+                    <p className="mt-auto font-mono text-[10px] text-muted-foreground">
                       {node.id}
                     </p>
                   </div>
@@ -383,32 +383,32 @@ export default function AgentWorkspacePage() {
               <Card
                 key={node.id}
                 className={cn(
-                  "border-white/6 bg-[#121216] text-white ring-white/6 transition-all duration-300",
+                  "border-border/60 bg-card text-card-foreground ring-border/40 transition-all duration-300",
                   status === "running" &&
                     "ring-1 ring-violet-500/40 shadow-[0_0_24px_rgba(139,92,246,0.08)]",
                 )}
               >
-                <CardHeader className="border-b border-white/6">
+                <CardHeader className="border-b border-border/60">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
                           "flex size-8 items-center justify-center rounded-lg",
                           status === "running" &&
-                            "bg-violet-500/20 text-violet-300",
+                            "bg-violet-200 dark:bg-violet-500/20 text-violet-800 dark:text-violet-300",
                           status === "done" &&
-                            "bg-emerald-500/15 text-emerald-300",
+                            "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
                           status === "pending" &&
-                            "bg-white/4 text-[#8b8b95]",
+                            "bg-muted/30 text-muted-foreground",
                         )}
                       >
                         <Icon className="size-4" />
                       </div>
                       <div>
-                        <CardTitle className="text-sm text-white">
+                        <CardTitle className="text-sm text-foreground">
                           {node.label}
                         </CardTitle>
-                        <CardDescription className="text-xs text-[#8b8b95]">
+                        <CardDescription className="text-xs text-muted-foreground">
                           {node.description}
                         </CardDescription>
                       </div>

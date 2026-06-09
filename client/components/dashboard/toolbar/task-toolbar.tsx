@@ -13,7 +13,7 @@ import {
 
 export function TaskToolbar() {
   return (
-    <div className="mx-6 mb-2 flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-[#1a1b1f]/80 px-3 py-2 shadow-sm">
+    <div className="mx-6 mb-2 flex shrink-0 flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/80 px-3 py-2 shadow-sm">
       <Button variant="outline" size="sm" className="gap-1.5 rounded-xl">
         <SlidersHorizontal className="size-3.5" />
         Filters

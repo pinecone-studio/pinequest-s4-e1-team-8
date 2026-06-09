@@ -65,9 +65,9 @@ export function BoardColumn({
       className={cn(
         "flex w-72 shrink-0 flex-col gap-2 rounded-2xl border bg-muted/30 p-3 transition-colors",
         over && droppable
-          ? "border-violet-500/50 ring-1 ring-violet-500/30"
+          ? "border-violet-500/50 ring-1 ring-violet-400 dark:ring-violet-500/30"
           : dragActive && droppable
-            ? "border-violet-500/30"
+            ? "border-violet-300 dark:border-violet-500/30"
             : "border-border/60",
       )}
     >

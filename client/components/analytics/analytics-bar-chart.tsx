@@ -19,7 +19,7 @@ export function AnalyticsBarChart({
   const max = Math.max(...items.map((item) => item.value), 1);
 
   return (
-    <div className="rounded-lg border border-border/60 bg-[#1c1d22] p-3">
+    <div className="rounded-lg border border-border/60 bg-secondary p-3">
       <p className="text-xs font-medium text-muted-foreground">{title}</p>
 
       <div

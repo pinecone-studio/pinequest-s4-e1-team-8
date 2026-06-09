@@ -89,7 +89,7 @@ export function DashboardWidgetsSection() {
           onPointerDown={onDividerPointerDown}
           className={cn(
             "group/widgets-divider relative mx-0.5 flex w-3 shrink-0 cursor-col-resize items-center justify-center self-center",
-            "rounded-full transition-colors hover:bg-white/[0.04]",
+            "rounded-full transition-colors hover:bg-accent",
           )}
         >
           <span className="h-10 w-1 rounded-full bg-border/70 transition-colors group-hover/widgets-divider:bg-violet-500/60" />

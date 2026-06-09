@@ -15,7 +15,7 @@ export function StepAiTasks({ onFinish, disabled = false }: StepAiTasksProps) {
   return (
     <>
       <div className="mb-5 text-center">
-        <div className="mx-auto mb-3.5 grid h-12 w-12 place-items-center rounded-xl bg-violet-500/15 text-violet-400">
+        <div className="mx-auto mb-3.5 grid h-12 w-12 place-items-center rounded-xl bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-400">
           <svg
             width="24"
             height="24"
@@ -30,10 +30,10 @@ export function StepAiTasks({ onFinish, disabled = false }: StepAiTasksProps) {
             <path d="M18 14l.7 1.9L20.6 16.6 18.7 17.3 18 19.2 17.3 17.3 15.4 16.6 17.3 15.9z" />
           </svg>
         </div>
-        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-white">
+        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-foreground">
           Scope your project
         </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-[#8e8e93]">
+        <p className="mt-1.5 text-sm leading-relaxed text-foreground">
           Chat with the onboarding worker to draft milestones before launch.
         </p>
       </div>
@@ -49,7 +49,7 @@ export function StepAiTasks({ onFinish, disabled = false }: StepAiTasksProps) {
           {disabled ? "Saving…" : "Continue to dashboard"}
         </button>
         <button
-          className="flex h-11 flex-1 items-center justify-center rounded-lg border border-white/10 bg-transparent text-sm font-semibold text-[#c4c4cc] transition-colors hover:border-white/20 hover:bg-white/[0.04] disabled:opacity-50"
+          className="flex h-11 flex-1 items-center justify-center rounded-lg border border-border bg-transparent text-sm font-semibold text-foreground transition-colors hover:border-border hover:bg-accent disabled:opacity-50"
           disabled={disabled}
           onClick={() => void onFinish()}
         >

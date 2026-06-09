@@ -74,7 +74,7 @@ export function TaskRow({ task, active = false }: TaskRowProps) {
     <article
       className={cn(
         "rounded-lg border bg-card p-5 text-card-foreground shadow-sm transition-colors",
-        "hover:border-violet-400/60 dark:bg-[#18191d]",
+        "hover:border-violet-400/60 dark:bg-card",
         active
           ? "border-violet-500 ring-1 ring-violet-500"
           : "border-border/70",
@@ -101,7 +101,7 @@ export function TaskRow({ task, active = false }: TaskRowProps) {
           <span
             key={`${task.id}-${member}`}
             className={cn(
-              "grid size-9 place-items-center rounded-full border-2 border-card text-xs font-semibold text-white dark:border-[#18191d]",
+              "grid size-9 place-items-center rounded-full border-2 border-card text-xs font-semibold text-white border-elevated",
               index > 0 && "-ml-2",
               memberColors[index % memberColors.length],
             )}

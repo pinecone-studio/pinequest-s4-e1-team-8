@@ -82,7 +82,7 @@ export function PrConversation({
 
       {loading ? (
         <div className="flex justify-center py-8">
-          <Loader2 className="size-5 animate-spin text-violet-500" />
+          <Loader2 className="size-5 animate-spin text-violet-700 dark:text-violet-500" />
         </div>
       ) : timeline.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">No comments yet</p>

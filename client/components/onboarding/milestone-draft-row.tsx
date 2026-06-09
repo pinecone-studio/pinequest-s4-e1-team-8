@@ -78,8 +78,8 @@ export function MilestoneDraftRow({
       className={cn(
         "rounded-xl border p-4 transition-all duration-300",
         draft.isApproved
-          ? "border-emerald-500/50 bg-emerald-500/10 shadow-[0_0_20px_rgba(34,197,94,0.08)]"
-          : "border-dashed border-violet-500/25 bg-[#121318]/90",
+          ? "border-emerald-500/50 bg-emerald-100 dark:bg-emerald-500/10 shadow-[0_0_20px_rgba(34,197,94,0.08)]"
+          : "border-dashed border-violet-300 dark:border-violet-500/25 bg-secondary/90",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -98,20 +98,20 @@ export function MilestoneDraftRow({
                   setIsEditingTitle(false);
                 }
               }}
-              className="h-8 border-white/15 bg-[#0f1014] text-sm font-semibold text-white focus-visible:border-violet-500/50 focus-visible:ring-violet-500/20"
+              className="h-8 border-border bg-secondary text-sm font-semibold text-foreground focus-visible:border-violet-500/50 focus-visible:ring-violet-500/20"
             />
           ) : (
             <button
               type="button"
               onClick={handleTitleClick}
-              className="w-full text-left text-sm font-semibold text-white transition-colors hover:text-violet-200"
+              className="w-full text-left text-sm font-semibold text-foreground transition-colors hover:text-violet-700 dark:hover:text-violet-200"
             >
               {draft.title}
             </button>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 transition-colors hover:border-emerald-500/30">
+          <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-muted/30 px-2 py-1 transition-colors hover:border-emerald-500/30">
             <Checkbox
               checked={draft.isApproved}
               onCheckedChange={() => onToggleApproval(milestoneIndex)}
@@ -120,7 +120,7 @@ export function MilestoneDraftRow({
             <span
               className={cn(
                 "text-[10px] font-medium uppercase tracking-wide",
-                draft.isApproved ? "text-emerald-300" : "text-[#8e8e93]",
+                draft.isApproved ? "text-emerald-800 dark:text-emerald-300" : "text-muted-foreground",
               )}
             >
               Approve
@@ -129,7 +129,7 @@ export function MilestoneDraftRow({
           <button
             type="button"
             onClick={() => onDeleteMilestone(milestoneIndex)}
-            className="rounded-md border border-white/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-[#8e8e93] transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300"
+            className="rounded-md border border-border px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:border-rose-500/40 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
           >
             Delete Card
           </button>
@@ -163,13 +163,13 @@ export function MilestoneDraftRow({
                         setEditingTaskIndex(null);
                       }
                     }}
-                    className="h-7 flex-1 border-white/15 bg-[#0f1014] text-[13px] text-[#c4c4cc] focus-visible:border-violet-500/50 focus-visible:ring-violet-500/20"
+                    className="h-7 flex-1 border-border bg-secondary text-[13px] text-foreground focus-visible:border-violet-500/50 focus-visible:ring-violet-500/20"
                   />
                 ) : (
                   <button
                     type="button"
                     onClick={() => handleTaskClick(taskIndex)}
-                    className="min-w-0 flex-1 text-left text-[13px] leading-snug text-[#c4c4cc] transition-colors hover:text-white"
+                    className="min-w-0 flex-1 text-left text-[13px] leading-snug text-foreground transition-colors hover:text-foreground"
                   >
                     {task}
                   </button>
@@ -177,7 +177,7 @@ export function MilestoneDraftRow({
                 <button
                   type="button"
                   onClick={() => onRemoveTask(milestoneIndex, taskIndex)}
-                  className="shrink-0 p-1 text-[#6b6b73] transition-colors hover:text-rose-400"
+                  className="shrink-0 p-1 text-muted-foreground transition-colors hover:text-rose-400"
                   aria-label="Remove task"
                 >
                   <Trash2 size={14} />
@@ -187,13 +187,13 @@ export function MilestoneDraftRow({
           })}
         </ul>
       ) : (
-        <p className="mt-3 text-[13px] text-[#6b6b73]">No tasks yet</p>
+        <p className="mt-3 text-[13px] text-foreground/80">No tasks yet</p>
       )}
 
       <button
         type="button"
         onClick={handleAddTask}
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-white/15 px-2.5 py-1.5 text-[12px] font-medium text-[#a1a1ab] transition-colors hover:border-violet-500/40 hover:bg-violet-500/5 hover:text-violet-200"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:border-violet-500/40 hover:bg-violet-100 dark:hover:bg-violet-500/5 hover:text-violet-800 dark:hover:text-violet-200"
       >
         <Plus size={14} />
         Add Task

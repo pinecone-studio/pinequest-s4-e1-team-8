@@ -56,11 +56,11 @@ export function TaskList() {
 
   return (
     <>
-      <Card className="rounded-lg border border-border/60 bg-[#16171b] shadow-none">
+      <Card className="rounded-lg border border-border/60 bg-card shadow-none">
         <CardHeader className="border-b border-border/60">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <ListTodo className="size-5 text-violet-400" />
+              <ListTodo className="size-5 text-violet-700 dark:text-violet-400" />
               Task list
             </CardTitle>
             <div className="flex flex-wrap items-center gap-2">
@@ -88,7 +88,7 @@ export function TaskList() {
                 className={cn(
                   "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
                   activeSource === source
-                    ? "border-violet-500 bg-violet-500 text-white"
+                    ? "border-violet-600 bg-violet-600 text-white dark:border-violet-500 dark:bg-violet-500"
                     : "border-border/70 bg-card text-muted-foreground hover:text-foreground",
                 )}
                 onClick={() => selectSource(source)}

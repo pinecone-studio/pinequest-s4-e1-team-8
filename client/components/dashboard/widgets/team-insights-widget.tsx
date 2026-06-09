@@ -21,9 +21,12 @@ function statusLabel(status: string) {
 }
 
 function statusClassName(status: string) {
-  if (status === "todo") return "bg-violet-500/15 text-violet-300";
-  if (status === "in progress") return "bg-sky-500/15 text-sky-300";
-  if (status === "completed") return "bg-emerald-500/15 text-emerald-300";
+  if (status === "todo")
+    return "bg-violet-100 dark:bg-violet-500/15 text-violet-800 dark:text-violet-300";
+  if (status === "in progress")
+    return "bg-sky-100 dark:bg-sky-500/15 text-sky-800 dark:text-sky-300";
+  if (status === "completed")
+    return "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300";
   return "bg-muted/40 text-muted-foreground";
 }
 
@@ -62,7 +65,7 @@ export function TeamInsightsWidget() {
         <CardAction>
           <Link
             href="/tasks"
-            className="text-sm font-medium text-violet-500 hover:text-violet-400"
+            className="text-sm font-medium text-violet-700 dark:text-violet-500 hover:text-violet-800 dark:hover:text-violet-400"
           >
             View all
           </Link>
@@ -111,7 +114,7 @@ export function TeamInsightsWidget() {
                       className="absolute top-8 left-[13px] h-[calc(100%-1rem)] w-px bg-border/70"
                     />
                   ) : null}
-                  <div className="relative z-10 mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-violet-500/30 bg-violet-500/10 text-[11px] font-semibold text-violet-300">
+                  <div className="relative z-10 mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-violet-300 dark:border-violet-500/30 bg-violet-100 dark:bg-violet-500/10 text-[11px] font-semibold text-violet-800 dark:text-violet-300">
                     {index + 1}
                   </div>
                   <div className="min-w-0 flex-1 rounded-xl border border-border/50 bg-muted/10 px-3 py-2.5">
@@ -142,7 +145,7 @@ export function TeamInsightsWidget() {
                     </div>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/40">
                       <div
-                        className="h-full rounded-full bg-violet-500/70 transition-all"
+                        className="h-full rounded-full bg-violet-600 dark:bg-violet-500/70 transition-all"
                         style={{ width: `${progress}%` }}
                       />
                     </div>
@@ -170,7 +173,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border/60 bg-muted/10 px-6 py-8 text-center">
-      <div className="rounded-xl bg-sky-500/10 p-3 text-sky-400">
+      <div className="rounded-xl bg-sky-100 dark:bg-sky-500/10 p-3 text-sky-700 dark:text-sky-400">
         <Layers3 className="size-5" />
       </div>
       <div className="space-y-1">
@@ -179,7 +182,7 @@ function EmptyState({
       </div>
       <Link
         href={href}
-        className="inline-flex items-center gap-1 text-xs font-medium text-violet-500 hover:text-violet-400"
+        className="inline-flex items-center gap-1 text-xs font-medium text-violet-700 dark:text-violet-500 hover:text-violet-800 dark:hover:text-violet-400"
       >
         <Flag className="size-3" />
         {linkLabel}

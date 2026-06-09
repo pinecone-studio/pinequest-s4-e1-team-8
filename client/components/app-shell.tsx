@@ -22,7 +22,7 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
   return (
     <MeetingChannelPresenceProvider>
       <MeetingSessionProvider>
-        <div className="flex min-h-screen bg-[#121212]">
+        <div className="flex min-h-screen bg-background">
           <AuthSetup />
           <UserSync />
           {hideSidebar ? null : <DashboardSidebar />}

@@ -18,7 +18,7 @@ export const RecordingActionButton = ({
   if (isRecordingActive) {
     return (
       <button
-        className="rounded-2xl border border-red-300/30 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/25 disabled:opacity-60"
+        className="rounded-2xl border border-red-300/30 bg-red-100 dark:bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-800 dark:text-red-100 transition hover:bg-red-500/25 disabled:opacity-60"
         disabled={isLoading}
         onClick={onStop}
         type="button"

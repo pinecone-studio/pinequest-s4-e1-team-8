@@ -84,10 +84,10 @@ export function AnalyticsTeamTimeline({
   }, [weekly]);
 
   return (
-    <section className="flex h-full min-h-[400px] flex-col rounded-xl border border-border/60 bg-[#16171b] p-4 shadow-sm">
+    <section className="flex h-full min-h-[400px] flex-col rounded-xl border border-border/60 bg-card p-4 shadow-sm">
       <div className="flex items-center border-b border-border/50 pb-3">
         <div className="flex items-center gap-2">
-          <CalendarDays className="size-4 text-sky-400/80" />
+          <CalendarDays className="size-4 text-sky-700 dark:text-sky-400/80" />
           <p className="text-sm font-medium text-foreground/90">
             {formatTimelineDate(new Date())}
           </p>
@@ -102,7 +102,7 @@ export function AnalyticsTeamTimeline({
               className={cn(
                 "border-b-2 pb-1 text-xs font-medium transition-colors",
                 view === tab.id
-                  ? "border-sky-400 text-sky-300"
+                  ? "border-sky-400 text-sky-800 dark:text-sky-300"
                   : "border-transparent text-muted-foreground hover:text-foreground/80",
               )}
             >
@@ -229,7 +229,7 @@ function DailyTimeline({
 
                   <span
                     className={cn(
-                      "ml-1 grid size-7 shrink-0 place-items-center rounded-full border bg-[#1c1d22] text-[10px] font-semibold tabular-nums",
+                      "ml-1 grid size-7 shrink-0 place-items-center rounded-full border bg-secondary text-[10px] font-semibold tabular-nums",
                       row.color.badge,
                     )}
                   >

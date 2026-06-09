@@ -23,8 +23,8 @@ function toDatetimeLocal(unixMs: number): string {
 }
 
 const INPUT_CLS =
-  "w-full rounded-lg border border-[#1a1d24] bg-[#121318] px-3 py-1.5 text-sm text-white " +
-  "outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/40 [color-scheme:dark]";
+  "w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground " +
+  "outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/40 ";
 
 export function CreateEventPopover({ startUnix, pos, onCreate, onClose }: CreateEventPopoverProps) {
   const snapped    = snapTo15Minutes(startUnix);
@@ -66,22 +66,22 @@ export function CreateEventPopover({ startUnix, pos, onCreate, onClose }: Create
   return (
     <div
       ref={ref}
-      className="fixed z-50 w-72 rounded-2xl border border-[#1a1d24] bg-[#0d0e12] p-4 shadow-2xl"
+      className="fixed z-50 w-72 rounded-2xl border border-border bg-popover p-4 shadow-2xl"
       style={{ left, top }}
     >
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-[#3d4252]">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           New Event
         </span>
-        <button onClick={onClose} className="text-[#3d4252] transition-colors hover:text-white">
+        <button onClick={onClose} className="text-muted-foreground transition-colors hover:text-foreground">
           <X className="size-3.5" />
         </button>
       </div>
 
       {/* Title */}
       <div className="mb-2">
-        <label className="mb-1 block text-[10px] text-[#5a6170]">Title</label>
+        <label className="mb-1 block text-[10px] text-muted-foreground">Title</label>
         <input
           ref={titleRef}
           value={title}
@@ -94,7 +94,7 @@ export function CreateEventPopover({ startUnix, pos, onCreate, onClose }: Create
 
       {/* Start */}
       <div className="mb-2">
-        <label className="mb-1 block text-[10px] text-[#5a6170]">Start</label>
+        <label className="mb-1 block text-[10px] text-muted-foreground">Start</label>
         <input
           type="datetime-local"
           value={startStr}
@@ -105,7 +105,7 @@ export function CreateEventPopover({ startUnix, pos, onCreate, onClose }: Create
 
       {/* End */}
       <div className="mb-3">
-        <label className="mb-1 block text-[10px] text-[#5a6170]">End</label>
+        <label className="mb-1 block text-[10px] text-muted-foreground">End</label>
         <input
           type="datetime-local"
           value={endStr}
@@ -120,7 +120,7 @@ export function CreateEventPopover({ startUnix, pos, onCreate, onClose }: Create
         className={`mb-3 flex w-full items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors ${
           addMeet
             ? 'border-[#2563eb]/50 bg-[#2563eb]/15 text-[#3b82f6]'
-            : 'border-[#1a1d24] bg-[#121318] text-[#5a6170] hover:text-white'
+            : 'border-border bg-secondary text-muted-foreground hover:text-foreground'
         }`}
       >
         <Video className="size-3.5" />
@@ -131,7 +131,7 @@ export function CreateEventPopover({ startUnix, pos, onCreate, onClose }: Create
       <div className="flex gap-2">
         <button
           onClick={onClose}
-          className="rounded-lg border border-[#1a1d24] px-3 py-1.5 text-xs text-[#5a6170] transition-colors hover:text-white"
+          className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           Cancel
         </button>

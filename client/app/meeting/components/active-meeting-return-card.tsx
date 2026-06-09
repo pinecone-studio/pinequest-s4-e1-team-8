@@ -32,22 +32,22 @@ export function ActiveMeetingReturnCard() {
   }
 
   return (
-    <div className="border-t border-white/[0.06] pt-3">
+    <div className="border-t border-border/60 pt-3">
       <Link
         className={cn(
-          "block rounded-2xl border border-white/10 bg-[#17151f] p-3 text-left transition hover:border-violet-400/30 hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-violet-500/40",
+          "block rounded-2xl border border-border bg-card p-3 text-left transition hover:border-violet-400/30 hover:bg-accent focus-visible:ring-2 focus-visible:ring-violet-500/40",
         )}
         href={activeSessionHref}
       >
         <div className="flex items-center gap-2">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-100 ring-1 ring-violet-400/20">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/15 text-violet-900 dark:text-violet-100 ring-1 ring-violet-400/20">
             <Mic className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">
+            <p className="truncate text-sm font-semibold text-foreground">
               {activeSessionRoomName}
             </p>
-            <p className="mt-0.5 truncate text-[11px] text-[#8e8e93]">
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
               Connected • {participants.length} participant
               {participants.length === 1 ? "" : "s"}
             </p>

@@ -8,7 +8,7 @@ export function ConnectCalendarBanner() {
 
   return (
     <div className="flex max-w-sm flex-col items-center justify-center gap-4 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1a1d24]">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
         <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none">
           <rect x="3" y="4" width="18" height="17" rx="2" stroke="#3b82f6" strokeWidth="1.5"/>
           <path d="M16 2v4M8 2v4M3 10h18" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
@@ -17,8 +17,8 @@ export function ConnectCalendarBanner() {
       </div>
 
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-white">Connect Google Calendar</p>
-        <p className="text-xs text-[#5a6170]">
+        <p className="text-sm font-semibold text-foreground">Connect Google Calendar</p>
+        <p className="text-xs text-muted-foreground">
           Grant access to display your real events, meetings, and tasks in this view.
         </p>
       </div>
@@ -31,7 +31,7 @@ export function ConnectCalendarBanner() {
 
       <a
         href="/api/auth/google-calendar"
-        className="inline-flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_rgba(37,99,235,0.35)] transition-opacity hover:opacity-90"
+        className="inline-flex items-center gap-2 rounded-xl bg-[#2563eb] px-5 py-2.5 text-sm font-semibold text-foreground shadow-[0_0_20px_rgba(37,99,235,0.35)] transition-opacity hover:opacity-90"
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#fff"/>
@@ -42,7 +42,7 @@ export function ConnectCalendarBanner() {
         Connect with Google
       </a>
 
-      <p className="text-[10px] text-[#3a4050]">
+      <p className="text-[10px] text-muted-foreground">
         Read-only access · Your data never leaves this app
       </p>
     </div>

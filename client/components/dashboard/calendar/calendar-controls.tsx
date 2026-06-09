@@ -104,16 +104,16 @@ export function CalendarControls({
               onClick={onRefresh}
               disabled={isSyncing}
               title={lastSynced ? `Last synced ${formatRelative(lastSynced)}` : 'Sync with Google Calendar'}
-              className="text-[#3a4050] transition-colors hover:text-[#5a6170] disabled:cursor-not-allowed"
+              className="text-muted-foreground transition-colors hover:text-muted-foreground disabled:cursor-not-allowed"
             >
               <RefreshCw
                 className={cn(
                   "size-3.5 transition-colors",
-                  isSyncing ? "animate-spin text-[#2563eb]" : "text-[#3a4050]",
+                  isSyncing ? "animate-spin text-[#2563eb]" : "text-muted-foreground",
                 )}
               />
             </button>
-            <span className="min-w-[56px] text-[10px] tabular-nums text-[#3a4050]">
+            <span className="min-w-[56px] text-[10px] tabular-nums text-muted-foreground">
               {isSyncing
                 ? 'Syncing…'
                 : lastSynced

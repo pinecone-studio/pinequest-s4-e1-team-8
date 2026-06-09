@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 
 export function SidebarAddProject() {
   return (
-    <div className="rounded-2xl border border-dashed border-border/70 bg-background/30 p-3 text-center dark:bg-[#121318]/80">
+    <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-3 text-center">
       <Button
         size="icon"
         className="mx-auto mb-1.5 rounded-full bg-violet-600 text-white hover:bg-violet-700"

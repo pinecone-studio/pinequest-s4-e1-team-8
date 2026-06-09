@@ -70,9 +70,9 @@ export function AnalyticsRisksAskPanel({ risks }: { risks: AnalyticsRisks }) {
   };
 
   return (
-    <div className="flex h-full flex-col rounded-lg border border-border/50 bg-[#18191d]/60 px-3 py-3">
+    <div className="flex h-full flex-col rounded-lg border border-border/50 bg-card/60 px-3 py-3">
       <div className="flex items-center gap-1.5">
-        <Sparkles className="size-3.5 text-violet-400/70" />
+        <Sparkles className="size-3.5 text-violet-700 dark:text-violet-400/70" />
         <p className="text-xs font-medium text-foreground/80">Ask AI</p>
       </div>
 
@@ -89,7 +89,7 @@ export function AnalyticsRisksAskPanel({ risks }: { risks: AnalyticsRisks }) {
             type="button"
             disabled={isLoading}
             onClick={() => void ask(question)}
-            className="rounded-full border border-border/50 bg-[#1c1d22]/80 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-violet-500/30 hover:text-foreground/80 disabled:opacity-50"
+            className="rounded-full border border-border/50 bg-secondary/80 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-violet-500/30 hover:text-foreground/80 disabled:opacity-50"
           >
             {question}
           </button>
@@ -104,7 +104,7 @@ export function AnalyticsRisksAskPanel({ risks }: { risks: AnalyticsRisks }) {
         }}
       >
         <input
-          className="h-8 min-w-0 flex-1 rounded-lg border border-border/50 bg-[#1c1d22]/80 px-3 text-sm text-foreground/90 outline-none placeholder:text-muted-foreground focus:border-violet-500/40"
+          className="h-8 min-w-0 flex-1 rounded-lg border border-border/50 bg-secondary/80 px-3 text-sm text-foreground/90 outline-none placeholder:text-muted-foreground focus:border-violet-500/40"
           placeholder="Ask about your risks..."
           value={input}
           onChange={(event) => setInput(event.target.value)}
@@ -202,9 +202,9 @@ export function AnalyticsRiskAsk({ item }: { item: AnalyticsRiskItem }) {
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-border/50 bg-[#18191d]/60 px-3 py-3">
+    <div className="mt-3 rounded-lg border border-border/50 bg-card/60 px-3 py-3">
       <div className="flex items-center gap-1.5">
-        <Sparkles className="size-3.5 text-violet-400/70" />
+        <Sparkles className="size-3.5 text-violet-700 dark:text-violet-400/70" />
         <p className="text-xs font-medium text-foreground/80">
           Ask AI — {item.title}
         </p>
@@ -217,7 +217,7 @@ export function AnalyticsRiskAsk({ item }: { item: AnalyticsRiskItem }) {
             type="button"
             disabled={isLoading}
             onClick={() => void ask(question)}
-            className="rounded-full border border-border/50 bg-[#1c1d22]/80 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-violet-500/30 hover:text-foreground/80 disabled:opacity-50"
+            className="rounded-full border border-border/50 bg-secondary/80 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-violet-500/30 hover:text-foreground/80 disabled:opacity-50"
           >
             {question}
           </button>
@@ -232,7 +232,7 @@ export function AnalyticsRiskAsk({ item }: { item: AnalyticsRiskItem }) {
         }}
       >
         <input
-          className="h-8 min-w-0 flex-1 rounded-lg border border-border/50 bg-[#1c1d22]/80 px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-violet-500/40"
+          className="h-8 min-w-0 flex-1 rounded-lg border border-border/50 bg-secondary/80 px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-violet-500/40"
           placeholder="Ask a question..."
           value={input}
           onChange={(event) => setInput(event.target.value)}

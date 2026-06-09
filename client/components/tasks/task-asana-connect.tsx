@@ -219,7 +219,7 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-[#18191d] px-4 py-3 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" />
         Checking Asana connection...
       </div>
@@ -228,7 +228,7 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
 
   if (!status?.connected) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border/60 bg-[#18191d] px-4 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border/60 bg-card px-4 py-4">
         <div>
           <p className="text-sm font-medium">Connect Asana</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -250,7 +250,7 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-border/60 bg-[#18191d] px-4 py-4">
+    <div className="space-y-3 rounded-lg border border-border/60 bg-card px-4 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium">
@@ -291,7 +291,7 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
         <label className="grid gap-1 text-xs font-medium text-muted-foreground">
           Workspace
           <select
-            className="h-9 rounded-lg border border-border/60 bg-[#25262b] px-3 text-sm outline-none"
+            className="h-9 rounded-lg border border-border/60 bg-muted px-3 text-sm outline-none"
             value={workspaceGid}
             onChange={(event) => void handleWorkspaceChange(event.target.value)}
           >
@@ -307,7 +307,7 @@ export function TaskAsanaConnect({ onSynced, oauthError }: TaskAsanaConnectProps
         <label className="grid gap-1 text-xs font-medium text-muted-foreground">
           Project
           <select
-            className="h-9 rounded-lg border border-border/60 bg-[#25262b] px-3 text-sm outline-none"
+            className="h-9 rounded-lg border border-border/60 bg-muted px-3 text-sm outline-none"
             value={projectGid}
             onChange={(event) => void handleProjectChange(event.target.value)}
           >

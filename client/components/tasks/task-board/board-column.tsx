@@ -37,7 +37,7 @@ export function BoardColumn({
   );
 
   return (
-    <section className="flex min-h-[28rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-[#18191d]">
+    <section className="flex min-h-[28rem] flex-col overflow-hidden rounded-lg border border-border/60 bg-card">
       <header
         className={cn(
           "px-4 py-3 text-center text-sm font-semibold tracking-tight",
@@ -54,7 +54,7 @@ export function BoardColumn({
         ref={setNodeRef}
         className={cn(
           "flex min-h-[12rem] flex-1 flex-col gap-3 p-3 transition-colors duration-200",
-          isOver && "bg-violet-500/5",
+          isOver && "bg-violet-50 dark:bg-violet-500/5",
         )}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>

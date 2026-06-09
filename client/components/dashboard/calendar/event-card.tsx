@@ -18,10 +18,10 @@ export function EventCard({ event, isDragging, onDragStart, onDragEnd, onEdit }:
   const colors = EVENT_COLORS[event.color];
   const layout = event._layout!;
 
-  const isTiny    = layout.heightPx < 24;
-  const isCompact = layout.heightPx < 44;
-  const isSmall   = layout.heightPx < 70;
-  const isMedium  = layout.heightPx < 100;
+  const isTiny    = layout.heightPx < 32;
+  const isCompact = layout.heightPx < 52;
+  const isSmall   = layout.heightPx < 84;
+  const isMedium  = layout.heightPx < 120;
 
   const start = new Date(event.startUnix);
   const end   = new Date(event.endUnix);
@@ -73,7 +73,7 @@ export function EventCard({ event, isDragging, onDragStart, onDragEnd, onEdit }:
       />
 
       {isTiny ? (
-        <p className="truncate pl-[6px] pr-[4px] text-[10px] font-semibold leading-[22px]">
+        <p className="truncate pl-[6px] pr-[4px] text-[10px] font-semibold leading-[30px]">
           {event.title}
         </p>
       ) : isCompact ? (

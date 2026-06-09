@@ -117,7 +117,7 @@ export const ParticipantTile = ({
           <div className="flex h-full flex-col items-center justify-center gap-3 px-5 text-center">
             <div
               className={cn(
-                "flex shrink-0 items-center justify-center rounded-full bg-violet-500/15 font-semibold text-violet-100 ring-1 ring-violet-400/20 transition-[box-shadow]",
+                "flex shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/15 font-semibold text-violet-900 dark:text-violet-100 ring-1 ring-violet-400/20 transition-[box-shadow]",
                 isActivelySpeaking &&
                   "shadow-[0_0_0_2px_rgba(167,139,250,0.58),0_0_24px_rgba(124,58,237,0.3)]",
                 isActive
@@ -139,7 +139,7 @@ export const ParticipantTile = ({
         )}
       </div>
       {isActivelySpeaking ? (
-        <span className="absolute right-3 top-3 rounded-full border border-violet-300/30 bg-violet-500/15 px-2.5 py-1 text-[11px] font-medium text-violet-100 backdrop-blur">
+        <span className="absolute right-3 top-3 rounded-full border border-violet-300/30 bg-violet-100 dark:bg-violet-500/15 px-2.5 py-1 text-[11px] font-medium text-violet-900 dark:text-violet-100 backdrop-blur">
           Speaking
         </span>
       ) : null}
@@ -149,7 +149,7 @@ export const ParticipantTile = ({
             "absolute left-3 top-3 rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur",
             badgeTone === "live"
               ? "border-red-300/30 bg-red-500/80 text-white"
-              : "border-violet-300/30 bg-violet-500/15 text-violet-100",
+              : "border-violet-300/30 bg-violet-100 dark:bg-violet-500/15 text-violet-900 dark:text-violet-100",
           )}
         >
           {badge}
@@ -170,8 +170,8 @@ export const ParticipantTile = ({
           <span
             className={`w-20 shrink-0 rounded-full px-3 py-1 text-center text-xs font-medium backdrop-blur ${
               participant.isMicrophoneEnabled
-                ? "bg-violet-400/15 text-violet-100"
-                : "bg-red-400/15 text-red-100"
+                ? "bg-violet-400/15 text-violet-900 dark:text-violet-100"
+                : "bg-red-400/15 text-red-800 dark:text-red-100"
             }`}
           >
             {participant.isMicrophoneEnabled ? "Mic on" : "Muted"}
