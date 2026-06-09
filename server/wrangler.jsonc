@@ -15,6 +15,8 @@
   ],
   "vars": {
     "LIVEKIT_URL": "wss://brisk-505qgdpu.livekit.cloud",
+    "R2_ACCOUNT_ID": "a60e9697809a342d3482149cd0ac135e",
+    "R2_BUCKET_NAME": "brisk",
     "CLERK_PUBLISHABLE_KEY": "pk_test_c2VsZWN0ZWQtbXV0dC0zMS5jbGVyay5hY2NvdW50cy5kZXYk",
     "CLIENT_APP_URL": "https://brisk-client.danny-otgontsetseg.workers.dev",
     "FRONTEND_URL": "https://brisk-client.danny-otgontsetseg.workers.dev",
@@ -31,6 +33,8 @@
       ],
       "vars": {
         "LIVEKIT_URL": "wss://brisk-505qgdpu.livekit.cloud",
+        "R2_ACCOUNT_ID": "a60e9697809a342d3482149cd0ac135e",
+        "R2_BUCKET_NAME": "brisk",
       },
     },
   },
