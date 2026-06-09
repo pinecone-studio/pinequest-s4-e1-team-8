@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { Context } from "hono";
+import { resolveAsanaAuth } from "../../controllers/integrations/asana";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import type { UpdateTaskBody } from "../../lib/tasks/task-api.types";
@@ -9,7 +10,13 @@ import {
   uiPriorityToDb,
   uiStatusToDb,
 } from "../../lib/tasks/task-mapper";
+import { updateAsanaTask } from "../../services/asana";
 import { tasks } from "../../schema/schema";
+
+function parseAsanaTaskGid(taskId: string): string | null {
+  if (!taskId.startsWith("asana-")) return null;
+  return taskId.slice("asana-".length);
+}
 
 export const updateTask = async (c: Context<{ Bindings: Bindings }>) => {
   const db = useDB(c);
@@ -45,6 +52,53 @@ export const updateTask = async (c: Context<{ Bindings: Bindings }>) => {
   const priority = uiPriorityToDb(body.priority);
   const isDone = status === "DONE";
   const wasDone = existing.status === "DONE";
+
+  if (existing.source === "asana") {
+    const userId = body.userId?.trim();
+    if (!userId) {
+      return c.json({ error: "userId is required for Asana tasks" }, 400);
+    }
+
+    const auth = await resolveAsanaAuth(c, userId);
+    if (!auth) {
+      return c.json({ error: "Connect Asana first" }, 401);
+    }
+
+    const asanaGid = parseAsanaTaskGid(id);
+    if (!asanaGid) {
+      return c.json({ error: "Invalid Asana task id" }, 400);
+    }
+
+    const asanaPayload: {
+      name?: string;
+      notes?: string;
+      completed?: boolean;
+      due_on?: string | null;
+    } = {};
+
+    if (body.title !== undefined) {
+      asanaPayload.name = body.title.trim();
+    }
+    if (body.description !== undefined) {
+      asanaPayload.notes = body.description ?? "";
+    }
+    if (status !== undefined) {
+      asanaPayload.completed = status === "DONE";
+    }
+    if (body.dueDate !== undefined) {
+      asanaPayload.due_on = body.dueDate || null;
+    }
+
+    if (Object.keys(asanaPayload).length > 0) {
+      try {
+        await updateAsanaTask(auth.accessToken, asanaGid, asanaPayload);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to update Asana task";
+        return c.json({ error: message }, 502);
+      }
+    }
+  }
 
   const [row] = await db
     .update(tasks)
