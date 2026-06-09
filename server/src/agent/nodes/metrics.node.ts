@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import type { BaseMessage } from "@langchain/core/messages";
+import { getGeminiApiKey } from "../agent-bindings";
 import type { BriskState, MetricsReport } from "../brisk.state";
 
 const SYSTEM_PROMPT = `You are a senior product analytics lead. Focus exclusively on defining core KPIs, tracking telemetry benchmarks, and setting release success targets for this project. Read the provided project description, goals, and constraints, then produce a measurable metrics report. Ignore concerns outside of metrics such as technical onboarding or security risk.`;
@@ -47,7 +48,7 @@ function extractProjectContext(state: typeof BriskState.State) {
 }
 
 export async function metricsNode(state: typeof BriskState.State) {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+  const genAI = new GoogleGenerativeAI(getGeminiApiKey());
 
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",

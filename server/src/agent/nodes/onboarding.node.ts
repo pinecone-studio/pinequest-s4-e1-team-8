@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import type { BaseMessage } from "@langchain/core/messages";
+import { getGeminiApiKey } from "../agent-bindings";
 import type { BriskState, OnboardingPlan } from "../brisk.state";
 
 const SYSTEM_PROMPT = `You are a senior technical onboarding lead. Focus exclusively on the technical setup, architecture maps, and toolchains needed to start this project. Read the provided project description, goals, and constraints, then produce a concrete onboarding plan with actionable setup steps and a realistic time estimate. Ignore concerns outside of technical setup such as KPIs, telemetry, or risk analysis.`;
@@ -46,7 +47,7 @@ function extractProjectContext(state: typeof BriskState.State) {
 }
 
 export async function onboardingNode(state: typeof BriskState.State) {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+  const genAI = new GoogleGenerativeAI(getGeminiApiKey());
 
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",

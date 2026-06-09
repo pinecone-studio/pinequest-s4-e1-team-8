@@ -76,6 +76,16 @@ completed_at is not null
 
 If LiveKit shows `EGRESS_COMPLETE` but remote D1 has no matching `egress_id`, the recording was started against another Worker or database. If the row exists but remains `processing`, check Worker logs for the `LiveKit webhook received` and `Recording finalized` messages.
 
+### AI secrets (Gemini / Groq)
+
+Local keys live in `server/.dev.vars`. Production reads the same names as **Cloudflare Worker secrets** (`GEMINI_API_KEY`, `GROQ_API_KEY`). Deploying code does not update secrets — after rotating a key or fixing a leaked key, sync from `.dev.vars`:
+
+```bash
+cd server
+node scripts/sync-secrets-from-dev-vars.mjs
+bun run deploy
+```
+
 ## Test POST (Postman, curl, etc.)
 
 **POST** `http://localhost:8787/users` with `Content-Type: application/json` and this body:

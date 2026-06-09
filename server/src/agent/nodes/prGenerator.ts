@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { AIMessage, type BaseMessage } from "@langchain/core/messages";
+import { getGeminiApiKey } from "../agent-bindings";
 import type { SupervisorGraphState } from "../state";
 
 const SYSTEM_PROMPT = `You are an elite pull request author. Analyze git diff strings, code additions, and structural modifications supplied by the user, then produce a clean professional pull request title and a detailed markdown description. Focus exclusively on summarizing code changes for reviewers. Ignore concerns outside of pull request authoring such as onboarding, metrics, or risk analysis.`;
@@ -56,7 +57,7 @@ ${verificationSection}`;
 }
 
 export async function prGeneratorWorkerNode(state: typeof SupervisorGraphState.State) {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+  const genAI = new GoogleGenerativeAI(getGeminiApiKey());
 
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",

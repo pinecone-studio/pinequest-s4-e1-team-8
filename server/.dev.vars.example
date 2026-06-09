@@ -25,6 +25,7 @@ R2_ACCESS_KEY_ID=r2-access-key-id-placeholder
 R2_SECRET_ACCESS_KEY=r2-secret-access-key-placeholder
 R2_BUCKET_NAME=r2-bucket-name-placeholder
 
+# Google AI Studio key — rotate if Google reports it as leaked
 GEMINI_API_KEY=gemini-api-key-placeholder
 GROQ_API_KEY=groq-api-key-placeholder
 GROQ_MODEL=llama-3.1-8b-instant

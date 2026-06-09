@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { AIMessage, type BaseMessage } from "@langchain/core/messages";
+import { getGeminiApiKey } from "../agent-bindings";
 import { generateGeminiJsonText } from "../gemini-structured";
 import type { SupervisorGraphState } from "../state";
 
@@ -34,7 +35,7 @@ function formatRiskMessage(
 }
 
 export async function riskWorkerNode(state: typeof SupervisorGraphState.State) {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+  const genAI = new GoogleGenerativeAI(getGeminiApiKey());
 
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",

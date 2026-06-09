@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { AIMessage, type BaseMessage } from "@langchain/core/messages";
+import { getGeminiApiKey } from "../agent-bindings";
 import type { SupervisorGraphState } from "../state";
 
 const SYSTEM_PROMPT = `You are an elite GitHub issue author. Transform messy, informal, or unstructured user requests into high-quality actionable GitHub issues. Produce a clear issue title and a structured markdown body. Focus exclusively on issue authoring. Ignore concerns outside of GitHub issue creation such as onboarding, metrics, risk analysis, or pull request writing.`;
@@ -57,7 +58,7 @@ ${criteriaSection}`;
 }
 
 export async function issueGeneratorWorkerNode(state: typeof SupervisorGraphState.State) {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+  const genAI = new GoogleGenerativeAI(getGeminiApiKey());
 
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",

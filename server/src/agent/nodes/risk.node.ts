@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import type { BaseMessage } from "@langchain/core/messages";
+import { getGeminiApiKey } from "../agent-bindings";
 import type { BriskState, RiskAnalysis } from "../brisk.state";
 
 const SYSTEM_PROMPT = `You are a senior security and infrastructure risk lead. Focus exclusively on identifying security vulnerabilities, infrastructure bottlenecks, and deployment risk mitigations for this project. Read the provided project description, goals, and constraints, then produce a concrete risk analysis. Ignore concerns outside of risk such as technical onboarding or product metrics.`;
@@ -47,7 +48,7 @@ function extractProjectContext(state: typeof BriskState.State) {
 }
 
 export async function riskNode(state: typeof BriskState.State) {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+  const genAI = new GoogleGenerativeAI(getGeminiApiKey());
 
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",

@@ -3,6 +3,7 @@ import { HumanMessage } from "@langchain/core/messages";
 import { END } from "@langchain/langgraph";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { runWithAgentBindingsAsync } from "../agent/agent-bindings";
 import { compileSupervisorGraph } from "../agent/graph";
 import type { SupervisorContext } from "../agent/state";
 import type { Bindings } from "../lib/common/types";
@@ -50,32 +51,39 @@ agentRoutes.post("/run", async (c) => {
   const graph = compileSupervisorGraph();
 
   return streamSSE(c, async (stream) => {
-    const events = await graph.stream(
-      { messages: [new HumanMessage(prompt)] },
-      { streamMode: "updates", signal: c.req.raw.signal },
-    );
+    await runWithAgentBindingsAsync(c.env, async () => {
+      const events = await graph.stream(
+        { messages: [new HumanMessage(prompt)] },
+        { streamMode: "updates", signal: c.req.raw.signal },
+      );
 
-    for await (const chunk of events) {
-      if (stream.aborted) {
-        return;
-      }
-
-      for (const [nodeName, update] of Object.entries(chunk as Record<string, StreamNodeUpdate>)) {
-        if (nodeName === END) {
-          await stream.writeSSE({ event: "done", data: JSON.stringify({ node: nodeName }) });
+      for await (const chunk of events) {
+        if (stream.aborted) {
           return;
         }
 
-        await stream.writeSSE({
-          event: "node",
-          data: JSON.stringify({ node: nodeName, update: serializeUpdate(update) }),
-        });
-      }
-    }
+        for (const [nodeName, update] of Object.entries(
+          chunk as Record<string, StreamNodeUpdate>,
+        )) {
+          if (nodeName === END) {
+            await stream.writeSSE({
+              event: "done",
+              data: JSON.stringify({ node: nodeName }),
+            });
+            return;
+          }
 
-    if (!stream.aborted) {
-      await stream.writeSSE({ event: "done", data: JSON.stringify({ node: END }) });
-    }
+          await stream.writeSSE({
+            event: "node",
+            data: JSON.stringify({ node: nodeName, update: serializeUpdate(update) }),
+          });
+        }
+      }
+
+      if (!stream.aborted) {
+        await stream.writeSSE({ event: "done", data: JSON.stringify({ node: END }) });
+      }
+    });
   });
 });
 
