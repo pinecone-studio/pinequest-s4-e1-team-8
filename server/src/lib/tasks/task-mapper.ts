@@ -1,5 +1,6 @@
 import type { Task, TaskPriority, TaskSource, TaskStatus } from "../../schema/task.model";
 import type { TaskListItemDto } from "./task-api.types";
+import type { ReorderedTaskDto } from "./reprioritize-payload.types";
 
 const STATUS_TO_UI: Record<TaskStatus, string> = {
   BACKLOG: "backlog",
@@ -74,6 +75,21 @@ export function serializeMembers(
   return JSON.stringify(normalized);
 }
 
+export function parseDependencyTaskIds(value: string | null | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is string => typeof item === "string");
+  } catch {
+    return [];
+  }
+}
+
+export function serializeDependencyTaskIds(dependencyTaskIds: string[]): string {
+  return JSON.stringify(dependencyTaskIds);
+}
+
 export function toTaskListItem(row: Task): TaskListItemDto {
   return {
     id: row.id,
@@ -92,6 +108,14 @@ export function toTaskListItem(row: Task): TaskListItemDto {
     doneCount: row.doneCount ?? 0,
     blockedCount: row.blockedCount ?? 0,
     members: parseMembersJson(row.membersJson),
+  };
+}
+
+export function toReorderedTaskDto(row: Task): ReorderedTaskDto {
+  return {
+    ...toTaskListItem(row),
+    sequenceOrder: row.sequenceOrder,
+    dependencyTaskIds: parseDependencyTaskIds(row.dependencyTaskIdsJson),
   };
 }
 
