@@ -142,7 +142,9 @@ export function TaskList() {
                 variant="outline"
                 className="rounded-lg"
                 disabled={isLoading}
-                onClick={loadTasks}
+                onClick={() => {
+                  void loadTasks();
+                }}
               >
                 <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
                 Refresh

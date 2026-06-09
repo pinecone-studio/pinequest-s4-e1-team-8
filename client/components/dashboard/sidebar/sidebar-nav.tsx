@@ -1,7 +1,6 @@
 "use client";
 
 import { SidebarNavItem } from "@/components/dashboard/sidebar/sidebar-nav-item";
-import { SidebarTree } from "@/components/dashboard/sidebar/sidebar-tree";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { sidebarNavItems } from "@/lib/dashboard/data";
@@ -18,7 +17,6 @@ export function SidebarNav() {
           {sidebarNavItems.map((item) => (
             <li key={item.label}>
               <SidebarNavItem item={item} />
-              {item.label === "Project Board" && <SidebarTree />}
             </li>
           ))}
         </ul>
