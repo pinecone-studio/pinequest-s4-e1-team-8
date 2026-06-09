@@ -11,6 +11,7 @@
     "build:cf": "next build --webpack && node scripts/fix-standalone-deps.mjs",
     "preview": "bun run build:cf && opennextjs-cloudflare build --skipNextBuild && node scripts/patch-handler-middleware.mjs && opennextjs-cloudflare preview",
     "deploy": "bun run build:cf && opennextjs-cloudflare build --skipNextBuild && node scripts/patch-handler-middleware.mjs && opennextjs-cloudflare deploy",
+    "deploy:prod": "node scripts/deploy-production.mjs",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },

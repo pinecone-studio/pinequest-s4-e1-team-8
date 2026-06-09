@@ -1,8 +1,9 @@
 # Client Worker deploy — copy to client/.dev.vars (wrangler deploy)
+# Use production API URLs below for Cloudflare deploy; use localhost for local preview only.
 
-NEXTJS_ENV=development
-API_URL=http://localhost:8787
-NEXT_PUBLIC_API_URL=http://localhost:8787
+NEXTJS_ENV=production
+API_URL=https://server-preset.danny-otgontsetseg.workers.dev
+NEXT_PUBLIC_API_URL=https://server-preset.danny-otgontsetseg.workers.dev
 NEXT_PUBLIC_LIVEKIT_URL=wss://brisk-505qgdpu.livekit.cloud
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
 CLERK_SECRET_KEY=sk_test_your_key_here
