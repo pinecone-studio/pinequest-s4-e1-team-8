@@ -29,8 +29,12 @@ export type AsanaProject = {
   name: string;
 };
 
-export function getAsanaConnectUrl() {
-  return `/api/auth/asana?userId=${encodeURIComponent(uid())}`;
+export function getAsanaConnectUrl(returnTo?: string) {
+  const params = new URLSearchParams({ userId: uid() });
+  if (returnTo) {
+    params.set("returnTo", returnTo);
+  }
+  return `/api/auth/asana?${params.toString()}`;
 }
 
 export async function fetchAsanaStatus(): Promise<AsanaStatus> {
