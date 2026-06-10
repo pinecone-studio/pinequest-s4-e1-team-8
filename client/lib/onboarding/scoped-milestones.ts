@@ -1,6 +1,5 @@
 import type { ScopedMilestone } from "@/components/onboarding/onboarding-types";
 import type { ApiTaskRecord } from "@/lib/api/tasks";
-import { DEMO_MILESTONE_DRAFTS } from "@/lib/onboarding/demo-defaults";
 import type { MilestoneDraft } from "@/lib/onboarding/parse-milestone-drafts";
 
 export type ProjectMilestone = ApiTaskRecord & {
@@ -19,17 +18,10 @@ export function milestoneDraftsToScoped(
     }));
 }
 
-export const DEMO_SCOPED_MILESTONES = milestoneDraftsToScoped(
-  DEMO_MILESTONE_DRAFTS,
-);
-
 export function resolveScopedMilestones(
   scoped?: ScopedMilestone[],
 ): ScopedMilestone[] {
-  if (scoped?.length) {
-    return scoped;
-  }
-  return DEMO_SCOPED_MILESTONES;
+  return scoped?.length ? scoped : [];
 }
 
 export function mapScopedMilestonesToProjectMilestones(

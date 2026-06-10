@@ -19,7 +19,7 @@ import { StepAiTasks } from "./steps/step-ai-tasks";
 
 function OnboardingWizardContent() {
   const router = useRouter();
-  const { step, step4, toOnboardingData, toInitializePayload } =
+  const { step, step4, toOnboardingData, toInitializePayload, goToPreviousStep } =
     useOnboardingStore();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +79,7 @@ function OnboardingWizardContent() {
       <div
         className={`w-full rounded-2xl border border-border bg-card p-[28px_30px_30px] shadow-lg dark:shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)] ${step === 3 ? "max-w-[640px]" : "max-w-[480px]"}`}
       >
-        <StepHeader step={step} />
+        <StepHeader step={step} onBack={goToPreviousStep} />
 
         {step === 0 ? <StepProjectSetup /> : null}
         {step === 1 ? <StepInviteTeam /> : null}

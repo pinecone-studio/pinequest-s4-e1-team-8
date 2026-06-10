@@ -181,8 +181,7 @@ export function StepIntegrations() {
       </div>
 
       <p className="mt-3 text-[12px] text-foreground/80">
-        GitHub connects with your team lead&apos;s PAT only (from .env.local). Asana is
-        optional during onboarding.
+        GitHub and Asana are optional during onboarding — you can skip and connect later.
       </p>
 
       <div className="mt-7 flex items-center">

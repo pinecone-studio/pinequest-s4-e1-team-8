@@ -7,10 +7,6 @@ import { DEFAULT_WORKSPACE_ID } from "@/lib/workspace-defaults";
 
 export type { MilestoneDraft };
 import {
-  applyDemoDefaultsToDraft,
-  DEMO_ONBOARDING_INITIAL,
-} from "@/lib/onboarding/demo-defaults";
-import {
   readOnboardingDraft,
   saveOnboardingDraft,
   type OnboardingDraft,
@@ -81,6 +77,7 @@ type OnboardingStoreContextValue = OnboardingStoreState & {
   advanceFromStep2: () => void;
   advanceFromStep3: () => void;
   skipStep3: () => void;
+  goToPreviousStep: () => void;
   setStep: (step: number) => void;
   toOnboardingData: () => OnboardingData;
   toInitializePayload: () => import("@/lib/api/projects").InitializeProjectPayload;
@@ -104,8 +101,12 @@ const INITIAL_STATE: OnboardingStoreState = {
   step: 0,
   projectId: createProjectId(),
   workspaceId: DEFAULT_WORKSPACE_ID,
-  aiGoals: DEMO_ONBOARDING_INITIAL.aiGoals,
-  step1: { ...DEMO_ONBOARDING_INITIAL.step1 },
+  aiGoals: "",
+  step1: {
+    projectName: "",
+    description: "",
+    timezone: "(GMT+00:00) UTC",
+  },
   step2: {
     collaborators: [],
   },
@@ -116,7 +117,7 @@ const INITIAL_STATE: OnboardingStoreState = {
     isAsanaDisconnected: false,
   },
   step4: {
-    milestoneDrafts: [...DEMO_ONBOARDING_INITIAL.step4.milestoneDrafts],
+    milestoneDrafts: [],
   },
 };
 
@@ -287,7 +288,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const draft = readOnboardingDraft();
     if (draft) {
-      dispatch({ type: "RESTORE", draft: applyDemoDefaultsToDraft(draft) });
+      dispatch({ type: "RESTORE", draft });
     }
     setDraftReady(true);
   }, []);
@@ -370,6 +371,12 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SKIP_STEP3" });
   }, []);
 
+  const goToPreviousStep = useCallback(() => {
+    if (state.step > 0) {
+      dispatch({ type: "SET_STEP", step: state.step - 1 });
+    }
+  }, [state.step]);
+
   const value = useMemo<OnboardingStoreContextValue>(
     () => ({
       ...state,
@@ -387,6 +394,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       advanceFromStep2,
       advanceFromStep3,
       skipStep3,
+      goToPreviousStep,
       setStep,
       toOnboardingData: () => toOnboardingData(state),
       toInitializePayload: () => toInitializePayload(state),
@@ -407,6 +415,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       advanceFromStep2,
       advanceFromStep3,
       skipStep3,
+      goToPreviousStep,
       setStep,
     ],
   );

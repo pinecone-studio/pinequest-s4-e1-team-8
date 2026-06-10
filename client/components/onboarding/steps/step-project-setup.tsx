@@ -2,24 +2,30 @@
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
 import { ArrowRight } from "lucide-react";
-
-const TIMEZONES = [
-  "(GMT-08:00) Pacific Time",
-  "(GMT-07:00) Mountain Time",
-  "(GMT-06:00) Central Time",
-  "(GMT-05:00) Eastern Time",
-  "(GMT+00:00) UTC",
-  "(GMT+01:00) Central European",
-  "(GMT+05:30) India Standard",
-  "(GMT+09:00) Japan Standard",
-];
+import { useCallback, useEffect, useRef } from "react";
 
 const inputClassName =
   "w-full rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20";
 
+const DESCRIPTION_MIN_HEIGHT = "5.25rem";
+
 export function StepProjectSetup() {
   const { step1, patchStep1, canAdvanceFromStep1, advanceFromStep1 } =
     useOnboardingStore();
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+
+  const resizeDescription = useCallback(() => {
+    const textarea = descriptionRef.current;
+    if (!textarea) {
+      return;
+    }
+    textarea.style.height = DESCRIPTION_MIN_HEIGHT;
+    textarea.style.height = `${Math.max(textarea.scrollHeight, textarea.offsetHeight)}px`;
+  }, []);
+
+  useEffect(() => {
+    resizeDescription();
+  }, [resizeDescription, step1.description]);
 
   return (
     <>
@@ -54,50 +60,17 @@ export function StepProjectSetup() {
             <span className="font-normal text-muted-foreground">(optional)</span>
           </label>
           <textarea
-            className={`${inputClassName} resize-none px-3.5 py-3 leading-snug`}
-            rows={3}
+            ref={descriptionRef}
+            className={`${inputClassName} resize-none overflow-hidden px-3.5 py-3 leading-snug`}
+            rows={1}
+            style={{ minHeight: DESCRIPTION_MIN_HEIGHT }}
             placeholder="What is this project about?"
             value={step1.description}
-            onChange={(event) =>
-              patchStep1({ description: event.target.value })
-            }
+            onChange={(event) => {
+              patchStep1({ description: event.target.value });
+              requestAnimationFrame(resizeDescription);
+            }}
           />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-foreground">
-            Timezone
-          </label>
-          <div className="relative">
-            <select
-              className={`${inputClassName} h-11 cursor-pointer appearance-none pl-3.5 pr-9`}
-              value={step1.timezone}
-              onChange={(event) =>
-                patchStep1({ timezone: event.target.value })
-              }
-            >
-              {TIMEZONES.map((timezone) => (
-                <option key={timezone} className="bg-card text-foreground">
-                  {timezone}
-                </option>
-              ))}
-            </select>
-            <svg
-              className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-            >
-              <path
-                d="M2.5 4.5L6 8l3.5-3.5"
-                stroke="#8e8e93"
-                strokeWidth="1.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
         </div>
       </div>
 

@@ -7,10 +7,6 @@ import {
   parseMilestoneDrafts,
   type MilestoneDraft,
 } from "@/lib/onboarding/parse-milestone-drafts";
-import {
-  DEMO_MILESTONE_DRAFTS,
-  DEMO_SCOPING_BRIEF,
-} from "@/lib/onboarding/demo-defaults";
 import { streamOnboardingWorker } from "@/lib/onboarding/onboarding-stream";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
@@ -87,14 +83,6 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
     setPrompt((current) => current.trim() || aiGoals);
   }, [aiGoals]);
 
-  useEffect(() => {
-    if (step4.milestoneDrafts.length === 0) {
-      setMilestoneDrafts(DEMO_MILESTONE_DRAFTS);
-    }
-    if (!aiGoals.trim()) {
-      setAiGoals(DEMO_SCOPING_BRIEF);
-    }
-  }, [aiGoals, setAiGoals, setMilestoneDrafts, step4.milestoneDrafts.length]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -242,9 +230,7 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
           },
           onDone: () => {
             const finalDrafts = parseMilestoneDrafts(accumulated);
-            setMilestoneDrafts(
-              finalDrafts.length > 0 ? finalDrafts : DEMO_MILESTONE_DRAFTS,
-            );
+            setMilestoneDrafts(finalDrafts);
             setLiveDrafts([]);
             if (finalDrafts.length > 0) {
               setIsComplete(true);
@@ -290,7 +276,7 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
           <div className="flex min-h-[12rem] flex-col items-center justify-center gap-2 px-4 text-center">
             <Sparkles className="size-5 text-violet-700 dark:text-violet-400" />
             <p className="text-sm font-medium text-muted-foreground">
-              Loading demo milestones…
+              Describe your goals below to generate milestone drafts.
             </p>
           </div>
         ) : isEditable ? (

@@ -4,7 +4,7 @@ import {
   useOnboardingStore,
   type CollaboratorRole,
 } from "@/app/onboarding/use-onboarding-store";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Plus, Trash2, ArrowRight } from "lucide-react";
 
 const ROLES: CollaboratorRole[] = ["Manager", "Developer", "Designer"];
@@ -69,8 +69,17 @@ export function StepInviteTeam() {
     setRole("Developer");
   };
 
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (canAdd) {
+      handleAdd();
+      return;
+    }
+    advanceFromStep2();
+  };
+
   return (
-    <>
+    <form onSubmit={handleSubmit}>
       <div className="mb-6">
         <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-foreground">
           Invite your team
@@ -86,11 +95,6 @@ export function StepInviteTeam() {
           placeholder="name@company.com"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              handleAdd();
-            }
-          }}
         />
         <div className="relative w-[130px] flex-none">
           <select
@@ -121,6 +125,7 @@ export function StepInviteTeam() {
           </svg>
         </div>
         <button
+          type="button"
           className="flex h-11 flex-none items-center gap-1.5 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45"
           disabled={!canAdd}
           onClick={handleAdd}
@@ -180,19 +185,20 @@ export function StepInviteTeam() {
 
       <div className="mt-7 flex items-center">
         <button
+          type="submit"
           className="flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
-          onClick={advanceFromStep2}
         >
           Continue
           <ArrowRight size={17} />
         </button>
         <button
+          type="button"
           className="ml-auto px-1.5 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-violet-800 dark:hover:text-violet-400"
           onClick={() => setStep(2)}
         >
           Skip for now
         </button>
       </div>
-    </>
+    </form>
   );
 }
