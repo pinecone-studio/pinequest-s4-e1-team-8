@@ -94,13 +94,20 @@ function asanaErrorMessage(code: string | null) {
   return ASANA_ERROR_MESSAGES[code] ?? `Asana connection failed (${code}). You can skip this step.`;
 }
 
-export function StepIntegrations() {
+interface StepIntegrationsProps {
+  onFinish: () => void | Promise<void>;
+  disabled?: boolean;
+}
+
+export function StepIntegrations({
+  onFinish,
+  disabled = false,
+}: StepIntegrationsProps) {
   const { userId, isLoaded: userReady } = useInternalUserId();
   const searchParams = useSearchParams();
   const {
     step3,
     setAsanaConnected,
-    advanceFromStep3,
     skipStep3,
     setStep,
   } = useOnboardingStore();
@@ -127,22 +134,22 @@ export function StepIntegrations() {
     if (connected === "1") {
       setAsanaConnected(true);
       setAsanaMessage("Asana connected successfully.");
-      setStep(2);
-      window.history.replaceState({}, "", "/onboarding");
+      setStep(3);
+      window.history.replaceState({}, "", "/onboarding/step2");
       return;
     }
 
     if (error) {
       setAsanaMessage(asanaErrorMessage(error));
-      setStep(2);
-      window.history.replaceState({}, "", "/onboarding");
+      setStep(3);
+      window.history.replaceState({}, "", "/onboarding/step2");
     }
   }, [searchParams, setAsanaConnected, setStep]);
 
   const handleAsanaConnect = () => {
     if (step3.asanaConnected || !userReady) return;
     setAsanaUserId(userId);
-    window.location.href = getAsanaConnectUrl("/onboarding");
+    window.location.href = getAsanaConnectUrl("/onboarding/step2");
   };
 
   return (
@@ -186,15 +193,22 @@ export function StepIntegrations() {
 
       <div className="mt-7 flex items-center">
         <button
-          className="flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
-          onClick={advanceFromStep3}
+          type="button"
+          className="flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={disabled}
+          onClick={() => void onFinish()}
         >
-          Continue
+          {disabled ? "Saving…" : "Continue to dashboard"}
           <ArrowRight size={17} />
         </button>
         <button
-          className="ml-auto px-1.5 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-violet-800 dark:hover:text-violet-400"
-          onClick={skipStep3}
+          type="button"
+          className="ml-auto px-1.5 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-violet-800 dark:hover:text-violet-400 disabled:opacity-50"
+          disabled={disabled}
+          onClick={() => {
+            skipStep3();
+            void onFinish();
+          }}
         >
           Skip for now
         </button>

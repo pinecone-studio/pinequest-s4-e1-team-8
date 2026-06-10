@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
-const STEPS = ["Project Setup", "Invite Team", "Integrations", "AI Tasks"];
+const STEPS = ["Project Setup", "Planning", "Invite Team", "Integrations"];
 
 interface StepHeaderProps {
   step: number;

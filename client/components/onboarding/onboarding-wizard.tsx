@@ -11,11 +11,12 @@ import { clearOnboardingDraft } from "@/lib/onboarding-draft-storage";
 import { milestoneDraftsToScoped } from "@/lib/onboarding/scoped-milestones";
 import { saveOnboardingData } from "@/lib/onboarding-storage";
 import { AuthThemeToggle } from "@/components/auth/auth-theme-toggle";
+import { cn } from "@/lib/utils";
 import { StepHeader } from "./step-header";
 import { StepProjectSetup } from "./steps/step-project-setup";
+import { StepPlanning } from "./steps/step-planning";
 import { StepInviteTeam } from "./steps/step-invite-team";
 import { StepIntegrations } from "./steps/step-integrations";
-import { StepAiTasks } from "./steps/step-ai-tasks";
 
 function OnboardingWizardContent() {
   const router = useRouter();
@@ -62,12 +63,24 @@ function OnboardingWizardContent() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-5 py-12">
+    <div
+      className={cn(
+        "relative w-full px-5",
+        step === 1
+          ? "grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4 py-6"
+          : "flex min-h-full flex-col items-center py-8 md:py-12",
+      )}
+    >
       <div className="absolute top-6 right-6 w-[168px]">
         <AuthThemeToggle />
       </div>
 
-      <div className="mb-6 flex items-center gap-2.5">
+      <div
+        className={cn(
+          "flex items-center gap-2.5",
+          step === 1 ? "justify-center" : "mb-6",
+        )}
+      >
         <div className="grid h-[30px] w-[30px] place-items-center rounded-[9px] bg-violet-600 text-base font-bold text-white">
           B
         </div>
@@ -77,29 +90,38 @@ function OnboardingWizardContent() {
       </div>
 
       <div
-        className={`w-full rounded-2xl border border-border bg-card p-[28px_30px_30px] shadow-lg dark:shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)] ${step === 3 ? "max-w-[640px]" : "max-w-[480px]"}`}
+        className={cn(
+          step === 1 ? "min-h-0 w-full justify-self-center" : "w-full",
+          step === 1
+            ? "grid h-full max-w-[640px] grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl border border-border bg-card p-[28px_30px_24px] shadow-lg dark:shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)]"
+            : "mx-auto w-full max-w-[480px] rounded-2xl border border-border bg-card p-[28px_30px_30px] shadow-lg dark:shadow-[0_24px_80px_-32px_rgba(0,0,0,0.8)]",
+        )}
       >
         <StepHeader step={step} onBack={goToPreviousStep} />
 
-        {step === 0 ? <StepProjectSetup /> : null}
-        {step === 1 ? <StepInviteTeam /> : null}
-        {step === 2 ? <StepIntegrations /> : null}
-        {step === 3 ? (
-          <StepAiTasks onFinish={finish} disabled={saving} />
-        ) : null}
+        <div className={cn(step === 1 && "h-full min-h-0 overflow-hidden")}>
+          {step === 0 ? <StepProjectSetup /> : null}
+          {step === 1 ? <StepPlanning /> : null}
+          {step === 2 ? <StepInviteTeam /> : null}
+          {step === 3 ? (
+            <StepIntegrations onFinish={finish} disabled={saving} />
+          ) : null}
+        </div>
       </div>
 
-      {error ? (
+      {step !== 1 && error ? (
         <p className="mt-3 text-center text-sm text-amber-700 dark:text-amber-400">{error}</p>
       ) : null}
 
-      <button
-        className="mt-5 px-1.5 py-1 text-[13px] text-foreground/80 transition-colors hover:text-muted-foreground disabled:opacity-50"
-        disabled={saving}
-        onClick={() => void finish()}
-      >
-        {saving ? "Saving project…" : "Skip onboarding →"}
-      </button>
+      {step !== 1 ? (
+        <button
+          className="mt-5 px-1.5 py-1 text-[13px] text-foreground/80 transition-colors hover:text-muted-foreground disabled:opacity-50"
+          disabled={saving}
+          onClick={() => void finish()}
+        >
+          {saving ? "Saving project…" : "Skip onboarding →"}
+        </button>
+      ) : null}
     </div>
   );
 }

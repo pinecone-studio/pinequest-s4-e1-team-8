@@ -76,39 +76,44 @@ export function MilestoneDraftRow({
   return (
     <article
       className={cn(
-        "rounded-xl border p-4 transition-all duration-300",
+        "rounded-xl border p-5 shadow-sm transition-all duration-300",
         draft.isApproved
-          ? "border-emerald-500/50 bg-emerald-100 dark:bg-emerald-500/10 shadow-[0_0_20px_rgba(34,197,94,0.08)]"
-          : "border-dashed border-violet-300 dark:border-violet-500/25 bg-secondary/90",
+          ? "border-emerald-500/50 bg-emerald-50/80 dark:bg-emerald-500/10 shadow-[0_0_20px_rgba(34,197,94,0.08)]"
+          : "border-border bg-card ring-1 ring-border/40",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          {isEditingTitle ? (
-            <Input
-              ref={titleInputRef}
-              defaultValue={draft.title}
-              onBlur={(event) => commitTitle(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  commitTitle(event.currentTarget.value);
-                }
-                if (event.key === "Escape") {
-                  setIsEditingTitle(false);
-                }
-              }}
-              className="h-8 border-border bg-secondary text-sm font-semibold text-foreground focus-visible:border-violet-500/50 focus-visible:ring-violet-500/20"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={handleTitleClick}
-              className="w-full text-left text-sm font-semibold text-foreground transition-colors hover:text-violet-700 dark:hover:text-violet-200"
-            >
-              {draft.title}
-            </button>
-          )}
+      <div className="mb-4 flex items-start justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[11px] font-bold text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+            {milestoneIndex + 1}
+          </span>
+          <div className="min-w-0 flex-1">
+            {isEditingTitle ? (
+              <Input
+                ref={titleInputRef}
+                defaultValue={draft.title}
+                onBlur={(event) => commitTitle(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitTitle(event.currentTarget.value);
+                  }
+                  if (event.key === "Escape") {
+                    setIsEditingTitle(false);
+                  }
+                }}
+                className="h-8 border-border bg-secondary text-sm font-semibold text-foreground focus-visible:border-violet-500/50 focus-visible:ring-violet-500/20"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={handleTitleClick}
+                className="w-full text-left text-[15px] font-semibold leading-snug text-foreground transition-colors hover:text-violet-700 dark:hover:text-violet-200"
+              >
+                {draft.title}
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-muted/30 px-2 py-1 transition-colors hover:border-emerald-500/30">
@@ -137,7 +142,7 @@ export function MilestoneDraftRow({
       </div>
 
       {draft.tasks.length > 0 ? (
-        <ul className="mt-3 space-y-1.5">
+        <ul className="space-y-2.5">
           {draft.tasks.map((task, taskIndex) => {
             const isEditingTask =
               editingTaskIndex === taskIndex || task.trim().length === 0;
