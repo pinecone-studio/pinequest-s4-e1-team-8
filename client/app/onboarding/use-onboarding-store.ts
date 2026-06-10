@@ -74,8 +74,8 @@ type OnboardingStoreContextValue = OnboardingStoreState & {
   setMilestoneDrafts: (milestoneDrafts: MilestoneDraft[]) => void;
   canAdvanceFromStep1: boolean;
   advanceFromStep1: () => boolean;
+  advanceFromPlanning: () => void;
   advanceFromStep2: () => void;
-  advanceFromStep3: () => void;
   skipStep3: () => void;
   goToPreviousStep: () => void;
   setStep: (step: number) => void;
@@ -359,11 +359,11 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
     return true;
   }, [state.step1.projectName]);
 
-  const advanceFromStep2 = useCallback(() => {
+  const advanceFromPlanning = useCallback(() => {
     dispatch({ type: "SET_STEP", step: 2 });
   }, []);
 
-  const advanceFromStep3 = useCallback(() => {
+  const advanceFromStep2 = useCallback(() => {
     dispatch({ type: "SET_STEP", step: 3 });
   }, []);
 
@@ -391,8 +391,8 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       setMilestoneDrafts,
       canAdvanceFromStep1,
       advanceFromStep1,
+      advanceFromPlanning,
       advanceFromStep2,
-      advanceFromStep3,
       skipStep3,
       goToPreviousStep,
       setStep,
@@ -412,8 +412,8 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       setMilestoneDrafts,
       canAdvanceFromStep1,
       advanceFromStep1,
+      advanceFromPlanning,
       advanceFromStep2,
-      advanceFromStep3,
       skipStep3,
       goToPreviousStep,
       setStep,

@@ -194,7 +194,7 @@ export function StepInviteTeam() {
         <button
           type="button"
           className="ml-auto px-1.5 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-violet-800 dark:hover:text-violet-400"
-          onClick={() => setStep(2)}
+          onClick={() => setStep(3)}
         >
           Skip for now
         </button>
