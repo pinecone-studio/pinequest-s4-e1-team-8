@@ -7,8 +7,8 @@ import {
   BarChart3,
   FileText,
   LayoutDashboard,
-  ListTodo,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -20,7 +20,7 @@ type NavHref = keyof typeof navIconsByHref;
 
 const navIconsByHref = {
   "/dashboard": LayoutDashboard,
-  "/tasks": ListTodo,
+  "/progress": TrendingUp,
   "/analytics": BarChart3,
   "/meeting-summaries": FileText,
   "/workflow": Sparkles,
