@@ -4,6 +4,7 @@ import { getAuthenticatedUserId } from "../../lib/auth/clerk";
 import type { Bindings, Variables } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import { listAccessibleProjectIds } from "../../lib/projects/project-access";
+import { ensureProjectInviteToken } from "../../lib/projects/invite-token";
 import {
   projectCollaborators,
   projects,
@@ -60,6 +61,14 @@ export async function getMyProjects(
 
   const ownerById = new Map(ownerRows.map((row) => [row.id, row]));
 
+  const inviteTokenById = new Map<string, string>();
+  for (const project of rows) {
+    inviteTokenById.set(
+      project.id,
+      await ensureProjectInviteToken(db, project.id, project.inviteToken),
+    );
+  }
+
   const projectsPayload = rows.map((project) => {
     const collaborators = allCollaborators
       .filter((c) => c.projectId === project.id)
@@ -89,7 +98,7 @@ export async function getMyProjects(
       name: project.name,
       description: project.description,
       timezone: project.timezone,
-      inviteToken: project.inviteToken,
+      inviteToken: inviteTokenById.get(project.id) ?? project.inviteToken,
       githubConnected: project.githubConnected,
       asanaConnected: project.asanaConnected,
       isOwner: project.ownerId === userId,

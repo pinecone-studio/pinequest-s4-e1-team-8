@@ -6,7 +6,7 @@ import {
 } from "@/app/onboarding/use-onboarding-store";
 import { OnboardingShell } from "@/components/onboarding/onboarding-layout";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { initializeProject } from "@/lib/api/projects";
 import {
   exportGithubMilestones,
@@ -17,7 +17,7 @@ import {
 import { useInternalUserId } from "@/hooks/use-internal-user-id";
 import { clearOnboardingDraft } from "@/lib/onboarding-draft-storage";
 import { milestoneDraftsToScoped } from "@/lib/onboarding/scoped-milestones";
-import { saveOnboardingData } from "@/lib/onboarding-storage";
+import { PROJECT_CHANGED_EVENT, saveOnboardingData } from "@/lib/onboarding-storage";
 import { StepProjectSetup } from "./steps/step-project-setup";
 import { StepTddDiscovery } from "./steps/step-tdd-discovery";
 import { StepPlanning } from "./steps/step-planning";
@@ -32,13 +32,50 @@ function isExpandedStep(step: number) {
   return step === 2;
 }
 
+function isWideStep(step: number) {
+  return step === 2 || step === 4;
+}
+
 function OnboardingWizardContent() {
   const router = useRouter();
   const { userId, isLoaded: userReady } = useInternalUserId();
-  const { step, step3, step4, toOnboardingData, toInitializePayload, goToPreviousStep } =
-    useOnboardingStore();
+  const {
+    step,
+    step3,
+    step4,
+    inviteToken,
+    setInviteToken,
+    toOnboardingData,
+    toInitializePayload,
+    goToPreviousStep,
+  } = useOnboardingStore();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const projectCreationRef = useRef(false);
+
+  // Create the project as soon as step 1 ("Create project") is done so an
+  // invite link can be shared before the rest of onboarding is finished.
+  useEffect(() => {
+    if (step < 1 || inviteToken || projectCreationRef.current) {
+      return;
+    }
+    projectCreationRef.current = true;
+
+    initializeProject(toInitializePayload())
+      .then((result) => {
+        setInviteToken(result.project.inviteToken);
+        saveOnboardingData({
+          ...toOnboardingData(),
+          projectId: result.project.id,
+          workspaceId: result.project.workspaceId,
+          projectName: result.project.name,
+        });
+        window.dispatchEvent(new Event(PROJECT_CHANGED_EVENT));
+      })
+      .catch(() => {
+        projectCreationRef.current = false;
+      });
+  }, [step, inviteToken, setInviteToken, toInitializePayload, toOnboardingData]);
 
   const finish = async () => {
     setSaving(true);
@@ -108,7 +145,8 @@ function OnboardingWizardContent() {
         step={step}
         maxWidth="full"
         onBack={goToPreviousStep}
-        contentClassName="py-4 md:py-6"
+        fillHeight
+        contentClassName="min-h-0 py-4 md:py-6"
       >
         <StepTddDiscovery />
       </OnboardingShell>
@@ -119,7 +157,7 @@ function OnboardingWizardContent() {
     <OnboardingShell
       step={step}
       onBack={goToPreviousStep}
-      maxWidth={isExpandedStep(step) ? "xl" : "lg"}
+      maxWidth={isWideStep(step) ? "xl" : "lg"}
       fillHeight={isExpandedStep(step)}
       contentClassName={isExpandedStep(step) ? "min-h-0 py-4 md:py-6" : undefined}
     >

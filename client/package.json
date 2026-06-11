@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=true bun --bun next dev --turbopack",
-    "dev:webpack": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=true bun --bun next dev --webpack",
+    "dev": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=true bun --bun next dev --webpack",
     "build": "NODE_OPTIONS='--max-old-space-size=8192' next build --webpack",
     "start": "bun --bun next start",
     "lint": "eslint .",

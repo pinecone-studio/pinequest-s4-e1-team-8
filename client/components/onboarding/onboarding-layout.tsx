@@ -185,7 +185,7 @@ export function OnboardingShell({
     <OnboardingBackContext.Provider value={backContextValue}>
       <div
         className={cn(
-          "relative flex min-h-dvh flex-col bg-background pb-16 text-foreground",
+          "relative flex h-dvh flex-col bg-background pb-16 text-foreground",
           className,
         )}
       >
