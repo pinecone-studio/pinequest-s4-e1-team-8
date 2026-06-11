@@ -6,6 +6,9 @@ import { resolveScopedMilestones } from "@/lib/onboarding/scoped-milestones";
 
 const STORAGE_KEY = "brisk-onboarding";
 
+/** Dispatched on `window` when the active project changes, so data hooks refresh. */
+export const PROJECT_CHANGED_EVENT = "brisk-project-changed";
+
 function parseScopedMilestones(raw: unknown): ScopedMilestone[] | undefined {
   if (!Array.isArray(raw)) {
     return undefined;
