@@ -11,6 +11,25 @@ const getUrl = (value: unknown) => {
   return url.startsWith("http://") || url.startsWith("https://") ? url : null;
 };
 
+const getRecordingUrl = (value: unknown) => {
+  const url = getUrl(value);
+
+  if (!url) return null;
+
+  try {
+    const parsedUrl = new URL(url);
+    const pathname = parsedUrl.pathname.toLowerCase();
+
+    if (pathname.includes("livekit-webhook")) return null;
+    if (pathname.includes("/meetings/")) return url;
+    if (/\.(aac|m4a|mp3|mp4|ogg|wav|webm)$/.test(pathname)) return url;
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
 const FINAL_EGRESS_EVENTS = new Set(["egress_ended"]);
 
 const FINAL_EGRESS_STATUSES = new Set([
@@ -44,14 +63,16 @@ const findRecordingUrl = (value: unknown): string | null => {
   const data = value as Record<string, unknown>;
   const directUrl =
     getUrl(data.location) ??
-    getUrl(data.url) ??
     getUrl(data.downloadUrl) ??
     getUrl(data.fileUrl) ??
-    getUrl(data.file_url);
+    getUrl(data.file_url) ??
+    getRecordingUrl(data.url);
 
   if (directUrl) return directUrl;
 
-  for (const nestedValue of Object.values(data)) {
+  for (const [key, nestedValue] of Object.entries(data)) {
+    if (key.toLowerCase().includes("webhook")) continue;
+
     const nestedUrl = findRecordingUrl(nestedValue);
     if (nestedUrl) return nestedUrl;
   }

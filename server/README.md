@@ -44,6 +44,15 @@ local frontend
 
 Use `client/.env.example` as the local client template. It intentionally points `API_URL` and `NEXT_PUBLIC_API_URL` at `http://localhost:8787`. Do not point local dev at the deployed Worker unless you explicitly want local UI actions to write to remote production D1.
 
+When running the local frontend, keep the local API Worker running in a second terminal:
+
+```bash
+cd server
+bunx wrangler dev --port 8787
+```
+
+If the Worker is not running, Meeting Summaries requests will fail because the frontend proxy cannot reach `http://localhost:8787/api/meeting-transcription`.
+
 Production egress finalization uses the LiveKit webhook URL configured in `server/wrangler.jsonc`:
 
 ```text

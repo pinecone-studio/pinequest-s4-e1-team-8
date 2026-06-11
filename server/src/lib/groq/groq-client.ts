@@ -32,6 +32,12 @@ export async function generateGroqSummary(
 ): Promise<string> {
   const apiKey = bindings.GROQ_API_KEY;
   if (!apiKey) {
+    console.error("[meetingTranscription] Groq summary generation is not configured", {
+      database: bindings.D1_DATABASE_NAME ?? "unknown",
+      environment: bindings.ENVIRONMENT ?? "unknown",
+      missingSecret: "GROQ_API_KEY",
+    });
+
     throw new Error("Groq API key is not configured");
   }
 
