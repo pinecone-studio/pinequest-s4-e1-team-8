@@ -62,11 +62,41 @@ export async function initializeProject(payload: InitializeProjectPayload) {
   return data;
 }
 
-export async function fetchMyProjects() {
-  const { data } = await clientApi.get<{ projects: ProjectSummary[] }>(
-    `${PROJECTS_API_BASE}/me`,
-  );
-  return data.projects;
+const PROJECTS_CACHE_TTL = 30_000;
+let projectsCache: { at: number; projects: ProjectSummary[] } | null = null;
+let projectsInFlight: Promise<ProjectSummary[]> | null = null;
+
+/**
+ * Fetch the current user's projects, deduping concurrent callers and caching
+ * briefly. Many components mount `useOnboardingData` at once (sidebar, header,
+ * page hooks); without this they each fire their own request. Pass `force` to
+ * bypass the cache (e.g. after creating a project).
+ */
+export async function fetchMyProjects(options?: { force?: boolean }) {
+  const now = Date.now();
+
+  if (!options?.force) {
+    if (projectsCache && now - projectsCache.at < PROJECTS_CACHE_TTL) {
+      return projectsCache.projects;
+    }
+    if (projectsInFlight) {
+      return projectsInFlight;
+    }
+  }
+
+  projectsInFlight = (async () => {
+    const { data } = await clientApi.get<{ projects: ProjectSummary[] }>(
+      `${PROJECTS_API_BASE}/me`,
+    );
+    projectsCache = { at: Date.now(), projects: data.projects };
+    return data.projects;
+  })();
+
+  try {
+    return await projectsInFlight;
+  } finally {
+    projectsInFlight = null;
+  }
 }
 
 export async function fetchProjectMembers(projectId: string) {

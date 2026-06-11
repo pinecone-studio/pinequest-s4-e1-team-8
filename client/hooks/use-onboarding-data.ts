@@ -8,18 +8,20 @@ import {
 import {
   hasOnboardingProject,
   hydrateOnboardingData,
+  PROJECT_CHANGED_EVENT,
   readOnboardingData,
   saveOnboardingData,
 } from "@/lib/onboarding-storage";
 import { resolveScopedMilestones } from "@/lib/onboarding/scoped-milestones";
 import { useAuth } from "@clerk/nextjs";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useOnboardingData() {
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const [data, setData] = useState<OnboardingData | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const mountedRef = useRef(false);
 
   const refresh = useCallback(async () => {
     const raw = readOnboardingData();
@@ -30,20 +32,24 @@ export function useOnboardingData() {
       if (!hadScoped) {
         saveOnboardingData(local);
       }
-      setData(local);
-    } else {
-      setData(local);
     }
 
-    setLoaded(true);
+    if (mountedRef.current) {
+      setData(local);
+      setLoaded(true);
+    }
 
     if (!isSignedIn) {
       return;
     }
 
     try {
-      const projects = await fetchMyProjects();
-      if (projects.length === 0) {
+      let projects = await fetchMyProjects();
+      // The active project may be newer than a cached list — refetch once.
+      if (local?.projectId && !projects.some((p) => p.id === local.projectId)) {
+        projects = await fetchMyProjects({ force: true });
+      }
+      if (projects.length === 0 || !mountedRef.current) {
         return;
       }
 
@@ -58,9 +64,11 @@ export function useOnboardingData() {
         synced.scopedMilestones = resolveScopedMilestones(
           local?.scopedMilestones ?? synced.scopedMilestones,
         );
-        setData(synced);
-        setInviteToken(active.inviteToken);
         saveOnboardingData(synced);
+        if (mountedRef.current) {
+          setData(synced);
+          setInviteToken(active.inviteToken);
+        }
       }
     } catch {
       // Keep hydrated local fallback when API is unavailable.
@@ -68,11 +76,25 @@ export function useOnboardingData() {
   }, [isSignedIn]);
 
   useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!authLoaded) {
       return;
     }
     void refresh();
   }, [authLoaded, refresh]);
+
+  useEffect(() => {
+    const handleProjectChanged = () => void refresh();
+    window.addEventListener(PROJECT_CHANGED_EVENT, handleProjectChanged);
+    return () =>
+      window.removeEventListener(PROJECT_CHANGED_EVENT, handleProjectChanged);
+  }, [refresh]);
 
   return {
     data,
