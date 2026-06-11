@@ -27,6 +27,28 @@ export const projects = sqliteTable("projects", {
   isAsanaDisconnected: integer("is_asana_disconnected", { mode: "boolean" })
     .notNull()
     .default(false),
+  // Project-scoped GitHub integration — shared by all project members.
+  githubPat: text("github_pat"),
+  githubLogin: text("github_login"),
+  repoOwner: text("repo_owner"),
+  repoName: text("repo_name"),
+  githubProjectId: text("github_project_id"),
+  githubConnectedBy: text("github_connected_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  // Project-scoped Asana integration — shared by all project members.
+  asanaAccessToken: text("asana_access_token"),
+  asanaRefreshToken: text("asana_refresh_token"),
+  asanaTokenExpiresAt: integer("asana_token_expires_at", { mode: "timestamp" }),
+  asanaUserGid: text("asana_user_gid"),
+  asanaUserName: text("asana_user_name"),
+  asanaUserEmail: text("asana_user_email"),
+  asanaWorkspaceGid: text("asana_workspace_gid"),
+  asanaProjectGid: text("asana_project_gid"),
+  asanaProjectName: text("asana_project_name"),
+  asanaConnectedBy: text("asana_connected_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
   inviteToken: text("invite_token").unique(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()

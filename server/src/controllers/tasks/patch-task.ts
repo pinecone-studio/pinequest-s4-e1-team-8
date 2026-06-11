@@ -59,7 +59,12 @@ export const updateTask = async (c: Context<{ Bindings: Bindings }>) => {
       return c.json({ error: "userId is required for Asana tasks" }, 400);
     }
 
-    const auth = await resolveAsanaAuth(c, userId);
+    const projectId = body.projectId?.trim() || existing.projectId;
+    if (!projectId) {
+      return c.json({ error: "projectId is required for Asana tasks" }, 400);
+    }
+
+    const auth = await resolveAsanaAuth(c, projectId, userId);
     if (!auth) {
       return c.json({ error: "Connect Asana first" }, 401);
     }

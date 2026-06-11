@@ -4,11 +4,8 @@ import { Hono } from "hono";
 import { resolveAuthenticatedUserId } from "../../lib/auth/clerk";
 import type { Bindings, Variables } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
-import {
-  asanaIntegrations,
-  githubIntegrations,
-  tasks,
-} from "../../schema/schema";
+import { userCanAccessProject } from "../../lib/projects/project-access";
+import { projects, tasks } from "../../schema/schema";
 
 type HonoEnv = { Bindings: Bindings; Variables: Variables };
 
@@ -85,7 +82,7 @@ syncRoutes.post("/", async (c) => {
   const db = useDB(c as unknown as Context<{ Bindings: Bindings }>);
 
   const [task] = await db
-    .select({ id: tasks.id })
+    .select({ id: tasks.id, projectId: tasks.projectId })
     .from(tasks)
     .where(eq(tasks.id, taskId))
     .limit(1);
@@ -94,24 +91,40 @@ syncRoutes.post("/", async (c) => {
     return c.json({ success: false, error: "Task not found" }, 404);
   }
 
+  if (task.projectId && !(await userCanAccessProject(db, task.projectId, userId))) {
+    return c.json({ success: false, error: "Forbidden" }, 403);
+  }
+
+  // Credentials live on the task's project (shared by all members).
+  const [project] = task.projectId
+    ? await db
+        .select({
+          githubPat: projects.githubPat,
+          repoOwner: projects.repoOwner,
+          repoName: projects.repoName,
+          isGithubDisconnected: projects.isGithubDisconnected,
+          asanaAccessToken: projects.asanaAccessToken,
+          asanaProjectGid: projects.asanaProjectGid,
+          asanaWorkspaceGid: projects.asanaWorkspaceGid,
+          isAsanaDisconnected: projects.isAsanaDisconnected,
+        })
+        .from(projects)
+        .where(eq(projects.id, task.projectId))
+        .limit(1)
+    : [];
+
   const results: SyncPlatformResult[] = [];
 
   if (syncTargets.includes("github")) {
     try {
-      const [integration] = await db
-        .select()
-        .from(githubIntegrations)
-        .where(eq(githubIntegrations.userId, userId))
-        .limit(1);
-
-      if (!integration) {
+      if (!project?.githubPat || project.isGithubDisconnected) {
         results.push({
           platform: "github",
           success: false,
-          error: "No active GitHub integration found for user",
+          error: "GitHub is not connected for this project",
         });
         await markFailed(db, taskId);
-      } else if (!integration.repoOwner || !integration.repoName) {
+      } else if (!project.repoOwner || !project.repoName) {
         results.push({
           platform: "github",
           success: false,
@@ -119,7 +132,7 @@ syncRoutes.post("/", async (c) => {
         });
         await markFailed(db, taskId);
       } else {
-        const { repoOwner: owner, repoName: repo } = integration;
+        const { repoOwner: owner, repoName: repo } = project;
 
         const response = await fetch(
           `https://api.github.com/repos/${owner}/${repo}/issues`,
@@ -128,7 +141,7 @@ syncRoutes.post("/", async (c) => {
             headers: {
               Accept: "application/vnd.github+json",
               "User-Agent": "brisk-app",
-              Authorization: `Bearer ${integration.accessToken}`,
+              Authorization: `Bearer ${project.githubPat}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ title, body: description }),
@@ -153,20 +166,14 @@ syncRoutes.post("/", async (c) => {
 
   if (syncTargets.includes("asana")) {
     try {
-      const [integration] = await db
-        .select()
-        .from(asanaIntegrations)
-        .where(eq(asanaIntegrations.userId, userId))
-        .limit(1);
-
-      if (!integration) {
+      if (!project?.asanaAccessToken || project.isAsanaDisconnected) {
         results.push({
           platform: "asana",
           success: false,
-          error: "No active Asana integration found for user",
+          error: "Asana is not connected for this project",
         });
         await markFailed(db, taskId);
-      } else if (!integration.projectGid && !integration.workspaceGid) {
+      } else if (!project.asanaProjectGid && !project.asanaWorkspaceGid) {
         results.push({
           platform: "asana",
           success: false,
@@ -176,16 +183,16 @@ syncRoutes.post("/", async (c) => {
       } else {
         const payload: Record<string, unknown> = { name: title, notes: description };
 
-        if (integration.projectGid) {
-          payload.projects = [integration.projectGid];
+        if (project.asanaProjectGid) {
+          payload.projects = [project.asanaProjectGid];
         } else {
-          payload.workspace = integration.workspaceGid;
+          payload.workspace = project.asanaWorkspaceGid;
         }
 
         const response = await fetch("https://app.asana.com/api/1.0/tasks", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${integration.accessToken}`,
+            Authorization: `Bearer ${project.asanaAccessToken}`,
             "Content-Type": "application/json",
             Accept: "application/json",
           },

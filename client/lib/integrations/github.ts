@@ -1,4 +1,5 @@
 import { clientApi } from "@/app/lib/client-api";
+import { readOnboardingData } from "@/lib/onboarding-storage";
 
 const DEV_USER_ID = "user_wr";
 let activeUserId = DEV_USER_ID;
@@ -9,6 +10,18 @@ export function setGithubUserId(userId: string) {
 
 function uid() {
   return activeUserId;
+}
+
+// The active Brisk project — integrations are stored on the project and shared by
+// all of its members. Kept in sync with the project switcher / onboarding storage.
+let activeProjectId = "";
+
+export function setGithubProjectId(projectId: string) {
+  activeProjectId = projectId;
+}
+
+function pid() {
+  return activeProjectId || readOnboardingData()?.projectId || "";
 }
 
 export type GithubStatus = {
@@ -128,14 +141,14 @@ export function getGithubRepo(): { owner: string; repo: string } | null {
 
 export async function connectGithubPAT(token: string): Promise<{ githubLogin: string }> {
   const { data } = await clientApi.post<{ githubLogin: string }>("/integrations/github/pat", {
-    userId: uid(),
+    userId: uid(), projectId: pid(),
     token,
   });
   return data;
 }
 
 export async function disconnectGithub(): Promise<void> {
-  await clientApi.post("/integrations/github/disconnect", { userId: uid() });
+  await clientApi.post("/integrations/github/disconnect", { userId: uid(), projectId: pid() });
 }
 
 /** GitHub "new token (classic)" page, pre-filled with full scopes for Brisk. */
@@ -146,7 +159,7 @@ type RepoParams = { owner: string; repo: string };
 
 export async function fetchGithubStatus(): Promise<GithubStatus> {
   const { data } = await clientApi.get<GithubStatus>("/integrations/github/status", {
-    params: { userId: uid() },
+    params: { userId: uid(), projectId: pid() },
   });
   return data;
 }
@@ -154,7 +167,7 @@ export async function fetchGithubStatus(): Promise<GithubStatus> {
 export async function fetchGithubRepos(): Promise<GithubRepoOption[]> {
   const { data } = await clientApi.get<{ repos: GithubRepoOption[] }>(
     "/integrations/github/repos",
-    { params: { userId: uid() } },
+    { params: { userId: uid(), projectId: pid() } },
   );
   return data.repos;
 }
@@ -162,7 +175,7 @@ export async function fetchGithubRepos(): Promise<GithubRepoOption[]> {
 export async function fetchGithubBranches(owner: string, repo: string): Promise<string[]> {
   const { data } = await clientApi.get<{ branches: string[] }>(
     "/integrations/github/branches",
-    { params: { userId: uid(), owner, repo } },
+    { params: { userId: uid(), projectId: pid(), owner, repo } },
   );
   return data.branches;
 }
@@ -174,7 +187,7 @@ export async function fetchGithubPulls(
 ): Promise<GithubPullItem[]> {
   const { data } = await clientApi.get<{ pulls: GithubPullItem[] }>(
     "/integrations/github/pulls",
-    { params: { userId: uid(), owner, repo, state } },
+    { params: { userId: uid(), projectId: pid(), owner, repo, state } },
   );
   return data.pulls;
 }
@@ -182,7 +195,7 @@ export async function fetchGithubPulls(
 export async function fetchGithubIssues(owner: string, repo: string): Promise<GithubIssueItem[]> {
   const { data } = await clientApi.get<{ issues: GithubIssueItem[] }>(
     "/integrations/github/issues",
-    { params: { userId: uid(), owner, repo } },
+    { params: { userId: uid(), projectId: pid(), owner, repo } },
   );
   return data.issues;
 }
@@ -190,7 +203,7 @@ export async function fetchGithubIssues(owner: string, repo: string): Promise<Gi
 export async function fetchPullDetail(owner: string, repo: string, number: number) {
   const { data } = await clientApi.get<{ pull: GithubPullItem }>(
     "/integrations/github/pulls/detail",
-    { params: { userId: uid(), owner, repo, number } },
+    { params: { userId: uid(), projectId: pid(), owner, repo, number } },
   );
   return data.pull;
 }
@@ -198,7 +211,7 @@ export async function fetchPullDetail(owner: string, repo: string, number: numbe
 export async function fetchPullFiles(owner: string, repo: string, number: number) {
   const { data } = await clientApi.get<{ files: GithubPullFile[] }>(
     "/integrations/github/pulls/files",
-    { params: { userId: uid(), owner, repo, number } },
+    { params: { userId: uid(), projectId: pid(), owner, repo, number } },
   );
   return data.files;
 }
@@ -206,7 +219,7 @@ export async function fetchPullFiles(owner: string, repo: string, number: number
 export async function fetchPullCommits(owner: string, repo: string, number: number) {
   const { data } = await clientApi.get<{ commits: unknown[] }>(
     "/integrations/github/pulls/commits",
-    { params: { userId: uid(), owner, repo, number } },
+    { params: { userId: uid(), projectId: pid(), owner, repo, number } },
   );
   return data.commits;
 }
@@ -214,7 +227,7 @@ export async function fetchPullCommits(owner: string, repo: string, number: numb
 export async function fetchPullComments(owner: string, repo: string, number: number) {
   const { data } = await clientApi.get<{ comments: GithubComment[]; reviews: GithubReview[] }>(
     "/integrations/github/pulls/comments",
-    { params: { userId: uid(), owner, repo, number } },
+    { params: { userId: uid(), projectId: pid(), owner, repo, number } },
   );
   return data;
 }
@@ -223,7 +236,7 @@ export async function fetchPullChecks(owner: string, repo: string, sha: string) 
   const { data } = await clientApi.get<{
     checks: { state: string; total_count: number; check_runs: GithubCheckRun[] };
   }>("/integrations/github/pulls/checks", {
-    params: { userId: uid(), owner, repo, sha },
+    params: { userId: uid(), projectId: pid(), owner, repo, sha },
   });
   return data.checks;
 }
@@ -231,7 +244,7 @@ export async function fetchPullChecks(owner: string, repo: string, sha: string) 
 export async function createGithubIssue(params: RepoParams & { title: string; body: string }) {
   const { data } = await clientApi.post<{ issue: { number: number; html_url: string } }>(
     "/integrations/github/issues",
-    { userId: uid(), ...params },
+    { userId: uid(), projectId: pid(), ...params },
   );
   return data.issue;
 }
@@ -247,7 +260,7 @@ export async function createGithubPull(
 ) {
   const { data } = await clientApi.post<{ pull: { number: number; html_url: string } }>(
     "/integrations/github/pulls",
-    { userId: uid(), ...params },
+    { userId: uid(), projectId: pid(), ...params },
   );
   return data.pull;
 }
@@ -260,7 +273,7 @@ export async function mergeGithubPull(
 ) {
   const { data } = await clientApi.post<{
     result: { sha: string; merged: boolean; message: string };
-  }>("/integrations/github/pulls/merge", { userId: uid(), ...params });
+  }>("/integrations/github/pulls/merge", { userId: uid(), projectId: pid(), ...params });
   return data.result;
 }
 
@@ -269,7 +282,7 @@ export async function postPullComment(
 ) {
   const { data } = await clientApi.post<{ comment: GithubComment }>(
     "/integrations/github/pulls/comment",
-    { userId: uid(), ...params },
+    { userId: uid(), projectId: pid(), ...params },
   );
   return data.comment;
 }
@@ -283,7 +296,7 @@ export async function postPullReview(
 ) {
   const { data } = await clientApi.post<{ review: GithubReview }>(
     "/integrations/github/pulls/review",
-    { userId: uid(), ...params },
+    { userId: uid(), projectId: pid(), ...params },
   );
   return data.review;
 }
@@ -299,7 +312,7 @@ export async function patchPull(
 ) {
   const { data } = await clientApi.patch<{ pull: GithubPullItem }>(
     "/integrations/github/pulls",
-    { userId: uid(), ...params },
+    { userId: uid(), projectId: pid(), ...params },
   );
   return data.pull;
 }
@@ -308,14 +321,14 @@ export async function generatePrMessage(params: RepoParams & { head: string; bas
   const { data } = await clientApi.post<{
     generated: { title: string; body: string };
     stats: { files: number; commits: number };
-  }>("/integrations/github/pulls/generate", { userId: uid(), ...params });
+  }>("/integrations/github/pulls/generate", { userId: uid(), projectId: pid(), ...params });
   return data;
 }
 
 export async function fetchIssueDetail(owner: string, repo: string, number: number) {
   const { data } = await clientApi.get<{ issue: GithubIssueItem }>(
     "/integrations/github/issues/detail",
-    { params: { userId: uid(), owner, repo, number } },
+    { params: { userId: uid(), projectId: pid(), owner, repo, number } },
   );
   return data.issue;
 }
@@ -323,7 +336,7 @@ export async function fetchIssueDetail(owner: string, repo: string, number: numb
 export async function fetchIssueComments(owner: string, repo: string, number: number) {
   const { data } = await clientApi.get<{ comments: GithubComment[] }>(
     "/integrations/github/issues/comments",
-    { params: { userId: uid(), owner, repo, number } },
+    { params: { userId: uid(), projectId: pid(), owner, repo, number } },
   );
   return data.comments;
 }
@@ -333,7 +346,7 @@ export async function postIssueComment(
 ) {
   const { data } = await clientApi.post<{ comment: GithubComment }>(
     "/integrations/github/issues/comment",
-    { userId: uid(), ...params },
+    { userId: uid(), projectId: pid(), ...params },
   );
   return data.comment;
 }
@@ -351,7 +364,7 @@ export async function patchIssue(
 ) {
   const { data } = await clientApi.patch<{ issue: GithubIssueItem }>(
     "/integrations/github/issues",
-    { userId: uid(), ...params },
+    { userId: uid(), projectId: pid(), ...params },
   );
   return data.issue;
 }
@@ -359,7 +372,7 @@ export async function patchIssue(
 export async function fetchRepoLabels(owner: string, repo: string) {
   const { data } = await clientApi.get<{ labels: GithubLabel[] }>(
     "/integrations/github/labels",
-    { params: { userId: uid(), owner, repo } },
+    { params: { userId: uid(), projectId: pid(), owner, repo } },
   );
   return data.labels;
 }
@@ -367,7 +380,7 @@ export async function fetchRepoLabels(owner: string, repo: string) {
 export async function fetchRepoMilestones(owner: string, repo: string) {
   const { data } = await clientApi.get<{ milestones: GithubMilestone[] }>(
     "/integrations/github/milestones",
-    { params: { userId: uid(), owner, repo } },
+    { params: { userId: uid(), projectId: pid(), owner, repo } },
   );
   return data.milestones;
 }
@@ -377,7 +390,7 @@ export async function createMilestone(
 ) {
   const { data } = await clientApi.post<{ milestone: GithubMilestone }>(
     "/integrations/github/milestones",
-    { userId: uid(), ...params },
+    { userId: uid(), projectId: pid(), ...params },
   );
   return data.milestone;
 }
@@ -385,7 +398,7 @@ export async function createMilestone(
 export async function fetchRepoAssignees(owner: string, repo: string) {
   const { data } = await clientApi.get<{ assignees: GithubAssignee[] }>(
     "/integrations/github/assignees",
-    { params: { userId: uid(), owner, repo } },
+    { params: { userId: uid(), projectId: pid(), owner, repo } },
   );
   return data.assignees;
 }
@@ -416,7 +429,7 @@ export async function syncGithubIssues(
   const { data } = await clientApi.post<GithubSyncResult>(
     "/integrations/github/sync",
     {
-      userId: uid(),
+      userId: uid(), projectId: pid(),
       owner,
       repo,
       ...(options?.projectId ? { projectId: options.projectId } : {}),
@@ -477,17 +490,17 @@ export type ProjectFieldValue =
 export async function fetchGithubProjects(org?: string): Promise<GithubProject[]> {
   const { data } = await clientApi.get<{ projects: GithubProject[] }>(
     "/integrations/github/projects",
-    { params: { userId: uid(), ...(org ? { org } : {}) } },
+    { params: { userId: uid(), projectId: pid(), ...(org ? { org } : {}) } },
   );
   return data.projects;
 }
 
 export async function fetchGithubProjectDetail(
-  projectId: string,
+  githubProjectId: string,
 ): Promise<{ fields: GithubProjectField[]; items: GithubProjectItem[] }> {
   const { data } = await clientApi.get<{ fields: GithubProjectField[]; items: GithubProjectItem[] }>(
     "/integrations/github/projects/detail",
-    { params: { userId: uid(), projectId } },
+    { params: { userId: uid(), projectId: pid(), githubProjectId } },
   );
   return data;
 }
@@ -498,9 +511,10 @@ export async function addGithubProjectItem(params: {
   title?: string;
   itemBody?: string;
 }): Promise<string> {
+  const { projectId: githubProjectId, ...rest } = params;
   const { data } = await clientApi.post<{ itemId: string }>(
     "/integrations/github/projects/items",
-    { userId: uid(), ...params },
+    { userId: uid(), projectId: pid(), githubProjectId, ...rest },
   );
   return data.itemId;
 }
@@ -511,7 +525,13 @@ export async function updateGithubProjectItemField(params: {
   fieldId: string;
   value: ProjectFieldValue;
 }): Promise<void> {
-  await clientApi.patch("/integrations/github/projects/items", { userId: uid(), ...params });
+  const { projectId: githubProjectId, ...rest } = params;
+  await clientApi.patch("/integrations/github/projects/items", {
+    userId: uid(),
+    projectId: pid(),
+    githubProjectId,
+    ...rest,
+  });
 }
 
 export function extractApiError(err: unknown, fallback: string) {

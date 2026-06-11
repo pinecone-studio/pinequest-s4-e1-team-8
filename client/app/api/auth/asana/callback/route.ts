@@ -63,11 +63,20 @@ export async function GET(request: Request) {
     return redirect(withQuery(returnTo, "asana_error=missing_state"));
   }
 
-  let parsed: { state: string; userId: string; returnTo?: string };
+  let parsed: { state: string; userId: string; projectId?: string; returnTo?: string };
   try {
-    parsed = JSON.parse(saved) as { state: string; userId: string; returnTo?: string };
+    parsed = JSON.parse(saved) as {
+      state: string;
+      userId: string;
+      projectId?: string;
+      returnTo?: string;
+    };
   } catch {
     return redirect(withQuery(returnTo, "asana_error=invalid_state"));
+  }
+
+  if (!parsed.projectId) {
+    return redirect(withQuery(returnTo, "asana_error=missing_project"));
   }
 
   if (parsed.returnTo?.startsWith("/")) {
@@ -125,6 +134,7 @@ export async function GET(request: Request) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       userId: parsed.userId,
+      projectId: parsed.projectId,
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token ?? null,
       expiresIn: tokens.expires_in,

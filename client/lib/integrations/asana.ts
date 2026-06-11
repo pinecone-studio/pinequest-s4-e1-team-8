@@ -1,4 +1,5 @@
 import { clientApi } from "@/app/lib/client-api";
+import { readOnboardingData } from "@/lib/onboarding-storage";
 
 const DEV_USER_ID = "user_wr";
 let activeUserId = DEV_USER_ID;
@@ -9,6 +10,18 @@ export function setAsanaUserId(userId: string) {
 
 function uid() {
   return activeUserId;
+}
+
+// The active Brisk project — Asana credentials are stored on the project and
+// shared by all of its members.
+let activeProjectId = "";
+
+export function setAsanaProjectId(projectId: string) {
+  activeProjectId = projectId;
+}
+
+function pid() {
+  return activeProjectId || readOnboardingData()?.projectId || "";
 }
 
 export type AsanaStatus = {
@@ -30,7 +43,7 @@ export type AsanaProject = {
 };
 
 export function getAsanaConnectUrl(returnTo?: string) {
-  const params = new URLSearchParams({ userId: uid() });
+  const params = new URLSearchParams({ userId: uid(), projectId: pid() });
   if (returnTo) {
     params.set("returnTo", returnTo);
   }
@@ -39,19 +52,19 @@ export function getAsanaConnectUrl(returnTo?: string) {
 
 export async function fetchAsanaStatus(): Promise<AsanaStatus> {
   const { data } = await clientApi.get<AsanaStatus>("/integrations/asana/status", {
-    params: { userId: uid() },
+    params: { userId: uid(), projectId: pid() },
   });
   return data;
 }
 
 export async function disconnectAsana(): Promise<void> {
-  await clientApi.post("/integrations/asana/disconnect", { userId: uid() });
+  await clientApi.post("/integrations/asana/disconnect", { userId: uid(), projectId: pid() });
 }
 
 export async function fetchAsanaWorkspaces(): Promise<AsanaWorkspace[]> {
   const { data } = await clientApi.get<{ workspaces: AsanaWorkspace[] }>(
     "/integrations/asana/workspaces",
-    { params: { userId: uid() } },
+    { params: { userId: uid(), projectId: pid() } },
   );
   return data.workspaces;
 }
@@ -59,7 +72,7 @@ export async function fetchAsanaWorkspaces(): Promise<AsanaWorkspace[]> {
 export async function fetchAsanaProjects(workspaceGid: string): Promise<AsanaProject[]> {
   const { data } = await clientApi.get<{ projects: AsanaProject[] }>(
     "/integrations/asana/projects",
-    { params: { userId: uid(), workspaceGid } },
+    { params: { userId: uid(), projectId: pid(), workspaceGid } },
   );
   return data.projects;
 }
@@ -75,14 +88,17 @@ export async function selectAsanaProject(params: {
     projectName: string | null;
   }>("/integrations/asana/project", {
     userId: uid(),
-    ...params,
+    projectId: pid(),
+    workspaceGid: params.workspaceGid,
+    asanaProjectGid: params.projectGid,
+    asanaProjectName: params.projectName,
   });
   return data;
 }
 
 export async function syncAsanaTasks() {
   const { data } = await clientApi.post<{ synced: number }>("/integrations/asana/sync", {
-    userId: uid(),
+    userId: uid(), projectId: pid(),
   });
   return data;
 }

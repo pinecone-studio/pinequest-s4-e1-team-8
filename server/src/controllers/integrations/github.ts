@@ -1,9 +1,9 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { Context } from "hono";
-import { nanoid } from "nanoid";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import { runD1Statements } from "../../lib/db/d1-batch";
+import { userCanAccessProject } from "../../lib/projects/project-access";
 import {
   addProjectDraftItem,
   addProjectItemById,
@@ -53,11 +53,9 @@ import {
   NO_STATUS_COLUMN,
 } from "../../lib/github/project-status";
 import { resolveGithubBoardProjectId } from "../../lib/github/resolve-board-project";
-import { resolveGithubSyncProject } from "../../lib/github/resolve-sync-project";
 import { ensureTaskSyncTargets } from "../../lib/tasks/ensure-task-sync-targets";
-import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import type { NewTask } from "../../schema/task.model";
-import { githubIntegrations, tasks } from "../../schema/schema";
+import { projects, tasks } from "../../schema/schema";
 
 function sanitizeGithubTaskRows(
   milestoneRows: NewTask[],
@@ -93,28 +91,42 @@ type GithubAuthContext = {
   githubLogin?: string | null;
   repoOwner?: string | null;
   repoName?: string | null;
-  integrationId?: string;
 };
 
+/**
+ * Resolves the GitHub credentials stored on a PROJECT (shared by all members).
+ * Returns null if the requesting user is not a member of the project, or if the
+ * project has no connected PAT (falling back to a configured test token).
+ */
 export async function resolveGithubAuth(
   c: Context<{ Bindings: Bindings }>,
+  projectId: string,
   userId: string,
 ): Promise<GithubAuthContext | null> {
   try {
     const db = useDB(c);
-    const [integration] = await db
-      .select()
-      .from(githubIntegrations)
-      .where(eq(githubIntegrations.userId, userId))
+    if (!(await userCanAccessProject(db, projectId, userId))) {
+      return null;
+    }
+
+    const [project] = await db
+      .select({
+        githubPat: projects.githubPat,
+        githubLogin: projects.githubLogin,
+        repoOwner: projects.repoOwner,
+        repoName: projects.repoName,
+        isGithubDisconnected: projects.isGithubDisconnected,
+      })
+      .from(projects)
+      .where(eq(projects.id, projectId))
       .limit(1);
 
-    if (integration) {
+    if (project?.githubPat && !project.isGithubDisconnected) {
       return {
-        accessToken: integration.accessToken,
-        githubLogin: integration.githubLogin,
-        repoOwner: integration.repoOwner,
-        repoName: integration.repoName,
-        integrationId: integration.id,
+        accessToken: project.githubPat,
+        githubLogin: project.githubLogin,
+        repoOwner: project.repoOwner,
+        repoName: project.repoName,
       };
     }
   } catch {
@@ -135,11 +147,40 @@ export async function resolveGithubAuth(
   }
 }
 
-export const getGithubStatus = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
-  if (!userId) return c.json({ error: "userId is required" }, 400);
+/** Reads `projectId` + `userId` from the query string. */
+function identityFromQuery(c: Context<{ Bindings: Bindings }>) {
+  return {
+    projectId: c.req.query("projectId"),
+    userId: c.req.query("userId"),
+  };
+}
 
-  const auth = await resolveGithubAuth(c, userId);
+/** Persists the active repo (and optional board id) on the project row. */
+async function rememberProjectRepo(
+  c: Context<{ Bindings: Bindings }>,
+  projectId: string,
+  owner: string,
+  repo: string,
+  githubProjectId?: string | null,
+) {
+  const db = useDB(c);
+  await db
+    .update(projects)
+    .set({
+      repoOwner: owner,
+      repoName: repo,
+      ...(githubProjectId !== undefined ? { githubProjectId } : {}),
+    })
+    .where(eq(projects.id, projectId));
+}
+
+export const getGithubStatus = async (c: Context<{ Bindings: Bindings }>) => {
+  const { projectId, userId } = identityFromQuery(c);
+  if (!projectId || !userId) {
+    return c.json({ error: "projectId and userId are required" }, 400);
+  }
+
+  const auth = await resolveGithubAuth(c, projectId, userId);
   if (!auth) {
     return c.json({ connected: false });
   }
@@ -147,12 +188,12 @@ export const getGithubStatus = async (c: Context<{ Bindings: Bindings }>) => {
   let githubProjectId: string | null = null;
   try {
     const db = useDB(c);
-    const [integration] = await db
-      .select({ githubProjectId: githubIntegrations.githubProjectId })
-      .from(githubIntegrations)
-      .where(eq(githubIntegrations.userId, userId))
+    const [project] = await db
+      .select({ githubProjectId: projects.githubProjectId })
+      .from(projects)
+      .where(eq(projects.id, projectId))
       .limit(1);
-    githubProjectId = integration?.githubProjectId ?? null;
+    githubProjectId = project?.githubProjectId ?? null;
   } catch {
     // ignore
   }
@@ -167,10 +208,12 @@ export const getGithubStatus = async (c: Context<{ Bindings: Bindings }>) => {
 };
 
 export const getGithubRepos = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
-  if (!userId) return c.json({ error: "userId is required" }, 400);
+  const { projectId, userId } = identityFromQuery(c);
+  if (!projectId || !userId) {
+    return c.json({ error: "projectId and userId are required" }, 400);
+  }
 
-  const auth = await resolveGithubAuth(c, userId);
+  const auth = await resolveGithubAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -191,14 +234,14 @@ export const getGithubRepos = async (c: Context<{ Bindings: Bindings }>) => {
 };
 
 export const getGithubBranches = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
-  if (!userId || !owner || !repo) {
-    return c.json({ error: "userId, owner, and repo are required" }, 400);
+  if (!projectId || !userId || !owner || !repo) {
+    return c.json({ error: "projectId, userId, owner, and repo are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, userId);
+  const auth = await resolveGithubAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -211,15 +254,15 @@ export const getGithubBranches = async (c: Context<{ Bindings: Bindings }>) => {
 };
 
 export const getGithubPulls = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
   const state = (c.req.query("state") as "open" | "closed" | "all") ?? "all";
-  if (!userId || !owner || !repo) {
-    return c.json({ error: "userId, owner, and repo are required" }, 400);
+  if (!projectId || !userId || !owner || !repo) {
+    return c.json({ error: "projectId, userId, owner, and repo are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, userId);
+  const auth = await resolveGithubAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -232,14 +275,14 @@ export const getGithubPulls = async (c: Context<{ Bindings: Bindings }>) => {
 };
 
 export const getGithubIssues = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
-  if (!userId || !owner || !repo) {
-    return c.json({ error: "userId, owner, and repo are required" }, 400);
+  if (!projectId || !userId || !owner || !repo) {
+    return c.json({ error: "projectId, userId, owner, and repo are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, userId);
+  const auth = await resolveGithubAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -253,6 +296,7 @@ export const getGithubIssues = async (c: Context<{ Bindings: Bindings }>) => {
 
 export const postGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -260,11 +304,11 @@ export const postGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
     body?: string;
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.title?.trim()) {
-    return c.json({ error: "userId, owner, repo, and title are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.title?.trim()) {
+    return c.json({ error: "projectId, userId, owner, repo, and title are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -276,13 +320,7 @@ export const postGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
       body.body?.trim() ?? "",
     );
 
-    if (auth.integrationId) {
-      const db = useDB(c);
-      await db
-        .update(githubIntegrations)
-        .set({ repoOwner: body.owner, repoName: body.repo })
-        .where(eq(githubIntegrations.id, auth.integrationId));
-    }
+    await rememberProjectRepo(c, body.projectId, body.owner, body.repo);
 
     return c.json({ issue });
   } catch (error) {
@@ -293,6 +331,7 @@ export const postGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
 
 export const postGithubPull = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -304,7 +343,8 @@ export const postGithubPull = async (c: Context<{ Bindings: Bindings }>) => {
   } | null;
 
   if (
-    !body?.userId ||
+    !body?.projectId ||
+    !body.userId ||
     !body.owner ||
     !body.repo ||
     !body.title?.trim() ||
@@ -312,12 +352,12 @@ export const postGithubPull = async (c: Context<{ Bindings: Bindings }>) => {
     !body.base?.trim()
   ) {
     return c.json(
-      { error: "userId, owner, repo, title, head, and base are required" },
+      { error: "projectId, userId, owner, repo, title, head, and base are required" },
       400,
     );
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -332,13 +372,7 @@ export const postGithubPull = async (c: Context<{ Bindings: Bindings }>) => {
       body.draft ?? false,
     );
 
-    if (auth.integrationId) {
-      const db = useDB(c);
-      await db
-        .update(githubIntegrations)
-        .set({ repoOwner: body.owner, repoName: body.repo })
-        .where(eq(githubIntegrations.id, auth.integrationId));
-    }
+    await rememberProjectRepo(c, body.projectId, body.owner, body.repo);
 
     return c.json({ pull });
   } catch (error) {
@@ -366,14 +400,14 @@ function parsePullNumber(value: string | undefined) {
 }
 
 export const getGithubPullDetail = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
   const number = parsePullNumber(c.req.query("number"));
-  const err = requireParams(c, { userId, owner, repo, number: number ? String(number) : undefined });
+  const err = requireParams(c, { projectId, userId, owner, repo, number: number ? String(number) : undefined });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -386,14 +420,14 @@ export const getGithubPullDetail = async (c: Context<{ Bindings: Bindings }>) =>
 };
 
 export const getGithubPullFiles = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
   const number = parsePullNumber(c.req.query("number"));
-  const err = requireParams(c, { userId, owner, repo, number: number ? String(number) : undefined });
+  const err = requireParams(c, { projectId, userId, owner, repo, number: number ? String(number) : undefined });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -406,14 +440,14 @@ export const getGithubPullFiles = async (c: Context<{ Bindings: Bindings }>) => 
 };
 
 export const getGithubPullCommits = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
   const number = parsePullNumber(c.req.query("number"));
-  const err = requireParams(c, { userId, owner, repo, number: number ? String(number) : undefined });
+  const err = requireParams(c, { projectId, userId, owner, repo, number: number ? String(number) : undefined });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -426,14 +460,14 @@ export const getGithubPullCommits = async (c: Context<{ Bindings: Bindings }>) =
 };
 
 export const getGithubPullComments = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
   const number = parsePullNumber(c.req.query("number"));
-  const err = requireParams(c, { userId, owner, repo, number: number ? String(number) : undefined });
+  const err = requireParams(c, { projectId, userId, owner, repo, number: number ? String(number) : undefined });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -449,14 +483,14 @@ export const getGithubPullComments = async (c: Context<{ Bindings: Bindings }>) 
 };
 
 export const getGithubPullChecks = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
   const sha = c.req.query("sha");
-  const err = requireParams(c, { userId, owner, repo, sha });
+  const err = requireParams(c, { projectId, userId, owner, repo, sha });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -470,6 +504,7 @@ export const getGithubPullChecks = async (c: Context<{ Bindings: Bindings }>) =>
 
 export const postGithubPullComment = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -477,11 +512,11 @@ export const postGithubPullComment = async (c: Context<{ Bindings: Bindings }>) 
     body?: string;
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.number || !body.body?.trim()) {
-    return c.json({ error: "userId, owner, repo, number, and body are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.number || !body.body?.trim()) {
+    return c.json({ error: "projectId, userId, owner, repo, number, and body are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -501,6 +536,7 @@ export const postGithubPullComment = async (c: Context<{ Bindings: Bindings }>) 
 
 export const postGithubPullReview = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -509,11 +545,11 @@ export const postGithubPullReview = async (c: Context<{ Bindings: Bindings }>) =
     event?: "APPROVE" | "REQUEST_CHANGES" | "COMMENT";
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.number || !body.event) {
-    return c.json({ error: "userId, owner, repo, number, and event are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.number || !body.event) {
+    return c.json({ error: "projectId, userId, owner, repo, number, and event are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -534,6 +570,7 @@ export const postGithubPullReview = async (c: Context<{ Bindings: Bindings }>) =
 
 export const patchGithubPull = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -544,11 +581,11 @@ export const patchGithubPull = async (c: Context<{ Bindings: Bindings }>) => {
     draft?: boolean;
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.number) {
-    return c.json({ error: "userId, owner, repo, and number are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.number) {
+    return c.json({ error: "projectId, userId, owner, repo, and number are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -567,6 +604,7 @@ export const patchGithubPull = async (c: Context<{ Bindings: Bindings }>) => {
 
 export const postGithubPullReviewers = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -574,11 +612,11 @@ export const postGithubPullReviewers = async (c: Context<{ Bindings: Bindings }>
     reviewers?: string[];
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.number || !body.reviewers?.length) {
-    return c.json({ error: "userId, owner, repo, number, and reviewers are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.number || !body.reviewers?.length) {
+    return c.json({ error: "projectId, userId, owner, repo, number, and reviewers are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -598,6 +636,7 @@ export const postGithubPullReviewers = async (c: Context<{ Bindings: Bindings }>
 
 export const postGithubGeneratePrMessage = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -605,11 +644,11 @@ export const postGithubGeneratePrMessage = async (c: Context<{ Bindings: Binding
     base?: string;
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.head || !body.base) {
-    return c.json({ error: "userId, owner, repo, head, and base are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.head || !body.base) {
+    return c.json({ error: "projectId, userId, owner, repo, head, and base are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -629,14 +668,14 @@ export const postGithubGeneratePrMessage = async (c: Context<{ Bindings: Binding
 };
 
 export const getGithubIssueDetail = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
   const number = parsePullNumber(c.req.query("number"));
-  const err = requireParams(c, { userId, owner, repo, number: number ? String(number) : undefined });
+  const err = requireParams(c, { projectId, userId, owner, repo, number: number ? String(number) : undefined });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -649,14 +688,14 @@ export const getGithubIssueDetail = async (c: Context<{ Bindings: Bindings }>) =
 };
 
 export const getGithubIssueComments = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
   const number = parsePullNumber(c.req.query("number"));
-  const err = requireParams(c, { userId, owner, repo, number: number ? String(number) : undefined });
+  const err = requireParams(c, { projectId, userId, owner, repo, number: number ? String(number) : undefined });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -670,6 +709,7 @@ export const getGithubIssueComments = async (c: Context<{ Bindings: Bindings }>)
 
 export const postGithubIssueComment = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -677,11 +717,11 @@ export const postGithubIssueComment = async (c: Context<{ Bindings: Bindings }>)
     body?: string;
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.number || !body.body?.trim()) {
-    return c.json({ error: "userId, owner, repo, number, and body are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.number || !body.body?.trim()) {
+    return c.json({ error: "projectId, userId, owner, repo, number, and body are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -701,6 +741,7 @@ export const postGithubIssueComment = async (c: Context<{ Bindings: Bindings }>)
 
 export const patchGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -713,11 +754,11 @@ export const patchGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
     milestone?: number | null;
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.number) {
-    return c.json({ error: "userId, owner, repo, and number are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.number) {
+    return c.json({ error: "projectId, userId, owner, repo, and number are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -737,13 +778,13 @@ export const patchGithubIssue = async (c: Context<{ Bindings: Bindings }>) => {
 };
 
 export const getGithubLabels = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
-  const err = requireParams(c, { userId, owner, repo });
+  const err = requireParams(c, { projectId, userId, owner, repo });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -756,13 +797,13 @@ export const getGithubLabels = async (c: Context<{ Bindings: Bindings }>) => {
 };
 
 export const getGithubMilestones = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
-  const err = requireParams(c, { userId, owner, repo });
+  const err = requireParams(c, { projectId, userId, owner, repo });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -776,6 +817,7 @@ export const getGithubMilestones = async (c: Context<{ Bindings: Bindings }>) =>
 
 export const postGithubMilestone = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -784,11 +826,11 @@ export const postGithubMilestone = async (c: Context<{ Bindings: Bindings }>) =>
     dueOn?: string;
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.title?.trim()) {
-    return c.json({ error: "userId, owner, repo, and title are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.title?.trim()) {
+    return c.json({ error: "projectId, userId, owner, repo, and title are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -805,13 +847,13 @@ export const postGithubMilestone = async (c: Context<{ Bindings: Bindings }>) =>
 };
 
 export const getGithubAssignees = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const owner = c.req.query("owner");
   const repo = c.req.query("repo");
-  const err = requireParams(c, { userId, owner, repo });
+  const err = requireParams(c, { projectId, userId, owner, repo });
   if (err) return err;
 
-  const auth = await resolveGithubAuth(c, userId!);
+  const auth = await resolveGithubAuth(c, projectId!, userId!);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -825,6 +867,7 @@ export const getGithubAssignees = async (c: Context<{ Bindings: Bindings }>) => 
 
 export const postGithubMergePull = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
@@ -832,11 +875,11 @@ export const postGithubMergePull = async (c: Context<{ Bindings: Bindings }>) =>
     mergeMethod?: "merge" | "squash" | "rebase";
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo || !body.number) {
-    return c.json({ error: "userId, owner, repo, and number are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo || !body.number) {
+    return c.json({ error: "projectId, userId, owner, repo, and number are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, body.userId);
+  const auth = await resolveGithubAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -857,52 +900,55 @@ export const postGithubMergePull = async (c: Context<{ Bindings: Bindings }>) =>
 
 export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     owner?: string;
     repo?: string;
-    projectId?: string;
     githubProjectId?: string;
   } | null;
 
-  if (!body?.userId || !body.owner || !body.repo) {
-    return c.json({ error: "userId, owner, and repo are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.owner || !body.repo) {
+    return c.json({ error: "projectId, userId, owner, and repo are required" }, 400);
   }
 
   const db = useDB(c);
-  const [integration] = await db
-    .select()
-    .from(githubIntegrations)
-    .where(eq(githubIntegrations.userId, body.userId))
+  if (!(await userCanAccessProject(db, body.projectId, body.userId))) {
+    return c.json({ error: "Connect GitHub first" }, 401);
+  }
+
+  const [project] = await db
+    .select({
+      id: projects.id,
+      workspaceId: projects.workspaceId,
+      githubPat: projects.githubPat,
+      githubProjectId: projects.githubProjectId,
+      isGithubDisconnected: projects.isGithubDisconnected,
+    })
+    .from(projects)
+    .where(eq(projects.id, body.projectId))
     .limit(1);
 
-  if (!integration) {
+  if (!project) {
+    return c.json({ error: "Project not found" }, 404);
+  }
+
+  const accessToken =
+    project.githubPat && !project.isGithubDisconnected
+      ? project.githubPat
+      : c.env.GITHUB_TEST_TOKEN?.trim();
+
+  if (!accessToken) {
     return c.json({ error: "Connect GitHub first" }, 401);
   }
 
   try {
     const { owner, repo } = body;
-    const syncProject = await resolveGithubSyncProject(
-      db,
-      body.userId,
-      body.projectId,
-    );
-
-    if (!syncProject) {
-      return c.json(
-        {
-          error:
-            "No project found to sync into. Complete onboarding or create a project first.",
-        },
-        400,
-      );
-    }
-
-    const { projectId, workspaceId, resolvedFrom } = syncProject;
+    const { id: projectId, workspaceId } = project;
     await ensureTaskSyncTargets(db, projectId, workspaceId);
 
     const githubBoardProjectId = await resolveGithubBoardProjectId(
-      integration.accessToken,
-      integration,
+      accessToken,
+      { githubProjectId: project.githubProjectId },
       owner,
       repo,
       body.githubProjectId,
@@ -913,7 +959,7 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
 
     if (githubBoardProjectId) {
       const projectDetail = await fetchProjectDetail(
-        integration.accessToken,
+        accessToken,
         githubBoardProjectId,
       );
       const statusField = findStatusField(projectDetail.fields);
@@ -926,8 +972,8 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
     }
 
     const [milestones, issues] = await Promise.all([
-      fetchRepoMilestones(integration.accessToken, owner, repo),
-      fetchRepoIssues(integration.accessToken, owner, repo),
+      fetchRepoMilestones(accessToken, owner, repo),
+      fetchRepoIssues(accessToken, owner, repo),
     ]);
 
     const mergedMilestones = mergeGithubMilestones(milestones, issues);
@@ -972,20 +1018,19 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
     ]);
 
     await db
-      .update(githubIntegrations)
+      .update(projects)
       .set({
         repoOwner: owner,
         repoName: repo,
         githubProjectId: githubBoardProjectId,
       })
-      .where(eq(githubIntegrations.id, integration.id));
+      .where(eq(projects.id, projectId));
 
     return c.json({
       synced: sanitized.milestoneRows.length + sanitized.issueRows.length,
       milestones: sanitized.milestoneRows.length,
       issues: sanitized.issueRows.length,
       projectId,
-      resolvedFrom,
       githubProjectId: githubBoardProjectId,
       columns: boardColumns,
     });
@@ -996,32 +1041,33 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
 };
 
 export const postGithubPAT = async (c: Context<{ Bindings: Bindings }>) => {
-  const { userId, token } = await c.req.json<{ userId: string; token: string }>();
-  if (!userId || !token) return c.json({ error: "userId and token are required" }, 400);
+  const { projectId, userId, token } = await c.req.json<{
+    projectId: string;
+    userId: string;
+    token: string;
+  }>();
+  if (!projectId || !userId || !token) {
+    return c.json({ error: "projectId, userId, and token are required" }, 400);
+  }
+
+  const db = useDB(c);
+  if (!(await userCanAccessProject(db, projectId, userId))) {
+    return c.json({ error: "You don't have access to this project" }, 403);
+  }
 
   try {
     const githubLogin = await fetchGithubLogin(token);
-    const db = useDB(c);
 
-    const [existing] = await db
-      .select({ id: githubIntegrations.id })
-      .from(githubIntegrations)
-      .where(eq(githubIntegrations.userId, userId))
-      .limit(1);
-
-    if (existing) {
-      await db
-        .update(githubIntegrations)
-        .set({ accessToken: token, githubLogin })
-        .where(eq(githubIntegrations.id, existing.id));
-    } else {
-      await db.insert(githubIntegrations).values({
-        id: `gh-int-${nanoid(10)}`,
-        userId,
-        accessToken: token,
+    await db
+      .update(projects)
+      .set({
+        githubPat: token,
         githubLogin,
-      });
-    }
+        githubConnected: true,
+        isGithubDisconnected: false,
+        githubConnectedBy: userId,
+      })
+      .where(eq(projects.id, projectId));
 
     return c.json({ githubLogin });
   } catch (error) {
@@ -1032,12 +1078,33 @@ export const postGithubPAT = async (c: Context<{ Bindings: Bindings }>) => {
 };
 
 export const postGithubDisconnect = async (c: Context<{ Bindings: Bindings }>) => {
-  const body = (await c.req.json().catch(() => null)) as { userId?: string } | null;
-  if (!body?.userId) return c.json({ error: "userId is required" }, 400);
+  const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
+    userId?: string;
+  } | null;
+  if (!body?.projectId || !body.userId) {
+    return c.json({ error: "projectId and userId are required" }, 400);
+  }
 
   try {
     const db = useDB(c);
-    await db.delete(githubIntegrations).where(eq(githubIntegrations.userId, body.userId));
+    if (!(await userCanAccessProject(db, body.projectId, body.userId))) {
+      return c.json({ error: "You don't have access to this project" }, 403);
+    }
+
+    await db
+      .update(projects)
+      .set({
+        githubPat: null,
+        githubLogin: null,
+        repoOwner: null,
+        repoName: null,
+        githubProjectId: null,
+        githubConnectedBy: null,
+        githubConnected: false,
+        isGithubDisconnected: true,
+      })
+      .where(eq(projects.id, body.projectId));
     return c.json({ disconnected: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to disconnect";
@@ -1046,11 +1113,13 @@ export const postGithubDisconnect = async (c: Context<{ Bindings: Bindings }>) =
 };
 
 export const getGithubProjects = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
+  const { projectId, userId } = identityFromQuery(c);
   const org = c.req.query("org");
-  if (!userId) return c.json({ error: "userId is required" }, 400);
+  if (!projectId || !userId) {
+    return c.json({ error: "projectId and userId are required" }, 400);
+  }
 
-  const auth = await resolveGithubAuth(c, userId);
+  const auth = await resolveGithubAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
@@ -1066,15 +1135,17 @@ export const getGithubProjects = async (c: Context<{ Bindings: Bindings }>) => {
 };
 
 export const getGithubProjectDetail = async (c: Context<{ Bindings: Bindings }>) => {
-  const userId = c.req.query("userId");
-  const projectId = c.req.query("projectId");
-  if (!userId || !projectId) return c.json({ error: "userId and projectId are required" }, 400);
+  const { projectId, userId } = identityFromQuery(c);
+  const githubProjectId = c.req.query("githubProjectId");
+  if (!projectId || !userId || !githubProjectId) {
+    return c.json({ error: "projectId, userId, and githubProjectId are required" }, 400);
+  }
 
-  const auth = await resolveGithubAuth(c, userId);
+  const auth = await resolveGithubAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
-    const detail = await fetchProjectDetail(auth.accessToken, projectId);
+    const detail = await fetchProjectDetail(auth.accessToken, githubProjectId);
     return c.json(detail);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch project";
@@ -1084,23 +1155,26 @@ export const getGithubProjectDetail = async (c: Context<{ Bindings: Bindings }>)
 
 export const postGithubProjectItem = async (c: Context<{ Bindings: Bindings }>) => {
   const body = await c.req.json<{
-    userId: string;
     projectId: string;
+    userId: string;
+    githubProjectId: string;
     contentId?: string;
     title?: string;
     itemBody?: string;
   }>();
-  const { userId, projectId, contentId, title, itemBody } = body;
-  if (!userId || !projectId) return c.json({ error: "userId and projectId are required" }, 400);
+  const { projectId, userId, githubProjectId, contentId, title, itemBody } = body;
+  if (!projectId || !userId || !githubProjectId) {
+    return c.json({ error: "projectId, userId, and githubProjectId are required" }, 400);
+  }
   if (!contentId && !title) return c.json({ error: "contentId or title required" }, 400);
 
-  const auth = await resolveGithubAuth(c, userId);
+  const auth = await resolveGithubAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
     const itemId = contentId
-      ? await addProjectItemById(auth.accessToken, projectId, contentId)
-      : await addProjectDraftItem(auth.accessToken, projectId, title!, itemBody);
+      ? await addProjectItemById(auth.accessToken, githubProjectId, contentId)
+      : await addProjectDraftItem(auth.accessToken, githubProjectId, title!, itemBody);
     return c.json({ itemId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to add project item";
@@ -1110,22 +1184,23 @@ export const postGithubProjectItem = async (c: Context<{ Bindings: Bindings }>) 
 
 export const patchGithubProjectItem = async (c: Context<{ Bindings: Bindings }>) => {
   const body = await c.req.json<{
-    userId: string;
     projectId: string;
+    userId: string;
+    githubProjectId: string;
     itemId: string;
     fieldId: string;
     value: ProjectFieldValue;
   }>();
-  const { userId, projectId, itemId, fieldId, value } = body;
-  if (!userId || !projectId || !itemId || !fieldId || value === undefined) {
-    return c.json({ error: "userId, projectId, itemId, fieldId and value are required" }, 400);
+  const { projectId, userId, githubProjectId, itemId, fieldId, value } = body;
+  if (!projectId || !userId || !githubProjectId || !itemId || !fieldId || value === undefined) {
+    return c.json({ error: "projectId, userId, githubProjectId, itemId, fieldId and value are required" }, 400);
   }
 
-  const auth = await resolveGithubAuth(c, userId);
+  const auth = await resolveGithubAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
 
   try {
-    await updateProjectItemField(auth.accessToken, projectId, itemId, fieldId, value);
+    await updateProjectItemField(auth.accessToken, githubProjectId, itemId, fieldId, value);
     return c.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update project item";

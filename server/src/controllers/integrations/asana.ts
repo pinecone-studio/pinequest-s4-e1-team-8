@@ -1,12 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { Context } from "hono";
-import { nanoid } from "nanoid";
 import { mapAsanaTaskToTask } from "../../lib/asana/map-asana-task";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
+import { userCanAccessProject } from "../../lib/projects/project-access";
 import { ensureTaskDefaults } from "../../lib/tasks/ensure-task-defaults";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
-import { asanaIntegrations, tasks, users } from "../../schema/schema";
+import { projects, tasks } from "../../schema/schema";
 import {
   getCurrentUser,
   getProjectTasks,
@@ -18,90 +18,105 @@ import {
 
 type AsanaAuthContext = {
   accessToken: string;
-  integrationId: string;
   workspaceGid?: string | null;
   projectGid?: string | null;
   projectName?: string | null;
   asanaUserName?: string | null;
 };
 
+/**
+ * Resolves the Asana credentials stored on a PROJECT (shared by all members),
+ * refreshing the access token in place when it is close to expiry. Returns null
+ * if the requesting user is not a member, or the project has no connection
+ * (falling back to a configured test token).
+ */
 export async function resolveAsanaAuth(
   c: Context<{ Bindings: Bindings }>,
+  projectId: string,
   userId: string,
 ): Promise<AsanaAuthContext | null> {
   try {
     const db = useDB(c);
-    const [integration] = await db
-      .select()
-      .from(asanaIntegrations)
-      .where(eq(asanaIntegrations.userId, userId))
-      .limit(1);
-
-    if (!integration) {
-      const testToken = c.env.ASANA_TEST_TOKEN?.trim();
-      if (!testToken) return null;
-      return {
-        accessToken: testToken,
-        integrationId: "test",
-      };
+    if (!(await userCanAccessProject(db, projectId, userId))) {
+      return null;
     }
 
-    let accessToken = integration.accessToken;
-    const expiresAt = integration.tokenExpiresAt?.getTime() ?? 0;
+    const [project] = await db
+      .select({
+        asanaAccessToken: projects.asanaAccessToken,
+        asanaRefreshToken: projects.asanaRefreshToken,
+        asanaTokenExpiresAt: projects.asanaTokenExpiresAt,
+        asanaWorkspaceGid: projects.asanaWorkspaceGid,
+        asanaProjectGid: projects.asanaProjectGid,
+        asanaProjectName: projects.asanaProjectName,
+        asanaUserName: projects.asanaUserName,
+        isAsanaDisconnected: projects.isAsanaDisconnected,
+      })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1);
+
+    if (!project?.asanaAccessToken || project.isAsanaDisconnected) {
+      const testToken = c.env.ASANA_TEST_TOKEN?.trim();
+      if (!testToken) return null;
+      return { accessToken: testToken };
+    }
+
+    let accessToken = project.asanaAccessToken;
+    const expiresAt = project.asanaTokenExpiresAt?.getTime() ?? 0;
     const asanaClientId = c.env.ASANA_CLIENT_ID;
     const asanaClientSecret = c.env.ASANA_CLIENT_SECRET;
     const shouldRefresh =
-      Boolean(integration.refreshToken) &&
+      Boolean(project.asanaRefreshToken) &&
       Boolean(asanaClientId) &&
       Boolean(asanaClientSecret) &&
       (!expiresAt || expiresAt <= Date.now() + 5 * 60 * 1000);
 
     if (
       shouldRefresh &&
-      integration.refreshToken &&
+      project.asanaRefreshToken &&
       asanaClientId &&
       asanaClientSecret
     ) {
       const refreshed = await refreshAsanaToken(
-        integration.refreshToken,
+        project.asanaRefreshToken,
         asanaClientId,
         asanaClientSecret,
       );
 
       accessToken = refreshed.access_token;
       await db
-        .update(asanaIntegrations)
+        .update(projects)
         .set({
-          accessToken: refreshed.access_token,
-          refreshToken: refreshed.refresh_token ?? integration.refreshToken,
-          tokenExpiresAt: new Date(Date.now() + refreshed.expires_in * 1000),
+          asanaAccessToken: refreshed.access_token,
+          asanaRefreshToken: refreshed.refresh_token ?? project.asanaRefreshToken,
+          asanaTokenExpiresAt: new Date(Date.now() + refreshed.expires_in * 1000),
         })
-        .where(eq(asanaIntegrations.id, integration.id));
+        .where(eq(projects.id, projectId));
     }
 
     return {
       accessToken,
-      integrationId: integration.id,
-      workspaceGid: integration.workspaceGid,
-      projectGid: integration.projectGid,
-      projectName: integration.projectName,
-      asanaUserName: integration.asanaUserName,
+      workspaceGid: project.asanaWorkspaceGid,
+      projectGid: project.asanaProjectGid,
+      projectName: project.asanaProjectName,
+      asanaUserName: project.asanaUserName,
     };
   } catch {
     const testToken = c.env.ASANA_TEST_TOKEN?.trim();
     if (!testToken) return null;
-    return {
-      accessToken: testToken,
-      integrationId: "test",
-    };
+    return { accessToken: testToken };
   }
 }
 
 export const getAsanaStatus = async (c: Context<{ Bindings: Bindings }>) => {
+  const projectId = c.req.query("projectId");
   const userId = c.req.query("userId");
-  if (!userId) return c.json({ error: "userId is required" }, 400);
+  if (!projectId || !userId) {
+    return c.json({ error: "projectId and userId are required" }, 400);
+  }
 
-  const auth = await resolveAsanaAuth(c, userId);
+  const auth = await resolveAsanaAuth(c, projectId, userId);
   if (!auth) {
     return c.json({ connected: false });
   }
@@ -119,6 +134,7 @@ export const postAsanaOAuthComplete = async (
   c: Context<{ Bindings: Bindings }>,
 ) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     accessToken?: string;
     refreshToken?: string;
@@ -128,8 +144,13 @@ export const postAsanaOAuthComplete = async (
     asanaUserEmail?: string | null;
   } | null;
 
-  if (!body?.userId || !body.accessToken) {
-    return c.json({ error: "userId and accessToken are required" }, 400);
+  if (!body?.projectId || !body.userId || !body.accessToken) {
+    return c.json({ error: "projectId, userId, and accessToken are required" }, 400);
+  }
+
+  const db = useDB(c);
+  if (!(await userCanAccessProject(db, body.projectId, body.userId))) {
+    return c.json({ error: "You don't have access to this project" }, 403);
   }
 
   try {
@@ -152,52 +173,22 @@ export const postAsanaOAuthComplete = async (
       }
     }
 
-    const db = useDB(c);
-
-    const [existingUser] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.id, body.userId))
-      .limit(1);
-
-    if (!existingUser) {
-      await db.insert(users).values({
-        id: body.userId,
-        clerkId: `clerk_${body.userId}`,
-        email: body.asanaUserEmail ?? `${body.userId}@local.dev`,
-        name: body.asanaUserName ?? body.userId,
-      });
-    }
-
-    const [existing] = await db
-      .select({ id: asanaIntegrations.id })
-      .from(asanaIntegrations)
-      .where(eq(asanaIntegrations.userId, body.userId))
-      .limit(1);
-
-    const values = {
-      accessToken: body.accessToken,
-      refreshToken: body.refreshToken ?? null,
-      tokenExpiresAt: body.expiresIn
-        ? new Date(Date.now() + body.expiresIn * 1000)
-        : null,
-      asanaUserGid: profile.gid,
-      asanaUserName: profile.name,
-      asanaUserEmail: profile.email,
-    };
-
-    if (existing) {
-      await db
-        .update(asanaIntegrations)
-        .set(values)
-        .where(eq(asanaIntegrations.id, existing.id));
-    } else {
-      await db.insert(asanaIntegrations).values({
-        id: `asana-int-${nanoid(10)}`,
-        userId: body.userId,
-        ...values,
-      });
-    }
+    await db
+      .update(projects)
+      .set({
+        asanaAccessToken: body.accessToken,
+        asanaRefreshToken: body.refreshToken ?? null,
+        asanaTokenExpiresAt: body.expiresIn
+          ? new Date(Date.now() + body.expiresIn * 1000)
+          : null,
+        asanaUserGid: profile.gid,
+        asanaUserName: profile.name,
+        asanaUserEmail: profile.email,
+        asanaConnected: true,
+        isAsanaDisconnected: false,
+        asanaConnectedBy: body.userId,
+      })
+      .where(eq(projects.id, body.projectId));
 
     return c.json({
       asanaUserName: profile.name ?? "Asana user",
@@ -211,27 +202,51 @@ export const postAsanaOAuthComplete = async (
 };
 
 export const postAsanaDisconnect = async (c: Context<{ Bindings: Bindings }>) => {
-  const body = (await c.req.json().catch(() => null)) as { userId?: string } | null;
-  if (!body?.userId) return c.json({ error: "userId is required" }, 400);
+  const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
+    userId?: string;
+  } | null;
+  if (!body?.projectId || !body.userId) {
+    return c.json({ error: "projectId and userId are required" }, 400);
+  }
 
   try {
     const db = useDB(c);
-    const [integration] = await db
-      .select()
-      .from(asanaIntegrations)
-      .where(eq(asanaIntegrations.userId, body.userId))
+    if (!(await userCanAccessProject(db, body.projectId, body.userId))) {
+      return c.json({ error: "You don't have access to this project" }, 403);
+    }
+
+    const [project] = await db
+      .select({ asanaAccessToken: projects.asanaAccessToken })
+      .from(projects)
+      .where(eq(projects.id, body.projectId))
       .limit(1);
 
-    if (integration) {
+    if (project?.asanaAccessToken) {
       try {
-        await revokeAsanaToken(integration.accessToken);
+        await revokeAsanaToken(project.asanaAccessToken);
       } catch {
         // Token may already be invalid — still remove local record.
       }
-      await db
-        .delete(asanaIntegrations)
-        .where(eq(asanaIntegrations.userId, body.userId));
     }
+
+    await db
+      .update(projects)
+      .set({
+        asanaAccessToken: null,
+        asanaRefreshToken: null,
+        asanaTokenExpiresAt: null,
+        asanaUserGid: null,
+        asanaUserName: null,
+        asanaUserEmail: null,
+        asanaWorkspaceGid: null,
+        asanaProjectGid: null,
+        asanaProjectName: null,
+        asanaConnectedBy: null,
+        asanaConnected: false,
+        isAsanaDisconnected: true,
+      })
+      .where(eq(projects.id, body.projectId));
 
     return c.json({ disconnected: true });
   } catch (error) {
@@ -242,10 +257,13 @@ export const postAsanaDisconnect = async (c: Context<{ Bindings: Bindings }>) =>
 };
 
 export const getAsanaWorkspaces = async (c: Context<{ Bindings: Bindings }>) => {
+  const projectId = c.req.query("projectId");
   const userId = c.req.query("userId");
-  if (!userId) return c.json({ error: "userId is required" }, 400);
+  if (!projectId || !userId) {
+    return c.json({ error: "projectId and userId are required" }, 400);
+  }
 
-  const auth = await resolveAsanaAuth(c, userId);
+  const auth = await resolveAsanaAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect Asana first" }, 401);
 
   try {
@@ -259,19 +277,20 @@ export const getAsanaWorkspaces = async (c: Context<{ Bindings: Bindings }>) => 
 };
 
 export const getAsanaProjects = async (c: Context<{ Bindings: Bindings }>) => {
+  const projectId = c.req.query("projectId");
   const userId = c.req.query("userId");
   const workspaceGid = c.req.query("workspaceGid");
-  if (!userId || !workspaceGid) {
-    return c.json({ error: "userId and workspaceGid are required" }, 400);
+  if (!projectId || !userId || !workspaceGid) {
+    return c.json({ error: "projectId, userId, and workspaceGid are required" }, 400);
   }
 
-  const auth = await resolveAsanaAuth(c, userId);
+  const auth = await resolveAsanaAuth(c, projectId, userId);
   if (!auth) return c.json({ error: "Connect Asana first" }, 401);
 
   try {
-    const projects = await getProjects(auth.accessToken, workspaceGid);
+    const asanaProjects = await getProjects(auth.accessToken, workspaceGid);
     return c.json({
-      projects: projects.filter((project) => !project.archived),
+      projects: asanaProjects.filter((project) => !project.archived),
     });
   } catch (error) {
     const message =
@@ -284,51 +303,51 @@ export const postAsanaSelectProject = async (
   c: Context<{ Bindings: Bindings }>,
 ) => {
   const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
     userId?: string;
     workspaceGid?: string;
-    projectGid?: string;
-    projectName?: string;
+    asanaProjectGid?: string;
+    asanaProjectName?: string;
   } | null;
 
-  if (!body?.userId || !body.workspaceGid || !body.projectGid) {
+  if (!body?.projectId || !body.userId || !body.workspaceGid || !body.asanaProjectGid) {
     return c.json(
-      { error: "userId, workspaceGid, and projectGid are required" },
+      { error: "projectId, userId, workspaceGid, and asanaProjectGid are required" },
       400,
     );
   }
 
   const db = useDB(c);
-  const [integration] = await db
-    .select({ id: asanaIntegrations.id })
-    .from(asanaIntegrations)
-    .where(eq(asanaIntegrations.userId, body.userId))
-    .limit(1);
-
-  if (!integration) {
-    return c.json({ error: "Connect Asana first" }, 401);
+  if (!(await userCanAccessProject(db, body.projectId, body.userId))) {
+    return c.json({ error: "You don't have access to this project" }, 403);
   }
 
   await db
-    .update(asanaIntegrations)
+    .update(projects)
     .set({
-      workspaceGid: body.workspaceGid,
-      projectGid: body.projectGid,
-      projectName: body.projectName ?? null,
+      asanaWorkspaceGid: body.workspaceGid,
+      asanaProjectGid: body.asanaProjectGid,
+      asanaProjectName: body.asanaProjectName ?? null,
     })
-    .where(eq(asanaIntegrations.id, integration.id));
+    .where(eq(projects.id, body.projectId));
 
   return c.json({
     workspaceGid: body.workspaceGid,
-    projectGid: body.projectGid,
-    projectName: body.projectName ?? null,
+    projectGid: body.asanaProjectGid,
+    projectName: body.asanaProjectName ?? null,
   });
 };
 
 export const postAsanaSync = async (c: Context<{ Bindings: Bindings }>) => {
-  const body = (await c.req.json().catch(() => null)) as { userId?: string } | null;
-  if (!body?.userId) return c.json({ error: "userId is required" }, 400);
+  const body = (await c.req.json().catch(() => null)) as {
+    projectId?: string;
+    userId?: string;
+  } | null;
+  if (!body?.projectId || !body.userId) {
+    return c.json({ error: "projectId and userId are required" }, 400);
+  }
 
-  const auth = await resolveAsanaAuth(c, body.userId);
+  const auth = await resolveAsanaAuth(c, body.projectId, body.userId);
   if (!auth) return c.json({ error: "Connect Asana first" }, 401);
 
   if (!auth.projectGid) {

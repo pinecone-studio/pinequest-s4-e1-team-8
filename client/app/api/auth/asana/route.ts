@@ -40,6 +40,11 @@ export async function GET(request: Request) {
     return redirect(withQuery(safeReturnTo, "asana_error=missing_user"));
   }
 
+  const projectId = url.searchParams.get("projectId");
+  if (!projectId) {
+    return redirect(withQuery(safeReturnTo, "asana_error=missing_project"));
+  }
+
   const baseUrl = getBaseUrl(request);
   const redirectUri = `${baseUrl}/api/auth/asana/callback`;
   const state = crypto.randomUUID();
@@ -47,7 +52,7 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   cookieStore.set(
     "asana_oauth_state",
-    JSON.stringify({ state, userId, returnTo: safeReturnTo }),
+    JSON.stringify({ state, userId, projectId, returnTo: safeReturnTo }),
     {
       httpOnly: true,
       sameSite: "lax",
