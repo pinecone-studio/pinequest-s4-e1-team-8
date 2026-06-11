@@ -4,6 +4,7 @@ import { getAuthenticatedUserId } from "../../lib/auth/clerk";
 import type { Bindings, Variables } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import { userCanAccessProject } from "../../lib/projects/project-access";
+import { ensureProjectInviteToken } from "../../lib/projects/invite-token";
 import {
   projectCollaborators,
   projects,
@@ -91,10 +92,16 @@ export async function getProjectMembers(
     });
   }
 
+  const inviteToken = await ensureProjectInviteToken(
+    db,
+    projectId,
+    project.inviteToken,
+  );
+
   return c.json({
     projectId,
     projectName: project.name,
-    inviteToken: project.inviteToken,
+    inviteToken,
     members,
   });
 }

@@ -39,10 +39,10 @@ export function StepIntegrations({
     <div>
       <OnboardingStepHeading
         title="Connect your tools"
-        description="Optional — link GitHub and Asana with personal access tokens, or skip and set them up later."
+        description="Optional — connect now or set up later."
       />
 
-      <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <OnboardingGithubConnect />
         <OnboardingAsanaConnect />
       </div>

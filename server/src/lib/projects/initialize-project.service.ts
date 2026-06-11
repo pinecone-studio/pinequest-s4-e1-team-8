@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { nanoid } from "nanoid";
 import { DEFAULT_WORKSPACE_ID } from "../tasks/task-defaults";
+import { createInviteToken } from "./invite-token";
 import type { InitializeProjectPayload } from "./initialize-project.types";
 import * as schema from "../../schema/schema";
 import {
@@ -12,10 +13,6 @@ import {
 } from "../../schema/schema";
 
 type Db = DrizzleD1Database<typeof schema>;
-
-function createInviteToken() {
-  return `inv_${nanoid(16)}`;
-}
 
 async function ensureWorkspace(db: Db, workspaceId: string) {
   const [existing] = await db

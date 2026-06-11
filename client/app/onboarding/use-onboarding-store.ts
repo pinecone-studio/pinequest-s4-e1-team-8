@@ -60,6 +60,7 @@ type OnboardingStoreState = {
   onboardingSessionId: string;
   tddLayoutState: TddLayoutState | null;
   tddConfirmed: boolean;
+  inviteToken: string | null;
   step1: OnboardingStep1;
   step2: OnboardingStep2;
   step3: OnboardingStep3;
@@ -78,6 +79,7 @@ type OnboardingStoreContextValue = OnboardingStoreState & {
   setMilestoneDrafts: (milestoneDrafts: MilestoneDraft[]) => void;
   setOnboardingSessionId: (sessionId: string) => void;
   setTddLayoutState: (layout: TddLayoutState | null) => void;
+  setInviteToken: (token: string | null) => void;
   canAdvanceFromStep1: boolean;
   advanceFromStep1: () => boolean;
   advanceFromTddDiscovery: () => void;
@@ -107,7 +109,8 @@ type OnboardingStoreAction =
   | { type: "SET_MILESTONE_DRAFTS"; milestoneDrafts: MilestoneDraft[] }
   | { type: "SET_ONBOARDING_SESSION_ID"; sessionId: string }
   | { type: "SET_TDD_LAYOUT_STATE"; layout: TddLayoutState | null }
-  | { type: "SET_TDD_CONFIRMED"; confirmed: boolean };
+  | { type: "SET_TDD_CONFIRMED"; confirmed: boolean }
+  | { type: "SET_INVITE_TOKEN"; token: string | null };
 
 const INITIAL_STATE: OnboardingStoreState = {
   step: 0,
@@ -117,6 +120,7 @@ const INITIAL_STATE: OnboardingStoreState = {
   onboardingSessionId: "",
   tddLayoutState: null,
   tddConfirmed: false,
+  inviteToken: null,
   step1: {
     projectName: "",
     description: "",
@@ -157,6 +161,7 @@ function onboardingReducer(
         onboardingSessionId: action.draft.onboardingSessionId ?? "",
         tddLayoutState: action.draft.tddLayoutState ?? null,
         tddConfirmed: action.draft.tddConfirmed ?? false,
+        inviteToken: action.draft.inviteToken ?? null,
         step1: action.draft.step1,
         step2: action.draft.step2,
         step3: action.draft.step3,
@@ -257,6 +262,8 @@ function onboardingReducer(
       return { ...state, tddLayoutState: action.layout };
     case "SET_TDD_CONFIRMED":
       return { ...state, tddConfirmed: action.confirmed };
+    case "SET_INVITE_TOKEN":
+      return { ...state, inviteToken: action.token };
     default:
       return state;
   }
@@ -329,6 +336,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       onboardingSessionId: state.onboardingSessionId,
       tddLayoutState: state.tddLayoutState,
       tddConfirmed: state.tddConfirmed,
+      inviteToken: state.inviteToken,
       step1: state.step1,
       step2: state.step2,
       step3: state.step3,
@@ -380,6 +388,10 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
 
   const setTddLayoutState = useCallback((layout: TddLayoutState | null) => {
     dispatch({ type: "SET_TDD_LAYOUT_STATE", layout });
+  }, []);
+
+  const setInviteToken = useCallback((token: string | null) => {
+    dispatch({ type: "SET_INVITE_TOKEN", token });
   }, []);
 
   const setStep = useCallback((step: number) => {
@@ -445,6 +457,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       setMilestoneDrafts,
       setOnboardingSessionId,
       setTddLayoutState,
+      setInviteToken,
       canAdvanceFromStep1,
       advanceFromStep1,
       skipFromStep1,
@@ -471,6 +484,7 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       setMilestoneDrafts,
       setOnboardingSessionId,
       setTddLayoutState,
+      setInviteToken,
       canAdvanceFromStep1,
       advanceFromStep1,
       skipFromStep1,

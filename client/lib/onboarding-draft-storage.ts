@@ -27,6 +27,7 @@ export type OnboardingDraft = {
   onboardingSessionId?: string;
   tddLayoutState?: TddLayoutState | null;
   tddConfirmed?: boolean;
+  inviteToken?: string | null;
 };
 
 export function saveOnboardingDraft(draft: OnboardingDraft) {
