@@ -15,8 +15,13 @@ const manifestPath = path.join(
 const manifest = readFileSync(manifestPath, "utf8");
 let handler = readFileSync(handlerPath, "utf8");
 
+// Next emits one of two forms depending on version:
+//   getMiddlewareManifest(){return null}                                  (current)
+//   getMiddlewareManifest(){return this.minimalMode?...:require(...)}     (older)
+// Either way, inline the real manifest so middleware (Clerk auth) resolves
+// in the bundled Cloudflare worker.
 const pattern =
-  /getMiddlewareManifest\(\)\{return this\.minimalMode\?[^:]+:require\(this\.middlewareManifestPath\)\}/;
+  /getMiddlewareManifest\(\)\{return (?:null|this\.minimalMode\?[^:]+:require\(this\.middlewareManifestPath\))\}/;
 
 if (!pattern.test(handler)) {
   throw new Error("Could not find getMiddlewareManifest() patch target in handler.mjs");

@@ -86,6 +86,30 @@ const getProxyError = (body: unknown, status: number) => {
 const getTargetUrl = (baseUrl: string, path: string) =>
   new URL(path, `${baseUrl}/`).toString();
 
+const isLocalBackendUrl = (targetUrl: string) => {
+  try {
+    const hostname = new URL(targetUrl).hostname;
+
+    return hostname === "localhost" || hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+};
+
+const getProxyConnectionError = (error: unknown, targetUrl: string) => {
+  const errorMessage =
+    error instanceof Error ? error.message : "Meeting proxy failed.";
+
+  if (isLocalBackendUrl(targetUrl)) {
+    return (
+      `Local meeting backend is unavailable at ${targetUrl}. ` +
+      "Start the server Worker with `cd server && bunx wrangler dev --port 8787`, then refresh Meeting Summaries."
+    );
+  }
+
+  return errorMessage;
+};
+
 const logProxyFailure = ({
   body,
   error,
@@ -152,7 +176,11 @@ export const proxyMeetingRequest = async ({
   }
 
   return Response.json(
-    { error: (lastError as Error | null)?.message ?? "Meeting proxy failed." },
+    {
+      error: lastError
+        ? getProxyConnectionError(lastError, targetUrls.at(-1) ?? "")
+        : "Meeting proxy failed.",
+    },
     { status: 500 }
   );
 };

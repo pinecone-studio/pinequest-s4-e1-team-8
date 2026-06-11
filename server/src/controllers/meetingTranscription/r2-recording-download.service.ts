@@ -89,25 +89,43 @@ const parseR2ObjectLocation = (
   env: Bindings,
 ): R2ObjectLocation => {
   const url = new URL(recordingUrl);
-  const expectedHost = `${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  const accountHost = `${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  const bucketHost = `${env.R2_BUCKET_NAME}.${accountHost}`;
   const pathParts = url.pathname.split("/").filter(Boolean);
 
-  if (url.host !== expectedHost) {
-    throw new Error("Recording URL is not an R2 account endpoint");
+  if (url.host === accountHost) {
+    const [bucket, ...keyParts] = pathParts;
+    const key = keyParts.join("/");
+
+    if (!bucket || !key) {
+      throw new Error("Recording URL does not contain R2 bucket and key");
+    }
+
+    if (bucket !== env.R2_BUCKET_NAME) {
+      throw new Error("Recording URL bucket does not match configured R2 bucket");
+    }
+
+    return { bucket, key, url };
   }
 
-  const [bucket, ...keyParts] = pathParts;
-  const key = keyParts.join("/");
+  if (url.host === bucketHost) {
+    const key = pathParts.join("/");
 
-  if (!bucket || !key) {
-    throw new Error("Recording URL does not contain R2 bucket and key");
+    if (!key) {
+      throw new Error("Recording URL does not contain R2 object key");
+    }
+
+    return { bucket: env.R2_BUCKET_NAME, key, url };
   }
 
-  if (bucket !== env.R2_BUCKET_NAME) {
-    throw new Error("Recording URL bucket does not match configured R2 bucket");
-  }
+  console.error("[meetingTranscription] Recording URL rejected by R2 validation", {
+    database: env.D1_DATABASE_NAME ?? "unknown",
+    environment: env.ENVIRONMENT ?? "unknown",
+    expectedHosts: [accountHost, bucketHost],
+    receivedHost: url.host,
+  });
 
-  return { bucket, key, url };
+  throw new Error("Recording URL is not an R2 account endpoint");
 };
 
 const getSignedR2Headers = async ({

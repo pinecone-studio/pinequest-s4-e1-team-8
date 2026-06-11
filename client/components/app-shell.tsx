@@ -20,7 +20,9 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
     pathname.startsWith("/onboarding/") ||
     pathname.startsWith("/invite/");
   const scrollableMain =
-    pathname === "/tasks" || pathname.startsWith("/tasks/");
+    pathname === "/tasks" ||
+    pathname.startsWith("/tasks/") ||
+    pathname === "/meeting-summaries";
 
   return (
     <MeetingChannelPresenceProvider>
@@ -32,7 +34,7 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
           <main
             className={
               scrollableMain
-                ? "flex min-w-0 flex-1 flex-col overflow-y-auto"
+                ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
                 : "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             }
           >

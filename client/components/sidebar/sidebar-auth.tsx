@@ -1,5 +1,6 @@
 "use client";
 
+import { ProjectSwitcher } from "@/components/sidebar/project-switcher";
 import { useSidebar } from "@/components/sidebar/sidebar-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,7 @@ export function SidebarAuth() {
             },
           }}
         />
+        {!collapsed ? <ProjectSwitcher /> : null}
       </Show>
     </div>
   );
