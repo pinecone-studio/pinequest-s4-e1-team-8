@@ -57,6 +57,7 @@ export async function fetchRepoIssues(
 
 export type GithubRepo = {
   id: number;
+  node_id: string;
   full_name: string;
   name: string;
   owner: { login: string };
@@ -91,6 +92,17 @@ export type GithubCreatedIssue = {
   title: string;
   html_url: string;
   state: string;
+  node_id: string;
+};
+
+export type GithubCreatedRepo = {
+  id: number;
+  name: string;
+  full_name: string;
+  owner: { login: string };
+  default_branch: string;
+  private: boolean;
+  node_id: string;
 };
 
 export type GithubCreatedPull = {
@@ -536,6 +548,7 @@ export async function createGithubIssue(
   repo: string,
   title: string,
   body: string,
+  options?: { milestone?: number },
 ): Promise<GithubCreatedIssue> {
   return githubJson<GithubCreatedIssue>(
     accessToken,
@@ -543,9 +556,30 @@ export async function createGithubIssue(
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, body }),
+      body: JSON.stringify({
+        title,
+        body,
+        ...(options?.milestone ? { milestone: options.milestone } : {}),
+      }),
     },
   );
+}
+
+export async function createGithubRepo(
+  accessToken: string,
+  name: string,
+  options?: { private?: boolean; description?: string },
+): Promise<GithubCreatedRepo> {
+  return githubJson<GithubCreatedRepo>(accessToken, "/user/repos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: name.trim(),
+      private: options?.private ?? true,
+      description: options?.description?.trim() || undefined,
+      auto_init: true,
+    }),
+  });
 }
 
 export async function createGithubPull(

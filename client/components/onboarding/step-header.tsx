@@ -1,7 +1,13 @@
 import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
-const STEPS = ["Project Setup", "Planning", "Invite Team", "Integrations"];
+const STEPS = [
+  "Profile Setup",
+  "AI Discovery & TDD",
+  "Milestone Generation",
+  "Invite Team",
+  "Integrations",
+];
 
 interface StepHeaderProps {
   step: number;
@@ -23,7 +29,7 @@ export function StepHeader({ step, onBack }: StepHeaderProps) {
       ) : null}
       <div className="mb-3.5 flex items-center justify-between">
         <span className="whitespace-nowrap text-[13px] font-semibold tracking-[0.2px] text-violet-700 dark:text-violet-400">
-          STEP {step + 1} OF 4
+          STEP {step + 1} OF 5
         </span>
         <span className="text-[13px] text-foreground">{STEPS[step]}</span>
       </div>

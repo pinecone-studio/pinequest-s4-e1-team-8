@@ -31,8 +31,9 @@ for (const envFile of [".env.local", ".env"]) {
   }
 }
 const apiUrl =
+  process.env.API_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
-  "https://server-preset.danny-otgontsetseg.workers.dev";
+  "http://localhost:8787";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -62,6 +63,18 @@ const nextConfig: NextConfig = {
       {
         source: "/api/backend/onboarding/scoping",
         destination: `${apiUrl}/api/onboarding/scoping`,
+      },
+      {
+        source: "/api/backend/onboarding/chat",
+        destination: `${apiUrl}/api/onboarding/chat`,
+      },
+      {
+        source: "/api/backend/onboarding/refine-selection",
+        destination: `${apiUrl}/api/onboarding/refine-selection`,
+      },
+      {
+        source: "/api/backend/onboarding/sessions/:path*",
+        destination: `${apiUrl}/api/onboarding/sessions/:path*`,
       },
     ];
   },

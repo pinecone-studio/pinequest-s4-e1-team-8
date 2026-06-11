@@ -1,5 +1,6 @@
 "use client";
 
+import type { ContextualSuggestion } from "@/lib/onboarding/tdd-types";
 import { cn } from "@/lib/utils";
 import { ArrowUp, Loader2, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
@@ -11,6 +12,9 @@ type ScopingPromptBarProps = {
   disabled?: boolean;
   isLoading?: boolean;
   placeholder?: string;
+  contextualSuggestions?: ContextualSuggestion[];
+  onInjectSuggestion?: (text: string) => void;
+  helperText?: string;
 };
 
 export function ScopingPromptBar({
@@ -20,8 +24,12 @@ export function ScopingPromptBar({
   disabled = false,
   isLoading = false,
   placeholder = "Describe your goals, timeline, and team…",
+  contextualSuggestions = [],
+  onInjectSuggestion,
+  helperText,
 }: ScopingPromptBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const suggestionIndexRef = useRef(0);
 
   const resize = useCallback(() => {
     const textarea = textareaRef.current;
@@ -36,10 +44,43 @@ export function ScopingPromptBar({
     resize();
   }, [resize, value]);
 
+  useEffect(() => {
+    suggestionIndexRef.current = 0;
+  }, [contextualSuggestions]);
+
+  const injectSuggestion = useCallback(
+    (text: string) => {
+      if (onInjectSuggestion) {
+        onInjectSuggestion(text);
+      } else {
+        onChange(text);
+      }
+      textareaRef.current?.focus();
+      resize();
+    },
+    [onChange, onInjectSuggestion, resize],
+  );
+
   const canSubmit = value.trim().length > 0 && !disabled && !isLoading;
 
   return (
     <div className="shrink-0 pt-2">
+      {contextualSuggestions.length > 0 ? (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {contextualSuggestions.map((suggestion, index) => (
+            <button
+              key={`${suggestion.display_label}-${index}`}
+              type="button"
+              disabled={disabled || isLoading}
+              onClick={() => injectSuggestion(suggestion.text_to_inject)}
+              className="rounded-full border border-violet-400/40 bg-violet-100 px-3 py-1 text-[12px] font-medium text-violet-800 transition-colors hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/20"
+            >
+              {suggestion.display_label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <div
         className={cn(
           "flex items-end gap-2 rounded-[28px] border border-border/70 bg-secondary/70 px-3 py-2",
@@ -53,6 +94,22 @@ export function ScopingPromptBar({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {
+            if (
+              event.key === "Tab" &&
+              contextualSuggestions.length > 0 &&
+              !event.shiftKey
+            ) {
+              event.preventDefault();
+              const suggestion =
+                contextualSuggestions[suggestionIndexRef.current] ??
+                contextualSuggestions[0];
+              if (suggestion) {
+                injectSuggestion(suggestion.text_to_inject);
+                suggestionIndexRef.current =
+                  (suggestionIndexRef.current + 1) % contextualSuggestions.length;
+              }
+              return;
+            }
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
               if (canSubmit) {
@@ -79,7 +136,10 @@ export function ScopingPromptBar({
         </button>
       </div>
       <p className="mt-2 text-center text-[11px] text-muted-foreground">
-        Brisk AI drafts milestones — review and edit before continuing.
+        {helperText ??
+          (contextualSuggestions.length > 0
+            ? "Click a chip or press Tab to inject a suggestion into the input."
+            : "Brisk AI drafts milestones — review and edit before continuing.")}
       </p>
     </div>
   );

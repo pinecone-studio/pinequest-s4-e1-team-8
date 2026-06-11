@@ -322,6 +322,60 @@ export type ProjectFieldValue =
   | { singleSelectOptionId: string }
   | { iterationId: string };
 
+export async function fetchViewerOwnerId(token: string): Promise<{ id: string; login: string }> {
+  const data = await githubGraphQL<{
+    viewer: { id: string; login: string };
+  }>(token, `query { viewer { id login } }`);
+  return data.viewer;
+}
+
+export async function createProjectV2(
+  token: string,
+  ownerId: string,
+  title: string,
+): Promise<GithubProject> {
+  const data = await githubGraphQL<{
+    createProjectV2: {
+      projectV2: {
+        id: string;
+        number: number;
+        title: string;
+        url: string;
+        closed: boolean;
+        shortDescription: string | null;
+      };
+    };
+  }>(
+    token,
+    `mutation($ownerId: ID!, $title: String!) {
+      createProjectV2(input: { ownerId: $ownerId, title: $title }) {
+        projectV2 { id number title url closed shortDescription }
+      }
+    }`,
+    { ownerId, title },
+  );
+
+  const project = data.createProjectV2.projectV2;
+  const ownerLogin = (await fetchViewerOwnerId(token)).login;
+  return { ...project, owner: ownerLogin };
+}
+
+export async function linkProjectToRepository(
+  token: string,
+  projectId: string,
+  repositoryId: string,
+): Promise<void> {
+  await githubGraphQL<unknown>(
+    token,
+    `mutation($projectId: ID!, $repositoryId: ID!) {
+      linkProjectV2ToRepository(input: { projectId: $projectId, repositoryId: $repositoryId }) {
+        repository { id }
+      }
+    }`,
+    { projectId, repositoryId },
+  );
+}
+
 export async function updateProjectItemField(
   token: string,
   projectId: string,

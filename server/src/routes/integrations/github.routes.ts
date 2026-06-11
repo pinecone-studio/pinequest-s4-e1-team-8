@@ -33,6 +33,11 @@ import {
   patchGithubProjectItem,
   postGithubPAT,
   postGithubDisconnect,
+  postGithubOAuthComplete,
+  patchGithubSettings,
+  postGithubRepo,
+  postGithubProject,
+  postGithubExportMilestones,
 } from "../../controllers/integrations/github";
 import { Bindings } from "../../lib/common/types";
 
@@ -67,7 +72,12 @@ githubRoutes.patch("/pulls", patchGithubPull);
 githubRoutes.post("/sync", postGithubSync);
 
 githubRoutes.post("/pat", postGithubPAT);
+githubRoutes.post("/oauth/complete", postGithubOAuthComplete);
 githubRoutes.post("/disconnect", postGithubDisconnect);
+githubRoutes.patch("/settings", patchGithubSettings);
+githubRoutes.post("/repos/create", postGithubRepo);
+githubRoutes.post("/projects/create", postGithubProject);
+githubRoutes.post("/export-milestones", postGithubExportMilestones);
 githubRoutes.get("/projects", getGithubProjects);
 githubRoutes.get("/projects/detail", getGithubProjectDetail);
 githubRoutes.post("/projects/items", postGithubProjectItem);

@@ -1,3 +1,4 @@
+import type { TddLayoutState } from "@/lib/onboarding/tdd-types";
 import type { TeamRole } from "@/components/onboarding/onboarding-types";
 import type { MilestoneDraft } from "@/lib/onboarding/parse-milestone-drafts";
 
@@ -23,6 +24,9 @@ export type OnboardingDraft = {
     isAsanaDisconnected: boolean;
   };
   step4: { milestoneDrafts: MilestoneDraft[] };
+  onboardingSessionId?: string;
+  tddLayoutState?: TddLayoutState | null;
+  tddConfirmed?: boolean;
 };
 
 export function saveOnboardingDraft(draft: OnboardingDraft) {

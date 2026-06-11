@@ -25,6 +25,7 @@ export type GithubRepoOption = {
   name: string;
   defaultBranch: string;
   private: boolean;
+  nodeId?: string | null;
 };
 
 export type GithubPullItem = {
@@ -126,11 +127,76 @@ export function getGithubRepo(): { owner: string; repo: string } | null {
   return owner && repo ? { owner, repo } : null;
 }
 
+export function getGithubConnectUrl(returnTo = "/onboarding/step2"): string {
+  const params = new URLSearchParams({
+    userId: uid(),
+    returnTo,
+  });
+  return `/api/auth/github?${params.toString()}`;
+}
+
 export async function connectGithubPAT(token: string): Promise<{ githubLogin: string }> {
   const { data } = await clientApi.post<{ githubLogin: string }>("/integrations/github/pat", {
     userId: uid(),
     token,
   });
+  return data;
+}
+
+export async function saveGithubSettings(settings: {
+  repoOwner?: string;
+  repoName?: string;
+  githubProjectId?: string | null;
+}): Promise<void> {
+  await clientApi.patch("/integrations/github/settings", {
+    userId: uid(),
+    ...settings,
+  });
+}
+
+export async function createGithubRepo(params: {
+  name: string;
+  description?: string;
+  private?: boolean;
+}): Promise<GithubRepoOption> {
+  const { data } = await clientApi.post<{ repo: GithubRepoOption & { nodeId?: string } }>(
+    "/integrations/github/repos/create",
+    { userId: uid(), ...params },
+  );
+  return {
+    ...data.repo,
+    nodeId: data.repo.nodeId ?? null,
+  };
+}
+
+export async function createGithubProject(params: {
+  title: string;
+  repoNodeId?: string;
+}): Promise<GithubProject> {
+  const { data } = await clientApi.post<{ project: GithubProject }>(
+    "/integrations/github/projects/create",
+    { userId: uid(), ...params },
+  );
+  return data.project;
+}
+
+export type GithubMilestoneExportResult = {
+  milestonesCreated: number;
+  issuesCreated: number;
+  projectItemsAdded: number;
+  issues: Array<{ number: number; title: string; html_url: string; milestoneTitle: string }>;
+};
+
+export async function exportGithubMilestones(params: {
+  owner?: string;
+  repo?: string;
+  githubProjectId?: string;
+  milestones: Array<{ title: string; tasks: string[] }>;
+}): Promise<GithubMilestoneExportResult> {
+  const { data } = await clientApi.post<GithubMilestoneExportResult>(
+    "/integrations/github/export-milestones",
+    { userId: uid(), ...params },
+  );
   return data;
 }
 

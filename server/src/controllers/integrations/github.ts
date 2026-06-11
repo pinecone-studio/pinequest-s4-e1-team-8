@@ -4,18 +4,23 @@ import { nanoid } from "nanoid";
 import { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import { runD1Statements } from "../../lib/db/d1-batch";
+import { exportMilestonesToGithubProject } from "../../lib/github/export-milestones";
 import {
   addProjectDraftItem,
   addProjectItemById,
+  createProjectV2,
   fetchOrgProjects,
   fetchProjectDetail,
   fetchUserProjects,
+  fetchViewerOwnerId,
+  linkProjectToRepository,
   updateProjectItemField,
   type ProjectFieldValue,
 } from "../../lib/github/projects";
 import {
   createGithubIssue,
   createGithubPull,
+  createGithubRepo,
   createIssueComment,
   createPullReview,
   fetchCompareDiff,
@@ -182,6 +187,7 @@ export const getGithubRepos = async (c: Context<{ Bindings: Bindings }>) => {
         name: r.name,
         defaultBranch: r.default_branch,
         private: r.private,
+        nodeId: (r as { node_id?: string }).node_id ?? null,
       })),
     });
   } catch (error) {
@@ -991,6 +997,261 @@ export const postGithubSync = async (c: Context<{ Bindings: Bindings }>) => {
     });
   } catch (error) {
     const message = formatSyncError(error);
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const postGithubOAuthComplete = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    userId?: string;
+    accessToken?: string;
+  } | null;
+
+  if (!body?.userId || !body.accessToken?.trim()) {
+    return c.json({ error: "userId and accessToken are required" }, 400);
+  }
+
+  try {
+    const token = body.accessToken.trim();
+    const githubLogin = await fetchGithubLogin(token);
+    const db = useDB(c);
+
+    const [existing] = await db
+      .select({ id: githubIntegrations.id })
+      .from(githubIntegrations)
+      .where(eq(githubIntegrations.userId, body.userId))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(githubIntegrations)
+        .set({ accessToken: token, githubLogin })
+        .where(eq(githubIntegrations.id, existing.id));
+    } else {
+      await db.insert(githubIntegrations).values({
+        id: `gh-int-${nanoid(10)}`,
+        userId: body.userId,
+        accessToken: token,
+        githubLogin,
+      });
+    }
+
+    return c.json({ githubLogin });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid token or GitHub API error";
+    return c.json({ error: message }, 400);
+  }
+};
+
+export const patchGithubSettings = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    userId?: string;
+    repoOwner?: string;
+    repoName?: string;
+    githubProjectId?: string | null;
+  } | null;
+
+  if (!body?.userId) {
+    return c.json({ error: "userId is required" }, 400);
+  }
+
+  const auth = await resolveGithubAuth(c, body.userId);
+  if (!auth?.integrationId) {
+    return c.json({ error: "Connect GitHub first" }, 401);
+  }
+
+  const repoOwner = body.repoOwner?.trim() || null;
+  const repoName = body.repoName?.trim() || null;
+  const githubProjectId =
+    body.githubProjectId === null
+      ? null
+      : body.githubProjectId?.trim() || undefined;
+
+  try {
+    const db = useDB(c);
+    await db
+      .update(githubIntegrations)
+      .set({
+        ...(repoOwner !== null ? { repoOwner } : {}),
+        ...(repoName !== null ? { repoName } : {}),
+        ...(githubProjectId !== undefined ? { githubProjectId } : {}),
+      })
+      .where(eq(githubIntegrations.id, auth.integrationId));
+
+    return c.json({
+      repoOwner,
+      repoName,
+      githubProjectId: githubProjectId ?? null,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to save settings";
+    return c.json({ error: message }, 500);
+  }
+};
+
+export const postGithubRepo = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    userId?: string;
+    name?: string;
+    description?: string;
+    private?: boolean;
+  } | null;
+
+  if (!body?.userId || !body.name?.trim()) {
+    return c.json({ error: "userId and name are required" }, 400);
+  }
+
+  const auth = await resolveGithubAuth(c, body.userId);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const repo = await createGithubRepo(auth.accessToken, body.name.trim(), {
+      description: body.description,
+      private: body.private,
+    });
+
+    if (auth.integrationId) {
+      const db = useDB(c);
+      await db
+        .update(githubIntegrations)
+        .set({ repoOwner: repo.owner.login, repoName: repo.name })
+        .where(eq(githubIntegrations.id, auth.integrationId));
+    }
+
+    return c.json({
+      repo: {
+        fullName: repo.full_name,
+        owner: repo.owner.login,
+        name: repo.name,
+        defaultBranch: repo.default_branch,
+        private: repo.private,
+        nodeId: repo.node_id,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create repository";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const postGithubProject = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    userId?: string;
+    title?: string;
+    repoNodeId?: string;
+  } | null;
+
+  if (!body?.userId || !body.title?.trim()) {
+    return c.json({ error: "userId and title are required" }, 400);
+  }
+
+  const auth = await resolveGithubAuth(c, body.userId);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  try {
+    const viewer = await fetchViewerOwnerId(auth.accessToken);
+    const project = await createProjectV2(auth.accessToken, viewer.id, body.title.trim());
+
+    if (body.repoNodeId?.trim()) {
+      await linkProjectToRepository(auth.accessToken, project.id, body.repoNodeId.trim());
+    }
+
+    if (auth.integrationId) {
+      const db = useDB(c);
+      await db
+        .update(githubIntegrations)
+        .set({ githubProjectId: project.id })
+        .where(eq(githubIntegrations.id, auth.integrationId));
+    }
+
+    return c.json({ project });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create project";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const postGithubExportMilestones = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    userId?: string;
+    owner?: string;
+    repo?: string;
+    githubProjectId?: string;
+    milestones?: Array<{ title?: string; tasks?: string[] }>;
+  } | null;
+
+  if (!body?.userId) {
+    return c.json({ error: "userId is required" }, 400);
+  }
+
+  const auth = await resolveGithubAuth(c, body.userId);
+  if (!auth) return c.json({ error: "Connect GitHub first" }, 401);
+
+  const owner = body.owner?.trim() || auth.repoOwner?.trim();
+  const repo = body.repo?.trim() || auth.repoName?.trim();
+
+  let projectId = body.githubProjectId?.trim();
+  if (!projectId) {
+    try {
+      const db = useDB(c);
+      const [integration] = await db
+        .select({ githubProjectId: githubIntegrations.githubProjectId })
+        .from(githubIntegrations)
+        .where(eq(githubIntegrations.userId, body.userId))
+        .limit(1);
+      projectId = integration?.githubProjectId ?? undefined;
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!owner || !repo) {
+    return c.json({ error: "Select a GitHub repository first." }, 400);
+  }
+  if (!projectId) {
+    return c.json({ error: "Select a GitHub project first." }, 400);
+  }
+
+  const milestones = Array.isArray(body.milestones)
+    ? body.milestones
+        .map((milestone) => ({
+          title: typeof milestone.title === "string" ? milestone.title : "",
+          tasks: Array.isArray(milestone.tasks)
+            ? milestone.tasks.filter((task): task is string => typeof task === "string")
+            : [],
+        }))
+        .filter((milestone) => milestone.title.trim())
+    : [];
+
+  if (milestones.length === 0) {
+    return c.json({ error: "No milestones to export." }, 400);
+  }
+
+  try {
+    const result = await exportMilestonesToGithubProject(
+      auth.accessToken,
+      owner,
+      repo,
+      projectId,
+      milestones,
+    );
+
+    if (auth.integrationId) {
+      const db = useDB(c);
+      await db
+        .update(githubIntegrations)
+        .set({
+          repoOwner: owner,
+          repoName: repo,
+          githubProjectId: projectId,
+        })
+        .where(eq(githubIntegrations.id, auth.integrationId));
+    }
+
+    return c.json(result);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to export milestones";
     return c.json({ error: message }, 502);
   }
 };

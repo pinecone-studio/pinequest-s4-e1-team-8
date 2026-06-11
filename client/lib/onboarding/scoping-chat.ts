@@ -28,6 +28,7 @@ export type ScopingTurnParams = {
   projectName: string;
   description: string;
   messages: ScopingChatMessage[];
+  tddContext?: string;
 };
 
 function getScopingTurnUrl(): string {

@@ -13,6 +13,8 @@ const devVarsPath = path.join(serverRoot, ".dev.vars");
 const DEFAULT_SECRETS = [
   "GEMINI_API_KEY",
   "GROQ_API_KEY",
+  "GROQ_GENERATIVE_API_KEY",
+  "GROQ_MEETING_API_KEY",
   "CLERK_SECRET_KEY",
 ];
 
@@ -52,7 +54,7 @@ for (const name of secretNames) {
   }
 
   console.log(`Updating remote secret ${name}...`);
-  const result = spawnSync("bunx", ["wrangler", "secret", "put", name], {
+  const result = spawnSync("bunx", ["wrangler", "secret", "put", name, "--env", ""], {
     cwd: serverRoot,
     input: value,
     stdio: ["pipe", "inherit", "inherit"],

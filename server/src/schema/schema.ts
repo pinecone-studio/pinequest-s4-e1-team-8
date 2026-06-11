@@ -11,6 +11,7 @@ export * from "./ai.model";
 export * from "./analytics-metric.model";
 export * from "./report-snapshot.model";
 export * from "./project-risk.model";
+export * from "./onboarding-session.model";
 export * from "./meetingTranscription/meeting-transcription.schema";
 export { syncMappings, syncMappingsRelations } from "../db/schema";
 export type { SyncMapping, NewSyncMapping } from "../db/schema";

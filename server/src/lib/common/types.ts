@@ -11,6 +11,8 @@ export interface Bindings {
   CHIMEGE_API_KEY: string;
   CHIMEGE_BASE_URL?: string;
   GROQ_API_KEY?: string;
+  GROQ_GENERATIVE_API_KEY?: string;
+  GROQ_MEETING_API_KEY?: string;
   GROQ_MODEL?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
@@ -32,6 +34,7 @@ export interface Bindings {
   R2_BUCKET_NAME: string;
   FRONTEND_URL?: string;
   GEMINI_API_KEY?: string;
+  ENCRYPTION_KEY?: string;
 }
 
 export interface Variables {

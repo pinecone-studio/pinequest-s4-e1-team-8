@@ -5,7 +5,7 @@ import { ScopingCanvas } from "@/components/onboarding/scoping-canvas";
 import { ArrowRight } from "lucide-react";
 
 export function StepPlanning() {
-  const { step4, advanceFromPlanning } = useOnboardingStore();
+  const { step4, advanceFromPlanning, tddConfirmed } = useOnboardingStore();
   const hasMilestones = step4.milestoneDrafts.length > 0;
   const hasApprovedMilestone = step4.milestoneDrafts.some((draft) => draft.isApproved);
 
@@ -13,20 +13,22 @@ export function StepPlanning() {
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto]">
       <div className="text-center">
         <h2 className="text-[19px] font-semibold tracking-[-0.4px] text-foreground">
-          Plan your project
+          Core milestone generation
         </h2>
         <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-          {hasMilestones
-            ? "Review milestones and approve at least one to continue."
-            : "Choose how you want to build your plan."}
+          {tddConfirmed
+            ? hasMilestones
+              ? "Review milestones derived from your TDD and approve at least one to continue."
+              : "Generate milestones from your finalized TDD or add them manually."
+            : "Complete the TDD canvas first to unlock milestone generation."}
         </p>
       </div>
 
       <div className="mt-4 min-h-0 overflow-hidden">
-        <ScopingCanvas />
+        <ScopingCanvas disabled={!tddConfirmed} seedFromTdd />
       </div>
 
-      {hasMilestones ? (
+      {hasMilestones && tddConfirmed ? (
         <div className="mt-4 flex shrink-0 items-center border-t border-border pt-4">
           <button
             type="button"

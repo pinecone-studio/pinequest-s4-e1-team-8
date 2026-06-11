@@ -108,6 +108,7 @@ export function StepIntegrations({
   const {
     step3,
     setAsanaConnected,
+    setGithubConnected,
     skipStep3,
     setStep,
   } = useOnboardingStore();
@@ -128,23 +129,44 @@ export function StepIntegrations({
   }, [setAsanaConnected, userReady, userId]);
 
   useEffect(() => {
-    const connected = searchParams.get("asana_connected");
-    const error = searchParams.get("asana_error");
+    const asanaConnected = searchParams.get("asana_connected");
+    const asanaError = searchParams.get("asana_error");
+    const githubConnected = searchParams.get("github_connected");
+    const githubError = searchParams.get("github_error");
 
-    if (connected === "1") {
+    if (asanaConnected === "1") {
       setAsanaConnected(true);
       setAsanaMessage("Asana connected successfully.");
-      setStep(3);
+      setStep(4);
       window.history.replaceState({}, "", "/onboarding/step2");
       return;
     }
 
-    if (error) {
-      setAsanaMessage(asanaErrorMessage(error));
-      setStep(3);
+    if (asanaError) {
+      setAsanaMessage(asanaErrorMessage(asanaError));
+      setStep(4);
+      window.history.replaceState({}, "", "/onboarding/step2");
+      return;
+    }
+
+    if (githubConnected === "1") {
+      setGithubConnected(true);
+      setAsanaMessage("GitHub connected successfully. Choose a repository and project below.");
+      setStep(4);
+      window.history.replaceState({}, "", "/onboarding/step2");
+      return;
+    }
+
+    if (githubError) {
+      setAsanaMessage(
+        githubError === "not_configured"
+          ? "GitHub OAuth is not configured — use a personal access token instead."
+          : `GitHub connection failed (${githubError}).`,
+      );
+      setStep(4);
       window.history.replaceState({}, "", "/onboarding/step2");
     }
-  }, [searchParams, setAsanaConnected, setStep]);
+  }, [searchParams, setAsanaConnected, setGithubConnected, setStep]);
 
   const handleAsanaConnect = () => {
     if (step3.asanaConnected || !userReady) return;

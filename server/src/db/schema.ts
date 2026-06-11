@@ -9,6 +9,9 @@ export const users = sqliteTable("users", {
   avatarUrl: text("avatar_url"),
   encryptedGithubToken: text("encrypted_github_token"),
   encryptedAsanaToken: text("encrypted_asana_token"),
+  encryptedGoogleAccessToken: text("encrypted_google_access_token"),
+  encryptedGoogleRefreshToken: text("encrypted_google_refresh_token"),
+  googleTokenExpiry: integer("google_token_expiry"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

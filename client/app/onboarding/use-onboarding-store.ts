@@ -2,6 +2,7 @@
 
 import type { OnboardingData } from "@/components/onboarding/onboarding-types";
 import type { MilestoneDraft } from "@/lib/onboarding/parse-milestone-drafts";
+import type { TddLayoutState } from "@/lib/onboarding/tdd-types";
 import { createProjectId } from "@/lib/onboarding-utils";
 import { DEFAULT_WORKSPACE_ID } from "@/lib/workspace-defaults";
 
@@ -56,6 +57,9 @@ type OnboardingStoreState = {
   projectId: string;
   workspaceId: string;
   aiGoals: string;
+  onboardingSessionId: string;
+  tddLayoutState: TddLayoutState | null;
+  tddConfirmed: boolean;
   step1: OnboardingStep1;
   step2: OnboardingStep2;
   step3: OnboardingStep3;
@@ -72,8 +76,11 @@ type OnboardingStoreContextValue = OnboardingStoreState & {
   setAsanaConnected: (connected: boolean) => void;
   setAiGoals: (aiGoals: string) => void;
   setMilestoneDrafts: (milestoneDrafts: MilestoneDraft[]) => void;
+  setOnboardingSessionId: (sessionId: string) => void;
+  setTddLayoutState: (layout: TddLayoutState | null) => void;
   canAdvanceFromStep1: boolean;
   advanceFromStep1: () => boolean;
+  advanceFromTddDiscovery: () => void;
   advanceFromPlanning: () => void;
   advanceFromStep2: () => void;
   skipStep3: () => void;
@@ -95,13 +102,19 @@ type OnboardingStoreAction =
   | { type: "SET_ASANA_CONNECTED"; connected: boolean }
   | { type: "SKIP_STEP3" }
   | { type: "SET_AI_GOALS"; aiGoals: string }
-  | { type: "SET_MILESTONE_DRAFTS"; milestoneDrafts: MilestoneDraft[] };
+  | { type: "SET_MILESTONE_DRAFTS"; milestoneDrafts: MilestoneDraft[] }
+  | { type: "SET_ONBOARDING_SESSION_ID"; sessionId: string }
+  | { type: "SET_TDD_LAYOUT_STATE"; layout: TddLayoutState | null }
+  | { type: "SET_TDD_CONFIRMED"; confirmed: boolean };
 
 const INITIAL_STATE: OnboardingStoreState = {
   step: 0,
   projectId: createProjectId(),
   workspaceId: DEFAULT_WORKSPACE_ID,
   aiGoals: "",
+  onboardingSessionId: "",
+  tddLayoutState: null,
+  tddConfirmed: false,
   step1: {
     projectName: "",
     description: "",
@@ -139,6 +152,9 @@ function onboardingReducer(
         projectId: action.draft.projectId,
         workspaceId: action.draft.workspaceId,
         aiGoals: action.draft.aiGoals,
+        onboardingSessionId: action.draft.onboardingSessionId ?? "",
+        tddLayoutState: action.draft.tddLayoutState ?? null,
+        tddConfirmed: action.draft.tddConfirmed ?? false,
         step1: action.draft.step1,
         step2: action.draft.step2,
         step3: action.draft.step3,
@@ -215,7 +231,7 @@ function onboardingReducer(
     case "SKIP_STEP3":
       return {
         ...state,
-        step: 3,
+        step: 4,
         step3: {
           ...state.step3,
           isGithubDisconnected: state.step3.githubConnected
@@ -233,6 +249,12 @@ function onboardingReducer(
         ...state,
         step4: { milestoneDrafts: action.milestoneDrafts },
       };
+    case "SET_ONBOARDING_SESSION_ID":
+      return { ...state, onboardingSessionId: action.sessionId };
+    case "SET_TDD_LAYOUT_STATE":
+      return { ...state, tddLayoutState: action.layout };
+    case "SET_TDD_CONFIRMED":
+      return { ...state, tddConfirmed: action.confirmed };
     default:
       return state;
   }
@@ -302,6 +324,9 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       projectId: state.projectId,
       workspaceId: state.workspaceId,
       aiGoals: state.aiGoals,
+      onboardingSessionId: state.onboardingSessionId,
+      tddLayoutState: state.tddLayoutState,
+      tddConfirmed: state.tddConfirmed,
       step1: state.step1,
       step2: state.step2,
       step3: state.step3,
@@ -347,6 +372,14 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_MILESTONE_DRAFTS", milestoneDrafts });
   }, []);
 
+  const setOnboardingSessionId = useCallback((sessionId: string) => {
+    dispatch({ type: "SET_ONBOARDING_SESSION_ID", sessionId });
+  }, []);
+
+  const setTddLayoutState = useCallback((layout: TddLayoutState | null) => {
+    dispatch({ type: "SET_TDD_LAYOUT_STATE", layout });
+  }, []);
+
   const setStep = useCallback((step: number) => {
     dispatch({ type: "SET_STEP", step });
   }, []);
@@ -359,12 +392,17 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
     return true;
   }, [state.step1.projectName]);
 
-  const advanceFromPlanning = useCallback(() => {
+  const advanceFromTddDiscovery = useCallback(() => {
+    dispatch({ type: "SET_TDD_CONFIRMED", confirmed: true });
     dispatch({ type: "SET_STEP", step: 2 });
   }, []);
 
-  const advanceFromStep2 = useCallback(() => {
+  const advanceFromPlanning = useCallback(() => {
     dispatch({ type: "SET_STEP", step: 3 });
+  }, []);
+
+  const advanceFromStep2 = useCallback(() => {
+    dispatch({ type: "SET_STEP", step: 4 });
   }, []);
 
   const skipStep3 = useCallback(() => {
@@ -389,8 +427,11 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       setAsanaConnected,
       setAiGoals,
       setMilestoneDrafts,
+      setOnboardingSessionId,
+      setTddLayoutState,
       canAdvanceFromStep1,
       advanceFromStep1,
+      advanceFromTddDiscovery,
       advanceFromPlanning,
       advanceFromStep2,
       skipStep3,
@@ -410,8 +451,11 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       setAsanaConnected,
       setAiGoals,
       setMilestoneDrafts,
+      setOnboardingSessionId,
+      setTddLayoutState,
       canAdvanceFromStep1,
       advanceFromStep1,
+      advanceFromTddDiscovery,
       advanceFromPlanning,
       advanceFromStep2,
       skipStep3,

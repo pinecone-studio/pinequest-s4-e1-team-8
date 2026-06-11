@@ -59,11 +59,13 @@ function createManualMilestone(index = 0): MilestoneDraft {
 
 type ScopingCanvasProps = {
   onStreamComplete?: () => void;
+  disabled?: boolean;
+  seedFromTdd?: boolean;
 };
 
-export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
+export function ScopingCanvas({ onStreamComplete, disabled = false, seedFromTdd = false }: ScopingCanvasProps) {
   const { getToken } = useAuth();
-  const { step1, setMilestoneDrafts, step4 } = useOnboardingStore();
+  const { step1, setMilestoneDrafts, step4, tddLayoutState } = useOnboardingStore();
   const [mode, setMode] = useState<PlanningMode>(
     step4.milestoneDrafts.length > 0 ? "manual" : "choose",
   );
@@ -159,6 +161,17 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
     [updateDrafts],
   );
 
+  const buildTddContext = useCallback((): string | undefined => {
+    if (!seedFromTdd || !tddLayoutState) {
+      return undefined;
+    }
+    const content = tddLayoutState.blocks
+      .map((block) => `## ${block.title}\n${block.content}`)
+      .join("\n\n")
+      .trim();
+    return content || undefined;
+  }, [seedFromTdd, tddLayoutState]);
+
   const runScopingTurn = useCallback(
     async (history: ChatMessage[]) => {
       abortRef.current?.abort();
@@ -179,6 +192,7 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
             projectName: step1.projectName,
             description: step1.description,
             messages,
+            tddContext: buildTddContext(),
           },
           () => getToken({ skipCache: true }),
           controller.signal,
@@ -220,7 +234,14 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
         abortRef.current = null;
       }
     },
-    [getToken, onStreamComplete, setMilestoneDrafts, step1.description, step1.projectName],
+    [
+      buildTddContext,
+      getToken,
+      onStreamComplete,
+      setMilestoneDrafts,
+      step1.description,
+      step1.projectName,
+    ],
   );
 
   useEffect(() => {
@@ -249,17 +270,24 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
   );
 
   const handleMakeWithAi = () => {
+    if (disabled) {
+      return;
+    }
     setMode("ai");
     setError(null);
-    const seed = [step1.description.trim(), step1.projectName.trim()]
-      .filter(Boolean)
-      .join(" — ");
-    if (seed && !inputValue.trim()) {
-      setInputValue(seed);
+    if (!inputValue.trim()) {
+      setInputValue(
+        seedFromTdd && tddLayoutState
+          ? "Generate milestones from my finalized TDD."
+          : "Help me draft milestones for this project.",
+      );
     }
   };
 
   const handleAddManually = () => {
+    if (disabled) {
+      return;
+    }
     setMode("manual");
     setMilestoneDrafts([createManualMilestone()]);
   };
@@ -314,14 +342,17 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
             <div className="space-y-1.5">
               <p className="text-sm font-medium text-foreground">How would you like to plan?</p>
               <p className="text-[13px] text-muted-foreground">
-                Let Brisk draft milestones from a prompt, or build them yourself.
+                {disabled
+                  ? "Confirm your TDD document in the previous step to unlock milestone generation."
+                  : "Let Brisk draft milestones from your TDD, or build them yourself."}
               </p>
             </div>
             <div className="flex w-full max-w-xs flex-col gap-2.5 sm:max-w-sm">
               <button
                 type="button"
                 onClick={handleMakeWithAi}
-                className="flex h-11 items-center justify-center gap-2 rounded-full border border-violet-500/30 bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
+                disabled={disabled}
+                className="flex h-11 items-center justify-center gap-2 rounded-full border border-violet-500/30 bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Sparkles className="size-4" />
                 Make it with AI
@@ -329,7 +360,8 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
               <button
                 type="button"
                 onClick={handleAddManually}
-                className="flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+                disabled={disabled}
+                className="flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <PenLine className="size-4" />
                 Add manually
@@ -400,7 +432,7 @@ export function ScopingCanvas({ onStreamComplete }: ScopingCanvasProps) {
         </p>
       ) : null}
 
-      {!hasMilestones && mode === "ai" ? (
+      {!hasMilestones && mode === "ai" && !disabled ? (
         <ScopingPromptBar
           value={inputValue}
           onChange={setInputValue}

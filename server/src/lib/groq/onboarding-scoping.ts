@@ -1,18 +1,5 @@
 import type { Bindings } from "../common/types";
-
-const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-
-function resolveGroqModel(bindings: Bindings): string {
-  return bindings.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
-}
-
-type GroqResponse = {
-  choices?: Array<{
-    message?: { content?: string };
-  }>;
-  error?: { message?: string };
-};
+import { generateGeminiJson, parseJsonFromGeminiText } from "../gemini/gemini-client";
 
 export type ScopingChatMessage = {
   role: "user" | "assistant";
@@ -39,36 +26,77 @@ export type ScopingFinalResult = {
 export type ScopingResult = ScopingClarificationResult | ScopingFinalResult;
 
 const MAX_CLARIFICATION_ROUNDS = 2;
+const MAX_TDD_CONTEXT_CHARS = 24_000;
 
 const SCOPING_SYSTEM_PROMPT =
   "You are a senior product strategist helping a founder scope a new software project through a short " +
   "conversational interview. Always reply with strict JSON only — no markdown, no commentary, no code fences.";
 
+function truncateTddContext(tddContext: string): string {
+  const trimmed = tddContext.trim();
+  if (trimmed.length <= MAX_TDD_CONTEXT_CHARS) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, MAX_TDD_CONTEXT_CHARS)}\n\n[Document truncated for length.]`;
+}
+
 function buildScopingPrompt(
   projectName: string,
   description: string,
   messages: ScopingChatMessage[],
+  tddContext?: string,
 ): string {
   const assistantTurns = messages.filter((message) => message.role === "assistant").length;
-  const mustFinalize = assistantTurns >= MAX_CLARIFICATION_ROUNDS;
+  const hasTddContext = Boolean(tddContext?.trim());
+  const mustFinalize = hasTddContext || assistantTurns >= MAX_CLARIFICATION_ROUNDS;
 
   const transcript = messages
     .map((message) => `${message.role === "user" ? "Founder" : "You"}: ${message.content}`)
     .join("\n");
 
-  return [
+  const sections = [
     `Project title: ${projectName || "Untitled project"}`,
     `Project idea: ${description || "No description provided yet."}`,
+  ];
+
+  if (hasTddContext) {
+    sections.push(
+      "Finalized TDD document (derive milestones directly from the features and test cases below):",
+      truncateTddContext(tddContext!),
+    );
+  }
+
+  sections.push(
     transcript ? `Conversation so far:\n${transcript}` : "Conversation so far: (none yet)",
-    mustFinalize
-      ? "You have already asked enough clarifying questions. You MUST finalize now (isClarification: false) using reasonable assumptions for anything still unclear."
-      : `You may ask up to ${MAX_CLARIFICATION_ROUNDS - assistantTurns} more clarifying question(s) if genuinely needed, or finalize now if you already have enough information.`,
+    hasTddContext
+      ? "A finalized TDD is provided. You MUST finalize now (isClarification: false) and produce 3-5 milestones that map to the TDD scope. Do not ask clarifying questions."
+      : mustFinalize
+        ? "You have already asked enough clarifying questions. You MUST finalize now (isClarification: false) using reasonable assumptions for anything still unclear."
+        : `You may ask up to ${MAX_CLARIFICATION_ROUNDS - assistantTurns} more clarifying question(s) if genuinely needed, or finalize now if you already have enough information.`,
     "Respond with ONLY a JSON object, no markdown fences, matching exactly one of these shapes:",
     '{"isClarification": true, "message": "<one short clarifying question>", "suggestions": ["<short answer option>", "..."]}',
     "OR",
     '{"isClarification": false, "message": "<one short summary sentence>", "milestones": [{"title": "<milestone title>", "tasks": ["<task>", "..."]}]}',
     'Rules: "suggestions" must contain 2-4 short example answers (max ~6 words each). "milestones" must contain 3-5 items, each with 2-5 concrete, actionable tasks.',
-  ].join("\n\n");
+  );
+
+  return sections.join("\n\n");
+}
+
+function coerceBoolean(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") {
+      return true;
+    }
+    if (normalized === "false") {
+      return false;
+    }
+  }
+  return undefined;
 }
 
 function normalizeStringArray(value: unknown, max: number): string[] {
@@ -108,8 +136,9 @@ function normalizeScopingResult(raw: unknown): ScopingResult {
 
   const record = raw as Record<string, unknown>;
   const message = typeof record.message === "string" ? record.message.trim() : "";
+  const isClarification = coerceBoolean(record.isClarification);
 
-  if (record.isClarification === false) {
+  if (isClarification === false) {
     const milestones = normalizeMilestones(record.milestones);
     if (milestones.length === 0) {
       throw new Error("Groq scoping response did not include any milestones.");
@@ -128,46 +157,43 @@ function normalizeScopingResult(raw: unknown): ScopingResult {
   };
 }
 
+function parseScopingResponse(text: string): ScopingResult {
+  let parsed: unknown;
+  try {
+    parsed = parseJsonFromGeminiText(text);
+  } catch {
+    throw new Error("Scoping response was not valid JSON.");
+  }
+
+  return normalizeScopingResult(parsed);
+}
+
 export async function generateScopingTurn(
   bindings: Bindings,
   projectName: string,
   description: string,
   messages: ScopingChatMessage[],
+  tddContext?: string,
 ): Promise<ScopingResult> {
-  const apiKey = bindings.GROQ_API_KEY;
-  if (!apiKey) {
-    throw new Error("Groq API key is not configured");
-  }
+  const userPrompt = buildScopingPrompt(projectName, description, messages, tddContext);
 
-  const response = await fetch(GROQ_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: resolveGroqModel(bindings),
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SCOPING_SYSTEM_PROMPT },
-        { role: "user", content: buildScopingPrompt(projectName, description, messages) },
-      ],
-    }),
-  });
+  const requestScoping = (prompt: string) =>
+    generateGeminiJson(bindings, {
+      systemPrompt: SCOPING_SYSTEM_PROMPT,
+      userPrompt: prompt,
+    });
 
-  const data = (await response.json()) as GroqResponse;
-  const text = data.choices?.[0]?.message?.content?.trim();
-
-  if (!response.ok || !text) {
-    throw new Error(data.error?.message ?? "Groq request failed");
-  }
-
-  let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error("Groq scoping response was not valid JSON.");
+    const text = await requestScoping(userPrompt);
+    return parseScopingResponse(text);
+  } catch (firstError) {
+    const text = await requestScoping(
+      `${userPrompt}\n\nIMPORTANT: Your previous reply was not valid JSON. Return ONLY a single JSON object matching one of the required shapes.`,
+    );
+    try {
+      return parseScopingResponse(text);
+    } catch {
+      throw firstError;
+    }
   }
-
-  return normalizeScopingResult(parsed);
 }

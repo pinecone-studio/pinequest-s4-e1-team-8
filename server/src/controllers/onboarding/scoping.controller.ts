@@ -11,6 +11,7 @@ type ScopingRequestBody = {
   projectName?: unknown;
   description?: unknown;
   messages?: unknown;
+  tddContext?: unknown;
 };
 
 function isScopingChatMessage(value: unknown): value is ScopingChatMessage {
@@ -37,16 +38,23 @@ export const postScopingTurn = async (c: Context<HonoEnv>) => {
 
   const projectName = typeof raw.projectName === "string" ? raw.projectName.trim() : "";
   const description = typeof raw.description === "string" ? raw.description.trim() : "";
+  const tddContext = typeof raw.tddContext === "string" ? raw.tddContext.trim() : "";
   const messages = Array.isArray(raw.messages)
     ? raw.messages.filter(isScopingChatMessage)
     : [];
 
-  if (!projectName || !description) {
-    return c.json({ error: "projectName and description are required." }, 400);
+  if (!projectName || (!description && !tddContext)) {
+    return c.json({ error: "projectName and description (or tddContext) are required." }, 400);
   }
 
   try {
-    const result = await generateScopingTurn(c.env, projectName, description, messages);
+    const result = await generateScopingTurn(
+      c.env,
+      projectName,
+      description,
+      messages,
+      tddContext || undefined,
+    );
     return c.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Scoping request failed.";

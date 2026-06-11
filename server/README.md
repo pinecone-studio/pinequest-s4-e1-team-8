@@ -78,7 +78,7 @@ If LiveKit shows `EGRESS_COMPLETE` but remote D1 has no matching `egress_id`, th
 
 ### AI secrets (Gemini / Groq)
 
-Local keys live in `server/.dev.vars`. Production reads the same names as **Cloudflare Worker secrets** (`GEMINI_API_KEY`, `GROQ_API_KEY`). Deploying code does not update secrets — after rotating a key or fixing a leaked key, sync from `.dev.vars`:
+Local keys live in `server/.dev.vars`. Production reads the same names as **Cloudflare Worker secrets** (`GEMINI_API_KEY` for onboarding AI, `GROQ_MEETING_API_KEY` for meeting summaries; legacy `GROQ_API_KEY` / `GROQ_GENERATIVE_API_KEY` are optional). Deploying code does not update secrets — after rotating a key or fixing a leaked key, sync from `.dev.vars`:
 
 ```bash
 cd server
