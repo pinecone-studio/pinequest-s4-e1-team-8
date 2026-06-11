@@ -5,7 +5,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const clientRoot = path.dirname(fileURLToPath(import.meta.url));
-const monorepoRoot = path.resolve(clientRoot, "..");
 const requireFromClient = createRequire(path.join(clientRoot, "package.json"));
 
 // Use .env.local for OpenNext/Wrangler local dev — client has no .dev.vars file.
@@ -36,9 +35,12 @@ const apiUrl =
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  outputFileTracingRoot: monorepoRoot,
+  // Both must point at the client app (Next 16 requires them to match). The
+  // monorepo root has no node_modules, so rooting there breaks resolution of
+  // tailwindcss, next, etc. — they all live in client/node_modules.
+  outputFileTracingRoot: clientRoot,
   turbopack: {
-    root: monorepoRoot,
+    root: clientRoot,
     resolveAlias: {
       tailwindcss: path.join(clientRoot, "node_modules/tailwindcss"),
       "tw-animate-css": path.join(clientRoot, "node_modules/tw-animate-css"),

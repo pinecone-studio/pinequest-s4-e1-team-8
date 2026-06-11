@@ -265,12 +265,17 @@ export function WorkflowContent() {
       if (parts.length !== 2) return;
       const [owner, repo] = parts;
 
-      const branchList = await fetchGithubBranches(owner, repo);
-      setBranches(branchList);
       setBaseBranch(defaultBranch);
-      setHeadBranch(branchList.find((b) => b !== defaultBranch) ?? branchList[0] ?? "");
 
-      await Promise.all([loadPulls(owner, repo, filter), loadIssues(owner, repo)]);
+      // Branches are only needed for the New PR form, so don't let them gate the
+      // PR/issue feed — fetch all three in parallel instead of in a waterfall.
+      const [branchList] = await Promise.all([
+        fetchGithubBranches(owner, repo),
+        loadPulls(owner, repo, filter),
+        loadIssues(owner, repo),
+      ]);
+      setBranches(branchList);
+      setHeadBranch(branchList.find((b) => b !== defaultBranch) ?? branchList[0] ?? "");
     },
     [loadPulls, loadIssues],
   );
@@ -279,8 +284,14 @@ export function WorkflowContent() {
   // status effect and the in-page PAT connect (which has no page reload to
   // re-run the effect).
   const loadConnectedData = useCallback(
-    async (saved?: { repoOwner?: string | null; repoName?: string | null }) => {
-      const repoList = await fetchGithubRepos();
+    async (
+      saved?: { repoOwner?: string | null; repoName?: string | null },
+      prefetchedRepos?: GithubRepoOption[],
+    ) => {
+      const repoList =
+        prefetchedRepos && prefetchedRepos.length > 0
+          ? prefetchedRepos
+          : await fetchGithubRepos();
       setRepos(repoList);
 
       const envRepo = getGithubRepo();
@@ -495,6 +506,11 @@ export function WorkflowContent() {
       setViewMode("create");
       setPrFilter("open");
       try {
+        // Status and the repo list are independent — start both up front so the
+        // repos request overlaps the status request instead of waterfalling.
+        const reposPromise = fetchGithubRepos().catch(
+          () => [] as GithubRepoOption[],
+        );
         const status = await fetchGithubStatus();
         if (cancelled) return;
 
@@ -503,7 +519,7 @@ export function WorkflowContent() {
 
         if (!status.connected) return;
 
-        await loadConnectedData(status);
+        await loadConnectedData(status, await reposPromise);
       } catch (err) {
         if (!cancelled) setError(extractApiError(err, "Failed to load GitHub data"));
       } finally {
