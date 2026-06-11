@@ -4,6 +4,8 @@ import { workspaces } from "./workspace.model";
 import { subTeams } from "./sub-team.model";
 import { tasks } from "./task.model";
 import { projectCollaborators } from "./project-collaborator.model";
+import { inviteTokens } from "./invite-token.model";
+import { milestones } from "./milestone.model";
 import { users } from "./user.model";
 
 export const projects = sqliteTable("projects", {
@@ -49,6 +51,8 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   subTeams: many(subTeams),
   tasks: many(tasks),
   collaborators: many(projectCollaborators),
+  inviteTokens: many(inviteTokens),
+  milestones: many(milestones),
 }));
 
 export type Project = typeof projects.$inferSelect;

@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=true bun --bun next dev --webpack",
-    "build": "next build --webpack",
+    "build": "NODE_OPTIONS='--max-old-space-size=8192' next build --webpack",
     "start": "bun --bun next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "build:cf": "next build --webpack && node scripts/fix-standalone-deps.mjs",
+    "build:cf": "NODE_OPTIONS='--max-old-space-size=8192' next build --webpack && node scripts/fix-standalone-deps.mjs",
     "preview": "bun run build:cf && opennextjs-cloudflare build --skipNextBuild && node scripts/patch-handler-middleware.mjs && opennextjs-cloudflare preview",
     "deploy": "node scripts/deploy-production.mjs",
     "deploy:prod": "node scripts/deploy-production.mjs",

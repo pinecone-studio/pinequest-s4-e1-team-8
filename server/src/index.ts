@@ -17,6 +17,7 @@ import onboardingScopingRoutes from "./routes/onboarding/scoping.routes";
 import onboardingChatRoutes from "./routes/onboarding/chat.routes";
 import onboardingRefineRoutes from "./routes/onboarding/refine.routes";
 import onboardingSessionRoutes from "./routes/onboarding/session.routes";
+import createLeanProjectRoutes from "./routes/projects/create-lean";
 import initializeProjectRoutes from "./routes/projects/initialize";
 import projectRoutes from "./routes/projects/project.routes";
 import reportStreamRoutes from "./routes/reports/stream";
@@ -82,6 +83,7 @@ app.route("/api/onboarding/chat", onboardingChatRoutes);
 app.route("/api/onboarding/refine-selection", onboardingRefineRoutes);
 app.route("/api/onboarding/sessions", onboardingSessionRoutes);
 app.route("/api/projects/initialize", initializeProjectRoutes);
+app.route("/api/projects/create-lean", createLeanProjectRoutes);
 app.route("/api/reports/stream", reportStreamRoutes);
 app.route("/api/tasks", reorderRoutes);
 

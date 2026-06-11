@@ -2,7 +2,8 @@ import type { Context } from "hono";
 import { eq } from "drizzle-orm";
 import type { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
-import { projects, users } from "../../schema/schema";
+import { resolveProjectByInviteToken } from "../../lib/projects/resolve-invite-token";
+import { users } from "../../schema/schema";
 
 export async function getInvitePreview(c: Context<{ Bindings: Bindings }>) {
   const token = c.req.param("token");
@@ -11,11 +12,7 @@ export async function getInvitePreview(c: Context<{ Bindings: Bindings }>) {
   }
   const db = useDB(c);
 
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.inviteToken, token))
-    .limit(1);
+  const project = await resolveProjectByInviteToken(db, token);
 
   if (!project) {
     return c.json({ error: "Invite not found or expired" }, 404);

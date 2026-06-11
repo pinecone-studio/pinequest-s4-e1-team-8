@@ -5,11 +5,8 @@ import { getAuthenticatedUserId } from "../../lib/auth/clerk";
 import type { Bindings, Variables } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import { userCanAccessProject } from "../../lib/projects/project-access";
-import {
-  projectCollaborators,
-  projects,
-  users,
-} from "../../schema/schema";
+import { resolveProjectByInviteToken } from "../../lib/projects/resolve-invite-token";
+import { projectCollaborators, users } from "../../schema/schema";
 
 export async function postAcceptInvite(
   c: Context<{ Bindings: Bindings; Variables: Variables }>,
@@ -25,11 +22,7 @@ export async function postAcceptInvite(
   }
   const db = useDB(c);
 
-  const [project] = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.inviteToken, token))
-    .limit(1);
+  const project = await resolveProjectByInviteToken(db, token);
 
   if (!project) {
     return c.json({ error: "Invite not found or expired" }, 404);

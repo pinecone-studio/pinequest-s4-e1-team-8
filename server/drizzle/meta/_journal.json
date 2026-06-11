@@ -127,6 +127,20 @@
       "when": 1781600000000,
       "tag": "0016_github_board_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1781167441013,
+      "tag": "0018_mixed_centennial",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1781700000000,
+      "tag": "0019_create_lean_tables",
+      "breakpoints": true
     }
   ]
 }
