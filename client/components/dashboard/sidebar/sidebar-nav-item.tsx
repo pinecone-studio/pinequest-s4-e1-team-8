@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import type { sidebarNavItems } from "@/lib/dashboard/data";
+import { cn } from "@/lib/utils";
 import {
   CalendarDays,
   Inbox,

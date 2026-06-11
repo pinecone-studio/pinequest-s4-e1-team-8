@@ -1,47 +1,30 @@
 "use client";
 
-import { MeetingChannelPresenceProvider } from "@/app/meeting/components/meeting-channel-presence-provider";
-import { MeetingSessionProvider } from "@/app/meeting/components/meeting-session-provider";
-import { DashboardSidebar } from "@/components/sidebar/sidebar";
-import { UserSync } from "@/components/user-sync";
-import { useClientApiAuth } from "@/lib/api/auth-interceptor";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 
-const AuthSetup = () => {
-  useClientApiAuth();
-  return null;
-};
+const DashboardAppShell = dynamic(
+  () =>
+    import("@/components/dashboard-app-shell").then((m) => m.DashboardAppShell),
+  { ssr: false },
+);
+
+const AUTH_ROUTES = new Set(["/login", "/onboarding"]);
+
+function isAuthRoute(pathname: string) {
+  return (
+    AUTH_ROUTES.has(pathname) ||
+    pathname.startsWith("/onboarding/") ||
+    pathname.startsWith("/invite/")
+  );
+}
 
 export const AppShell = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
-  const hideSidebar =
-    pathname === "/login" ||
-    pathname === "/onboarding" ||
-    pathname.startsWith("/onboarding/") ||
-    pathname.startsWith("/invite/");
-  const scrollableMain =
-    pathname === "/tasks" ||
-    pathname.startsWith("/tasks/") ||
-    pathname === "/meeting-summaries";
 
-  return (
-    <MeetingChannelPresenceProvider>
-      <MeetingSessionProvider>
-        <div className="flex h-screen overflow-hidden bg-background">
-          <AuthSetup />
-          <UserSync />
-          {hideSidebar ? null : <DashboardSidebar />}
-          <main
-            className={
-              scrollableMain
-                ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
-                : "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-            }
-          >
-            {children}
-          </main>
-        </div>
-      </MeetingSessionProvider>
-    </MeetingChannelPresenceProvider>
-  );
+  if (isAuthRoute(pathname)) {
+    return <>{children}</>;
+  }
+
+  return <DashboardAppShell>{children}</DashboardAppShell>;
 };

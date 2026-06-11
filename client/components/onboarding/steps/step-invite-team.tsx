@@ -4,30 +4,35 @@ import {
   useOnboardingStore,
   type CollaboratorRole,
 } from "@/app/onboarding/use-onboarding-store";
-import { useState, type FormEvent } from "react";
-import { Plus, Trash2, ArrowRight } from "lucide-react";
+import {
+  OnboardingStepActions,
+  OnboardingStepHeading,
+  onboardingInputClassName,
+  onboardingSelectClassName,
+} from "@/components/onboarding/onboarding-layout";
+import { cn } from "@/lib/utils";
+import { Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 
 const ROLES: CollaboratorRole[] = ["Manager", "Developer", "Designer"];
 
-const AV_COLORS = [
-  "#6366F1", "#0EA5E9", "#22C55E", "#F59E0B", "#EC4899",
-  "#8B5CF6", "#14B8A6", "#F43F5E", "#0F172A", "#64748B",
-];
+type InviteRow = {
+  id: string;
+  email: string;
+  role: CollaboratorRole;
+};
 
-const inputClassName =
-  "rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20";
-
-function avColor(name: string) {
-  let hash = 0;
-  for (let index = 0; index < name.length; index++) {
-    hash = (hash * 31 + name.charCodeAt(index)) % AV_COLORS.length;
-  }
-  return AV_COLORS[hash];
+function createRow(partial?: Partial<InviteRow>): InviteRow {
+  return {
+    id: crypto.randomUUID(),
+    email: "",
+    role: "Developer",
+    ...partial,
+  };
 }
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+function isValidEmail(value: string) {
+  return /\S+@\S+\.\S+/.test(value.trim());
 }
 
 function collaboratorDisplayName(email: string) {
@@ -37,168 +42,169 @@ function collaboratorDisplayName(email: string) {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function roleBadgeStyle(role: CollaboratorRole) {
-  if (role === "Manager") {
-    return { bg: "rgba(124,58,237,0.18)", color: "#c4b5fd" };
-  }
-  if (role === "Developer") {
-    return { bg: "rgba(34,197,94,0.15)", color: "#86efac" };
-  }
-  return { bg: "rgba(14,165,233,0.15)", color: "#7dd3fc" };
-}
-
 export function StepInviteTeam() {
-  const {
-    step2,
-    addCollaborator,
-    removeCollaborator,
-    advanceFromStep2,
-    setStep,
-  } = useOnboardingStore();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<CollaboratorRole>("Developer");
+  const { step2, addCollaborator, removeCollaborator, advanceFromStep2 } =
+    useOnboardingStore();
 
-  const canAdd = /\S+@\S+\.\S+/.test(email);
+  const [rows, setRows] = useState<InviteRow[]>(() => [
+    createRow(),
+    createRow(),
+    createRow(),
+  ]);
 
-  const handleAdd = () => {
-    if (!canAdd) {
-      return;
-    }
-    addCollaborator({ email, role });
-    setEmail("");
-    setRole("Developer");
+  const existingEmails = useMemo(
+    () => new Set(step2.collaborators.map((entry) => entry.email.toLowerCase())),
+    [step2.collaborators],
+  );
+
+  const updateRow = (id: string, patch: Partial<InviteRow>) => {
+    setRows((current) =>
+      current.map((row) => (row.id === id ? { ...row, ...patch } : row)),
+    );
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (canAdd) {
-      handleAdd();
-      return;
+  const addRow = () => {
+    setRows((current) => [...current, createRow()]);
+  };
+
+  const removeRow = (id: string) => {
+    setRows((current) => {
+      const next = current.filter((row) => row.id !== id);
+      return next.length > 0 ? next : [createRow()];
+    });
+  };
+
+  const syncInvitesAndContinue = () => {
+    const pending = rows.filter(
+      (row) =>
+        isValidEmail(row.email) &&
+        !existingEmails.has(row.email.trim().toLowerCase()),
+    );
+
+    for (const row of pending) {
+      addCollaborator({ email: row.email.trim(), role: row.role });
     }
+
     advanceFromStep2();
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-6">
-        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-foreground">
-          Invite your team
-        </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-foreground">
-          Add teammates by email and assign their role. They&apos;ll get an invite link.
-        </p>
-      </div>
+    <div>
+      <OnboardingStepHeading
+        title="Invite your team"
+        description="Add teammates by email and assign their role. They'll get an invite link."
+      />
 
-      <div className="mb-4 flex gap-2">
-        <input
-          className={`${inputClassName} h-11 flex-1 px-3.5`}
-          placeholder="name@company.com"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-        <div className="relative w-[130px] flex-none">
-          <select
-            className={`${inputClassName} h-11 w-full cursor-pointer appearance-none pl-3.5 pr-8`}
-            value={role}
-            onChange={(event) => setRole(event.target.value as CollaboratorRole)}
-          >
-            {ROLES.map((entry) => (
-              <option key={entry} className="bg-card text-foreground">
-                {entry}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2"
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-          >
-            <path
-              d="M2.5 4.5L6 8l3.5-3.5"
-              stroke="#8e8e93"
-              strokeWidth="1.5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+      <div className="space-y-3">
+        {rows.map((row, index) => (
+          <div key={row.id} className="flex items-center gap-2">
+            <input
+              className={cn(onboardingInputClassName, "min-w-0 flex-1")}
+              placeholder="Teammate's email"
+              value={row.email}
+              onChange={(event) => updateRow(row.id, { email: event.target.value })}
+              autoFocus={index === 0}
             />
-          </svg>
-        </div>
+            <div className="relative w-[132px] shrink-0">
+              <select
+                className={cn(
+                  onboardingSelectClassName,
+                  "w-full cursor-pointer appearance-none pr-8",
+                )}
+                value={row.role}
+                onChange={(event) =>
+                  updateRow(row.id, { role: event.target.value as CollaboratorRole })
+                }
+              >
+                {ROLES.map((entry) => (
+                  <option key={entry} value={entry} className="bg-card">
+                    {entry}
+                  </option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground"
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                aria-hidden
+              >
+                <path
+                  d="M2.5 4.5L6 8l3.5-3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            {rows.length > 1 ? (
+              <button
+                type="button"
+                aria-label="Remove invite row"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                onClick={() => removeRow(row.id)}
+              >
+                <Trash2 className="size-4" />
+              </button>
+            ) : (
+              <div className="size-10 shrink-0" />
+            )}
+          </div>
+        ))}
+
         <button
           type="button"
-          className="flex h-11 flex-none items-center gap-1.5 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45"
-          disabled={!canAdd}
-          onClick={handleAdd}
+          onClick={addRow}
+          className="inline-flex items-center gap-1.5 text-sm text-[#6d8ef7] transition-colors hover:text-[#8aa6ff]"
         >
-          <Plus size={16} />
-          Add
+          <Plus className="size-4" />
+          Add another teammate
         </button>
       </div>
 
-      <div className="min-h-24">
-        {step2.collaborators.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[13.5px] text-foreground/80">
-            No members added yet — invite your first teammate above.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {step2.collaborators.map((collaborator, index) => {
-              const displayName = collaboratorDisplayName(collaborator.email);
-              const { bg, color } = roleBadgeStyle(collaborator.role);
-              return (
-                <div
-                  key={`${collaborator.email}-${index}`}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-secondary px-3 py-2.5"
-                >
-                  <div
-                    className="grid h-[34px] w-[34px] flex-none place-items-center rounded-full text-[13px] font-semibold text-white select-none"
-                    style={{ background: avColor(displayName) }}
-                  >
-                    {initials(displayName)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13.5px] font-semibold text-foreground">
-                      {displayName}
-                    </div>
-                    <div className="truncate text-[12.5px] text-foreground/80">
-                      {collaborator.email}
-                    </div>
-                  </div>
-                  <span
-                    className="inline-flex h-6 flex-none items-center rounded-lg px-2.5 text-xs font-medium"
-                    style={{ background: bg, color }}
-                  >
-                    {collaborator.role}
-                  </span>
-                  <button
-                    className="p-1 text-muted-foreground transition-colors hover:text-red-400"
-                    onClick={() => removeCollaborator(index)}
-                  >
-                    <Trash2 size={17} />
-                  </button>
+      {step2.collaborators.length > 0 ? (
+        <div className="mt-8 space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Added to project
+          </p>
+          <div className="space-y-2">
+            {step2.collaborators.map((collaborator, index) => (
+              <div
+                key={`${collaborator.email}-${index}`}
+                className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {collaboratorDisplayName(collaborator.email)}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {collaborator.email}
+                  </p>
                 </div>
-              );
-            })}
+                <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground/90">
+                  {collaborator.role}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Remove teammate"
+                  className="text-muted-foreground transition-colors hover:text-red-400"
+                  onClick={() => removeCollaborator(index)}
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      ) : null}
 
-      <div className="mt-7 flex items-center">
-        <button
-          type="submit"
-          className="flex h-11 min-w-[150px] items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
-        >
-          Continue
-          <ArrowRight size={17} />
-        </button>
-        <button
-          type="button"
-          className="ml-auto px-1.5 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-violet-800 dark:hover:text-violet-400"
-          onClick={() => setStep(3)}
-        >
-          Skip for now
-        </button>
-      </div>
-    </form>
+      <OnboardingStepActions
+        onContinue={syncInvitesAndContinue}
+        onSkip={advanceFromStep2}
+        skipLabel="Continue without invites"
+      />
+    </div>
   );
 }

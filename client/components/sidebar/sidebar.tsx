@@ -1,7 +1,6 @@
 "use client";
 
 import { ActiveMeetingReturnCard } from "@/app/meeting/components/active-meeting-return-card";
-import { SidebarAddProject } from "@/components/sidebar/sidebar-add-project";
 import { SidebarAuth } from "@/components/sidebar/sidebar-auth";
 import { MobileSidebarTrigger } from "@/components/sidebar/mobile-sidebar-trigger";
 import { SidebarCollapseTrigger } from "@/components/sidebar/sidebar-collapse-trigger";
@@ -75,12 +74,6 @@ const DashboardSidebarInner = () => {
       >
         <ActiveMeetingReturnCard />
 
-        {!collapsed && (
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Onboarding
-          </p>
-        )}
-
         <div
           className={cn(
             "rounded-2xl bg-sidebar-accent",
@@ -114,7 +107,6 @@ const DashboardSidebarInner = () => {
         </div>
 
         <SidebarThemeToggle />
-        <SidebarAddProject />
       </div>
     </aside>
     </>

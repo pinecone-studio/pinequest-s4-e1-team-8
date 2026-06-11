@@ -1,6 +1,11 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
+import {
+  OnboardingChoiceCard,
+  onboardingAccentChipClassName,
+  onboardingAccentTextClassName,
+} from "@/components/onboarding/onboarding-layout";
 import { MilestoneDraftRow } from "@/components/onboarding/milestone-draft-row";
 import { ScopingPromptBar } from "@/components/onboarding/scoping-prompt-bar";
 import type { MilestoneDraft } from "@/lib/onboarding/parse-milestone-drafts";
@@ -18,7 +23,7 @@ function StreamCursor() {
   return (
     <span
       aria-hidden
-      className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-px animate-pulse rounded-full bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.8)]"
+      className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-px animate-pulse rounded-full bg-[#7c3aed] shadow-[0_0_8px_rgba(124,58,237,0.55)]"
     />
   );
 }
@@ -331,48 +336,38 @@ export function ScopingCanvas({ onStreamComplete, disabled = false, seedFromTdd 
             <button
               type="button"
               onClick={handleAddMilestone}
-              className="inline-flex items-center gap-1.5 self-start rounded-full border border-dashed border-border px-3 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:border-violet-500/40 hover:text-violet-700 dark:hover:text-violet-300"
+              className="inline-flex items-center gap-1.5 self-start rounded-full border border-dashed border-border px-3 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:border-[#7c3aed]/40 hover:text-[#7c3aed]"
             >
               <PenLine className="size-3.5" />
               Add another milestone
             </button>
           </div>
         ) : mode === "choose" ? (
-          <div className="flex min-h-[220px] flex-col items-center justify-center gap-5 px-2 py-8 text-center">
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium text-foreground">How would you like to plan?</p>
-              <p className="text-[13px] text-muted-foreground">
-                {disabled
-                  ? "Confirm your TDD document in the previous step to unlock milestone generation."
-                  : "Let Brisk draft milestones from your TDD, or build them yourself."}
-              </p>
-            </div>
-            <div className="flex w-full max-w-xs flex-col gap-2.5 sm:max-w-sm">
-              <button
-                type="button"
-                onClick={handleMakeWithAi}
-                disabled={disabled}
-                className="flex h-11 items-center justify-center gap-2 rounded-full border border-violet-500/30 bg-violet-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                <Sparkles className="size-4" />
-                Make it with AI
-              </button>
-              <button
-                type="button"
-                onClick={handleAddManually}
-                disabled={disabled}
-                className="flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-secondary px-5 text-sm font-semibold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                <PenLine className="size-4" />
-                Add manually
-              </button>
+          <div className="flex min-h-[280px] flex-col justify-center py-4">
+            <div className="mx-auto w-full max-w-2xl space-y-6 text-center">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <OnboardingChoiceCard
+                  icon={Sparkles}
+                  title="Make it with AI"
+                  description="Brisk drafts milestones from your TDD, timeline, and project context."
+                  onClick={handleMakeWithAi}
+                  disabled={disabled}
+                />
+                <OnboardingChoiceCard
+                  icon={PenLine}
+                  title="Add manually"
+                  description="Create milestones yourself and add tasks one by one."
+                  onClick={handleAddManually}
+                  disabled={disabled}
+                />
+              </div>
             </div>
           </div>
         ) : (
           <div className="flex min-h-[180px] flex-col gap-4 pb-2">
             {chatMessages.length === 0 && !isLoading ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-10 text-center">
-                <Sparkles className="size-6 text-violet-500 dark:text-violet-400" />
+                <Sparkles className={cn("size-6", onboardingAccentTextClassName)} />
                 <p className="max-w-xs text-sm text-muted-foreground">
                   Tell Brisk about your timeline, team size, and what you want to ship.
                 </p>
@@ -391,7 +386,7 @@ export function ScopingCanvas({ onStreamComplete, disabled = false, seedFromTdd 
                   className={cn(
                     "max-w-[90%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
                     message.role === "user"
-                      ? "bg-violet-600 text-white"
+                      ? "bg-[#7c3aed] text-white"
                       : "bg-secondary text-foreground",
                   )}
                 >
@@ -405,7 +400,7 @@ export function ScopingCanvas({ onStreamComplete, disabled = false, seedFromTdd 
                         type="button"
                         onClick={() => handleUserReply(suggestion)}
                         disabled={isLoading}
-                        className="rounded-full border border-violet-400/40 bg-violet-100 px-3 py-1 text-[12px] font-medium text-violet-800 transition-colors hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/20"
+                        className={onboardingAccentChipClassName}
                       >
                         {suggestion}
                       </button>

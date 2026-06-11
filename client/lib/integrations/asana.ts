@@ -29,6 +29,21 @@ export type AsanaProject = {
   name: string;
 };
 
+export const ASANA_TOKEN_URL = "https://app.asana.com/0/my-apps";
+
+export async function connectAsanaPAT(
+  token: string,
+): Promise<{ asanaUserName: string }> {
+  const { data } = await clientApi.post<{ asanaUserName: string }>(
+    "/integrations/asana/pat",
+    {
+      userId: uid(),
+      token,
+    },
+  );
+  return data;
+}
+
 export function getAsanaConnectUrl(returnTo?: string) {
   const params = new URLSearchParams({ userId: uid() });
   if (returnTo) {
@@ -62,6 +77,17 @@ export async function fetchAsanaProjects(workspaceGid: string): Promise<AsanaPro
     { params: { userId: uid(), workspaceGid } },
   );
   return data.projects;
+}
+
+export async function createAsanaProject(params: {
+  workspaceGid: string;
+  name: string;
+}): Promise<AsanaProject> {
+  const { data } = await clientApi.post<{ project: AsanaProject }>(
+    "/integrations/asana/projects/create",
+    { userId: uid(), ...params },
+  );
+  return data.project;
 }
 
 export async function selectAsanaProject(params: {

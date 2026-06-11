@@ -155,6 +155,21 @@ export const getProjects = (
     token,
   );
 
+export const createAsanaProject = (
+  token: string,
+  workspaceGid: string,
+  name: string,
+): Promise<AsanaProject> =>
+  asanaFetch<AsanaProject>("/projects", token, {
+    method: "POST",
+    body: JSON.stringify({
+      data: {
+        name,
+        workspace: workspaceGid,
+      },
+    }),
+  });
+
 export const getProjectTasks = (
   token: string,
   projectGid: string,

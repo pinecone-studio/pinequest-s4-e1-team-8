@@ -27,6 +27,13 @@ function withQuery(path: string, query: string) {
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+
+  if (url.searchParams.get("probe") === "1") {
+    return Response.json({
+      configured: Boolean(process.env.ASANA_CLIENT_ID?.trim()),
+    });
+  }
+
   const returnTo = url.searchParams.get("returnTo")?.trim() || "/tasks";
   const safeReturnTo = returnTo.startsWith("/") ? returnTo : "/onboarding";
 

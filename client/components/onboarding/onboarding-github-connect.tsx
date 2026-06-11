@@ -1,40 +1,30 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
+import { GithubPatConnectForm } from "@/components/onboarding/github-pat-connect-form";
+import { IntegrationSelect } from "@/features/onboarding/components/integration-select";
 import { useInternalUserId } from "@/hooks/use-internal-user-id";
 import {
-  connectGithubPAT,
   createGithubProject,
   createGithubRepo,
   extractApiError,
   fetchGithubProjects,
   fetchGithubRepos,
   fetchGithubStatus,
-  getGithubConnectUrl,
-  GITHUB_TOKEN_URL,
   saveGithubSettings,
   setGithubUserId,
   type GithubProject,
   type GithubRepoOption,
 } from "@/lib/integrations/github";
+import { onboardingPanelClassName } from "@/components/onboarding/onboarding-layout";
 import { cn } from "@/lib/utils";
-import { Check, ExternalLink, Loader2, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-
-function GithubMark() {
-  return (
-    <div className="grid h-6 w-6 place-items-center rounded-full bg-muted/50 text-[13px] font-bold text-foreground">
-      GH
-    </div>
-  );
-}
+import { Check, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function OnboardingGithubConnect() {
-  const { userId, isLoaded: userReady } = useInternalUserId();
+  const { userId, isLoaded: userReady, syncError } = useInternalUserId();
   const { step1, step3, setGithubConnected } = useOnboardingStore();
   const [githubLogin, setGithubLogin] = useState<string | null>(null);
-  const [patValue, setPatValue] = useState("");
-  const [showPat, setShowPat] = useState(false);
   const [isBusy, setIsBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,8 +32,6 @@ export function OnboardingGithubConnect() {
   const [projects, setProjects] = useState<GithubProject[]>([]);
   const [selectedRepo, setSelectedRepo] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [newRepoName, setNewRepoName] = useState("");
-  const [newProjectTitle, setNewProjectTitle] = useState("");
   const [settingsSaved, setSettingsSaved] = useState(false);
 
   const loadResources = useCallback(async () => {
@@ -124,33 +112,10 @@ export function OnboardingGithubConnect() {
     void loadStatus();
   }, [loadStatus]);
 
-  const handleOAuthConnect = () => {
-    if (!userReady) return;
-    setGithubUserId(userId);
-    window.location.href = getGithubConnectUrl("/onboarding/step2");
-  };
-
-  const handlePatConnect = async () => {
-    if (!userReady || !patValue.trim()) {
-      return;
-    }
-
-    setGithubUserId(userId);
-    setIsBusy(true);
-    setError(null);
-
-    try {
-      const { githubLogin: login } = await connectGithubPAT(patValue.trim());
-      setPatValue("");
-      setGithubLogin(login);
-      setGithubConnected(true);
-      await loadResources();
-    } catch (err) {
-      setGithubConnected(false);
-      setError(extractApiError(err, "Could not connect GitHub."));
-    } finally {
-      setIsBusy(false);
-    }
+  const handlePatConnected = async (login: string) => {
+    setGithubLogin(login);
+    setGithubConnected(true);
+    await loadResources();
   };
 
   const persistSelection = async (repoKey: string, projectId: string) => {
@@ -190,10 +155,7 @@ export function OnboardingGithubConnect() {
     }
   };
 
-  const handleCreateRepo = async () => {
-    const name = newRepoName.trim();
-    if (!name) return;
-
+  const handleCreateRepo = async (name: string) => {
     setIsBusy(true);
     setError(null);
     try {
@@ -204,19 +166,18 @@ export function OnboardingGithubConnect() {
       });
       setRepos((current) => [repo, ...current]);
       setSelectedRepo(repo.fullName);
-      setNewRepoName("");
       if (selectedProjectId) {
         await persistSelection(repo.fullName, selectedProjectId);
       }
     } catch (err) {
       setError(extractApiError(err, "Could not create repository."));
+      throw err;
     } finally {
       setIsBusy(false);
     }
   };
 
-  const handleCreateProject = async () => {
-    const title = newProjectTitle.trim() || `${step1.projectName.trim() || "Brisk"} board`;
+  const handleCreateProject = async (title: string) => {
     const repo = repos.find((item) => item.fullName === selectedRepo);
 
     setIsBusy(true);
@@ -228,12 +189,12 @@ export function OnboardingGithubConnect() {
       });
       setProjects((current) => [project, ...current]);
       setSelectedProjectId(project.id);
-      setNewProjectTitle("");
       if (selectedRepo) {
         await persistSelection(selectedRepo, project.id);
       }
     } catch (err) {
       setError(extractApiError(err, "Could not create GitHub project."));
+      throw err;
     } finally {
       setIsBusy(false);
     }
@@ -242,173 +203,121 @@ export function OnboardingGithubConnect() {
   const connected = step3.githubConnected;
   const repoProjectReady = Boolean(selectedRepo && selectedProjectId);
 
+  const repoOptions = useMemo(
+    () =>
+      repos.map((repo) => ({
+        value: repo.fullName,
+        label: repo.fullName,
+      })),
+    [repos],
+  );
+
+  const projectOptions = useMemo(
+    () =>
+      projects.map((project) => ({
+        value: project.id,
+        label: project.owner
+          ? `${project.title} · ${project.owner}`
+          : project.title,
+      })),
+    [projects],
+  );
+
+  const defaultProjectTitle = `${step1.projectName.trim() || "Brisk"} board`;
+
   return (
-    <div
+    <section
       className={cn(
-        "flex flex-1 flex-col gap-3 rounded-xl border p-4 transition-[border-color,background]",
-        connected
-          ? "border-emerald-500/40 bg-emerald-50 dark:border-emerald-500/45 dark:bg-emerald-500/10"
-          : "border-border bg-muted/40 dark:bg-secondary",
+        onboardingPanelClassName,
+        connected && "border-[#5da283]/30 bg-[#5da283]/5",
       )}
     >
-      <div className="flex items-center gap-2.5">
-        <div className="grid h-[42px] w-[42px] flex-none place-items-center rounded-[10px] border border-border bg-card">
-          <GithubMark />
+      <div className="flex items-start gap-4">
+        <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-border/80 bg-background text-xs font-bold text-foreground">
+          GH
         </div>
-        <div>
-          <div className="text-[15px] font-semibold text-foreground">GitHub</div>
-          <div className="text-[12.5px] text-foreground">
-            Connect, pick a repo & project, export milestones as issues
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="space-y-1">
+            <h3 className="text-[15px] font-semibold text-foreground">GitHub</h3>
+            {connected ? (
+              <p className="inline-flex items-center gap-1 text-xs font-medium text-[#5da283]">
+                <Check className="size-3.5 shrink-0" />
+                Connected{githubLogin ? ` as @${githubLogin}` : ""}
+              </p>
+            ) : null}
           </div>
+          {!connected ? (
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Sync repos, boards, and milestone issues.
+            </p>
+          ) : null}
         </div>
+        {isBusy && !connected ? (
+          <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
+        ) : null}
       </div>
 
-      {connected ? (
-        <div className="space-y-3">
-          <div className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-500/35 bg-emerald-100 text-[13px] font-semibold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
-            <Check size={15} />
-            Connected{githubLogin ? ` as @${githubLogin}` : ""}
+      <div className="mt-7">
+        {isBusy && connected ? (
+          <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Loading repositories…
           </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Repository
-            </label>
-            <select
+        ) : connected ? (
+          <div className="space-y-7">
+            <IntegrationSelect
+              label="Repository"
+              placeholder="Choose a repository"
               value={selectedRepo}
-              onChange={(event) => void handleRepoChange(event.target.value)}
+              options={repoOptions}
+              onValueChange={(value) => void handleRepoChange(value)}
+              createLabel="Create new repository"
+              createDialogTitle="Create repository"
+              createDialogDescription="A private repo will be created under your GitHub account."
+              createInputLabel="Repository name"
+              createInputPlaceholder="my-project"
+              onCreate={handleCreateRepo}
               disabled={isBusy}
-              className="h-9 w-full rounded-lg border border-border/70 bg-background px-3 text-[13px] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:opacity-50"
-            >
-              <option value="">Select a repository…</option>
-              {repos.map((repo) => (
-                <option key={repo.fullName} value={repo.fullName}>
-                  {repo.fullName}
-                </option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newRepoName}
-                onChange={(event) => setNewRepoName(event.target.value)}
-                placeholder="new-repo-name"
-                disabled={isBusy}
-                className="h-8 min-w-0 flex-1 rounded-lg border border-border/70 bg-background px-3 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:opacity-50"
-              />
-              <button
-                type="button"
-                disabled={isBusy || !newRepoName.trim()}
-                onClick={() => void handleCreateRepo()}
-                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-2.5 text-[12px] font-medium text-foreground hover:bg-accent disabled:opacity-50"
-              >
-                <Plus className="size-3.5" />
-                Create
-              </button>
-            </div>
-          </div>
+            />
 
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              GitHub Project
-            </label>
-            <select
+            <IntegrationSelect
+              label="Project board"
+              placeholder="Choose a GitHub project"
               value={selectedProjectId}
-              onChange={(event) => void handleProjectChange(event.target.value)}
+              options={projectOptions}
+              onValueChange={(value) => void handleProjectChange(value)}
+              createLabel="Create new board"
+              createDialogTitle="Create project board"
+              createDialogDescription="Creates a GitHub project linked to your selected repository when possible."
+              createInputLabel="Board title"
+              createInputPlaceholder={defaultProjectTitle}
+              onCreate={handleCreateProject}
               disabled={isBusy}
-              className="h-9 w-full rounded-lg border border-border/70 bg-background px-3 text-[13px] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:opacity-50"
-            >
-              <option value="">Select a project board…</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.title}
-                  {project.owner ? ` (${project.owner})` : ""}
-                </option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newProjectTitle}
-                onChange={(event) => setNewProjectTitle(event.target.value)}
-                placeholder={`${step1.projectName.trim() || "Brisk"} board`}
-                disabled={isBusy}
-                className="h-8 min-w-0 flex-1 rounded-lg border border-border/70 bg-background px-3 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:opacity-50"
-              />
-              <button
-                type="button"
-                disabled={isBusy}
-                onClick={() => void handleCreateProject()}
-                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-border bg-card px-2.5 text-[12px] font-medium text-foreground hover:bg-accent disabled:opacity-50"
-              >
-                <Plus className="size-3.5" />
-                Create
-              </button>
-            </div>
+            />
+
+            {repoProjectReady && settingsSaved ? (
+              <p className="text-sm text-[#5da283]">
+                Ready to export milestones as issues.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Optional — pick a repo and board to enable milestone export.
+              </p>
+            )}
           </div>
-
-          {repoProjectReady && settingsSaved ? (
-            <p className="text-[12px] text-emerald-700 dark:text-emerald-300">
-              Ready — milestone tasks will be created as GitHub issues on this project when you finish.
-            </p>
-          ) : connected ? (
-            <p className="text-[12px] text-muted-foreground">
-              Select a repository and GitHub project to enable milestone export.
-            </p>
-          ) : null}
-        </div>
-      ) : (
-        <div className="space-y-2.5">
-          <button
-            type="button"
-            className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-transparent bg-violet-600 text-[13px] font-semibold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+        ) : (
+          <GithubPatConnectForm
+            userId={userId}
             disabled={isBusy || !userReady}
-            onClick={handleOAuthConnect}
-          >
-            {isBusy ? <Loader2 className="size-3.5 animate-spin" /> : null}
-            Connect with GitHub
-          </button>
-          <button
-            type="button"
-            className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-            onClick={() => setShowPat((value) => !value)}
-          >
-            {showPat ? "Hide token option" : "Use a personal access token instead"}
-          </button>
-          {showPat ? (
-            <>
-              <input
-                type="password"
-                value={patValue}
-                onChange={(event) => setPatValue(event.target.value)}
-                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                disabled={isBusy}
-                className="h-9 w-full rounded-lg border border-border/70 bg-background px-3 text-[13px] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:opacity-50"
-              />
-              <button
-                type="button"
-                className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-card text-[13px] font-semibold text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isBusy || !patValue.trim()}
-                onClick={() => void handlePatConnect()}
-              >
-                Connect with token
-              </button>
-              <a
-                href={GITHUB_TOKEN_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] text-violet-700 hover:underline dark:text-violet-400"
-              >
-                Create a personal access token
-                <ExternalLink className="size-3" />
-              </a>
-            </>
-          ) : null}
-          {error ? <p className="text-[12px] text-rose-500">{error}</p> : null}
-        </div>
-      )}
+            onConnected={handlePatConnected}
+          />
+        )}
+      </div>
 
-      {connected && error ? <p className="text-[12px] text-rose-500">{error}</p> : null}
-    </div>
+      {syncError ? (
+        <p className="mt-5 text-sm text-destructive">{syncError}</p>
+      ) : null}
+      {error ? <p className="mt-5 text-sm text-destructive">{error}</p> : null}
+    </section>
   );
 }

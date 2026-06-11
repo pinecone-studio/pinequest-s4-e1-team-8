@@ -189,7 +189,7 @@ export const githubRepositories = sqliteTable("github_repositories", {
 	githubRepoId: integer("github_repo_id").notNull(),
 	fullName: text("full_name").notNull(),
 	defaultBranch: text("default_branch"),
-	private: integer().default(0).notNull(),
+	private: integer().default(false).notNull(),
 	projectId: text("project_id").references(() => projects.id, { onDelete: "set null" } ),
 	createdAt: integer("created_at").notNull(),
 	updatedAt: integer("updated_at").notNull(),
@@ -316,4 +316,26 @@ export const projectRisks = sqliteTable("project_risks", {
 (table) => [
 	uniqueIndex("project_risks_project_id_unique").on(table.projectId),
 ]);
+
+export const inviteTokens = sqliteTable("invite_tokens", {
+	id: text().primaryKey().notNull(),
+	token: text().notNull(),
+	projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" } ),
+	expiresAt: integer("expires_at").notNull(),
+	createdAt: integer("created_at").notNull(),
+},
+(table) => [
+	uniqueIndex("invite_tokens_token_unique").on(table.token),
+]);
+
+export const milestones = sqliteTable("milestones", {
+	id: text().primaryKey().notNull(),
+	projectId: text("project_id").notNull().references(() => projects.id, { onDelete: "cascade" } ),
+	title: text().notNull(),
+	description: text(),
+	dueDate: text("due_date"),
+	sequenceOrder: integer("sequence_order").default(0).notNull(),
+	createdAt: integer("created_at").notNull(),
+	updatedAt: integer("updated_at").notNull(),
+});
 

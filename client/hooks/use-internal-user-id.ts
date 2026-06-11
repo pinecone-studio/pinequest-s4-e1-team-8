@@ -12,22 +12,31 @@ export function useInternalUserId() {
   const { user, isLoaded: userLoaded } = useUser();
   const [internalUserId, setInternalUserId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoaded || !userLoaded) return;
 
     if (!clerkId) {
       setInternalUserId(DEV_USER_ID);
+      setSyncError(null);
       setSyncing(false);
       return;
     }
 
     const email = user?.primaryEmailAddress?.emailAddress?.trim();
     const name = user?.fullName?.trim() || user?.username?.trim();
-    if (!email || !name) return;
+    if (!email || !name) {
+      setInternalUserId(null);
+      setSyncError("Your profile is missing an email or display name.");
+      setSyncing(false);
+      return;
+    }
 
     let cancelled = false;
     setSyncing(true);
+    setSyncError(null);
+    setInternalUserId(null);
 
     syncClerkUser({
       clerkId,
@@ -36,10 +45,16 @@ export function useInternalUserId() {
       avatarUrl: user?.imageUrl ?? null,
     })
       .then((synced) => {
-        if (!cancelled) setInternalUserId(synced.id);
+        if (!cancelled) {
+          setInternalUserId(synced.id);
+          setSyncError(null);
+        }
       })
       .catch(() => {
-        if (!cancelled) setInternalUserId(DEV_USER_ID);
+        if (!cancelled) {
+          setInternalUserId(null);
+          setSyncError("Could not sync your account. Refresh the page and try again.");
+        }
       })
       .finally(() => {
         if (!cancelled) setSyncing(false);
@@ -65,5 +80,7 @@ export function useInternalUserId() {
     userId: internalUserId ?? DEV_USER_ID,
     isLoaded,
     isDevFallback: !clerkId,
+    syncError,
+    syncing,
   };
 }

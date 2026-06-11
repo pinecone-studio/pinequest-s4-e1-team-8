@@ -5,6 +5,10 @@
 const DB_NAME = "server-preset-db";
 
 const OPTIONAL_ALTER_STATEMENTS = [
+  "ALTER TABLE `github_integrations` ADD `github_project_id` text",
+  "ALTER TABLE `users` ADD `encrypted_google_access_token` text",
+  "ALTER TABLE `users` ADD `encrypted_google_refresh_token` text",
+  "ALTER TABLE `users` ADD `google_token_expiry` integer",
   "ALTER TABLE `projects` ADD `timezone` text",
   "ALTER TABLE `projects` ADD `github_connected` integer DEFAULT 0 NOT NULL",
   "ALTER TABLE `projects` ADD `asana_connected` integer DEFAULT 0 NOT NULL",
@@ -24,6 +28,15 @@ const PENDING_MIGRATIONS = [
   "0012_project_invite_token.sql",
   "0012_report_snapshots.sql",
   "0013_project_risks.sql",
+  "0013_task_sequence_dependencies.sql",
+  "0014_task_reprioritize_fields.sql",
+  "0015_task_sync_state.sql",
+  "0016_github_board_columns.sql",
+  "0017_onboarding_sessions.sql",
+  "0018_mixed_centennial.sql",
+  "0018_onboarding_discovery_state.sql",
+  "0019_create_lean_tables.sql",
+  "0020_eager_cargill.sql",
 ];
 
 async function runWrangler(args: string[]) {

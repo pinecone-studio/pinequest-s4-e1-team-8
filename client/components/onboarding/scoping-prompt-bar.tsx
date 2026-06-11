@@ -73,7 +73,7 @@ export function ScopingPromptBar({
               type="button"
               disabled={disabled || isLoading}
               onClick={() => injectSuggestion(suggestion.text_to_inject)}
-              className="rounded-full border border-violet-400/40 bg-violet-100 px-3 py-1 text-[12px] font-medium text-violet-800 transition-colors hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/20"
+              className="rounded-full border border-[#7c3aed]/40 bg-[#7c3aed]/10 px-3 py-1 text-[12px] font-medium text-[#7c3aed] transition-colors hover:bg-[#7c3aed]/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {suggestion.display_label}
             </button>
@@ -87,7 +87,7 @@ export function ScopingPromptBar({
           "shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-secondary/50 dark:shadow-[0_2px_20px_rgba(0,0,0,0.35)]",
         )}
       >
-        <Sparkles className="mb-2.5 size-5 shrink-0 text-violet-500 dark:text-violet-400" />
+        <Sparkles className="mb-2.5 size-5 shrink-0 text-[#7c3aed]" />
         <textarea
           ref={textareaRef}
           rows={1}

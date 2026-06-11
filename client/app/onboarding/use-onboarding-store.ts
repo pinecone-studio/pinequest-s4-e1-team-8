@@ -83,6 +83,8 @@ type OnboardingStoreContextValue = OnboardingStoreState & {
   advanceFromTddDiscovery: () => void;
   advanceFromPlanning: () => void;
   advanceFromStep2: () => void;
+  skipFromStep1: () => void;
+  skipTddDiscovery: () => void;
   skipStep3: () => void;
   goToPreviousStep: () => void;
   setStep: (step: number) => void;
@@ -392,6 +394,20 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
     return true;
   }, [state.step1.projectName]);
 
+  const skipFromStep1 = useCallback(() => {
+    if (state.step1.projectName.trim().length === 0) {
+      dispatch({
+        type: "PATCH_STEP1",
+        patch: { projectName: "Untitled Project" },
+      });
+    }
+    dispatch({ type: "SET_STEP", step: 1 });
+  }, [state.step1.projectName]);
+
+  const skipTddDiscovery = useCallback(() => {
+    dispatch({ type: "SET_STEP", step: 2 });
+  }, []);
+
   const advanceFromTddDiscovery = useCallback(() => {
     dispatch({ type: "SET_TDD_CONFIRMED", confirmed: true });
     dispatch({ type: "SET_STEP", step: 2 });
@@ -431,6 +447,8 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       setTddLayoutState,
       canAdvanceFromStep1,
       advanceFromStep1,
+      skipFromStep1,
+      skipTddDiscovery,
       advanceFromTddDiscovery,
       advanceFromPlanning,
       advanceFromStep2,
@@ -455,6 +473,8 @@ export function OnboardingStoreProvider({ children }: { children: ReactNode }) {
       setTddLayoutState,
       canAdvanceFromStep1,
       advanceFromStep1,
+      skipFromStep1,
+      skipTddDiscovery,
       advanceFromTddDiscovery,
       advanceFromPlanning,
       advanceFromStep2,

@@ -3,6 +3,7 @@
 import { DiscoveryFeed } from "@/components/onboarding/discovery/DiscoveryFeed";
 import { DiscoveryInteractionFooter } from "@/components/onboarding/discovery/DiscoveryInteractionFooter";
 import { DiscoveryStatusBar } from "@/components/onboarding/discovery/DiscoveryStatusBar";
+import { useOnboardingBackRegistration } from "@/components/onboarding/onboarding-layout";
 import { TddDraggableCanvas } from "@/components/onboarding/TddDraggableCanvas";
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
 import { useInternalUserId } from "@/hooks/use-internal-user-id";
@@ -45,13 +46,18 @@ function googleOAuthErrorMessage(code: string): string {
 type OnboardingWorkspaceProps = {
   onTddConfirmed: () => void;
   onBack?: () => void;
+  onSkip?: () => void;
 };
 
 function createMessageId(): string {
   return crypto.randomUUID();
 }
 
-export function OnboardingWorkspace({ onTddConfirmed, onBack }: OnboardingWorkspaceProps) {
+export function OnboardingWorkspace({
+  onTddConfirmed,
+  onBack,
+  onSkip,
+}: OnboardingWorkspaceProps) {
   const { getToken } = useAuth();
   const { userId } = useInternalUserId();
   const searchParams = useSearchParams();
@@ -75,6 +81,18 @@ export function OnboardingWorkspace({ onTddConfirmed, onBack }: OnboardingWorksp
   const isSubmittingRef = useRef(false);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const hasHandledGoogleOAuthCallbackRef = useRef(false);
+  const { registerBackHandler } = useOnboardingBackRegistration();
+
+  useEffect(() => {
+    registerBackHandler(() => {
+      if (phase === "canvas") {
+        setPhase("interview");
+        return;
+      }
+      onBack?.();
+    });
+    return () => registerBackHandler(null);
+  }, [onBack, phase, registerBackHandler]);
 
   useEffect(() => {
     if (tddLayoutState && phase === "interview") {
@@ -339,7 +357,7 @@ export function OnboardingWorkspace({ onTddConfirmed, onBack }: OnboardingWorksp
         ref={workspaceRef}
         className="flex h-full min-h-0 flex-col bg-background text-foreground"
       >
-        <DiscoveryStatusBar metrics={metrics} onBack={onBack} mode="canvas" />
+        <DiscoveryStatusBar metrics={metrics} onSkip={onSkip} mode="canvas" />
         <div className="flex min-h-0 flex-1 flex-col px-6 py-6">
           <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 pb-6">
             <div>
@@ -439,7 +457,7 @@ export function OnboardingWorkspace({ onTddConfirmed, onBack }: OnboardingWorksp
       ref={workspaceRef}
       className="flex h-full min-h-0 flex-col bg-background text-foreground"
     >
-      <DiscoveryStatusBar metrics={metrics} onBack={onBack} mode="interview" />
+      <DiscoveryStatusBar metrics={metrics} onSkip={onSkip} mode="interview" />
       <DiscoveryFeed
         messages={messages}
         streamingContent={streamingContent}

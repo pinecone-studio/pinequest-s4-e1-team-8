@@ -62,7 +62,7 @@ import { resolveGithubSyncProject } from "../../lib/github/resolve-sync-project"
 import { ensureTaskSyncTargets } from "../../lib/tasks/ensure-task-sync-targets";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import type { NewTask } from "../../schema/task.model";
-import { githubIntegrations, tasks } from "../../schema/schema";
+import { githubIntegrations, tasks, users } from "../../schema/schema";
 
 function sanitizeGithubTaskRows(
   milestoneRows: NewTask[],
@@ -182,12 +182,13 @@ export const getGithubRepos = async (c: Context<{ Bindings: Bindings }>) => {
     const repos = await fetchGithubRepos(auth.accessToken);
     return c.json({
       repos: repos.map((r) => ({
+        id: String(r.id),
         fullName: r.full_name,
         owner: r.owner.login,
         name: r.name,
         defaultBranch: r.default_branch,
         private: r.private,
-        nodeId: (r as { node_id?: string }).node_id ?? null,
+        nodeId: r.node_id ?? null,
       })),
     });
   } catch (error) {
@@ -1121,6 +1122,7 @@ export const postGithubRepo = async (c: Context<{ Bindings: Bindings }>) => {
 
     return c.json({
       repo: {
+        id: String(repo.id),
         fullName: repo.full_name,
         owner: repo.owner.login,
         name: repo.name,
@@ -1256,6 +1258,11 @@ export const postGithubExportMilestones = async (c: Context<{ Bindings: Bindings
   }
 };
 
+function isMissingUserDbError(message: string) {
+  const lower = message.toLowerCase();
+  return lower.includes("foreign key") || lower.includes("no such column");
+}
+
 export const postGithubPAT = async (c: Context<{ Bindings: Bindings }>) => {
   const { userId, token } = await c.req.json<{ userId: string; token: string }>();
   if (!userId || !token) return c.json({ error: "userId and token are required" }, 400);
@@ -1263,6 +1270,22 @@ export const postGithubPAT = async (c: Context<{ Bindings: Bindings }>) => {
   try {
     const githubLogin = await fetchGithubLogin(token);
     const db = useDB(c);
+
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      return c.json(
+        {
+          error:
+            "Your Brisk account is not synced yet. Refresh the page, wait a moment, then try again.",
+        },
+        409,
+      );
+    }
 
     const [existing] = await db
       .select({ id: githubIntegrations.id })
@@ -1288,6 +1311,15 @@ export const postGithubPAT = async (c: Context<{ Bindings: Bindings }>) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Invalid token or GitHub API error";
+    if (isMissingUserDbError(message)) {
+      return c.json(
+        {
+          error:
+            "Database setup is incomplete. Run `cd server && bun run db:repair:local`, then retry.",
+        },
+        500,
+      );
+    }
     return c.json({ error: message }, 400);
   }
 };

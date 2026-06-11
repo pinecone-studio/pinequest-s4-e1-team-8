@@ -6,7 +6,7 @@ export default function OnboardingStep2Page() {
   return (
     <RequireSignIn>
       <Suspense fallback={null}>
-        <div className="h-dvh min-h-0 overflow-hidden bg-background">
+        <div className="min-h-dvh overflow-x-hidden overflow-y-auto bg-background">
           <OnboardingWizard />
         </div>
       </Suspense>

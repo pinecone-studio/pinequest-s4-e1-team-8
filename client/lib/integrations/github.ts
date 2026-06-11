@@ -20,6 +20,7 @@ export type GithubStatus = {
 };
 
 export type GithubRepoOption = {
+  id?: string;
   fullName: string;
   owner: string;
   name: string;
@@ -125,14 +126,6 @@ export function getGithubRepo(): { owner: string; repo: string } | null {
   if (!value.includes("/")) return null;
   const [owner, repo] = value.split("/");
   return owner && repo ? { owner, repo } : null;
-}
-
-export function getGithubConnectUrl(returnTo = "/onboarding/step2"): string {
-  const params = new URLSearchParams({
-    userId: uid(),
-    returnTo,
-  });
-  return `/api/auth/github?${params.toString()}`;
 }
 
 export async function connectGithubPAT(token: string): Promise<{ githubLogin: string }> {

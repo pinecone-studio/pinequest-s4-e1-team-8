@@ -1,15 +1,9 @@
-import { SidebarAddProject } from "@/components/dashboard/sidebar/sidebar-add-project";
 import { SidebarNav } from "@/components/dashboard/sidebar/sidebar-nav";
 import { SidebarProfile } from "@/components/dashboard/sidebar/sidebar-profile";
 import { SidebarSearch } from "@/components/dashboard/sidebar/sidebar-search";
 import { SidebarThemeToggle } from "@/components/dashboard/sidebar/sidebar-theme-toggle";
 import { Separator } from "@/components/ui/separator";
-import {
-  Bookmark,
-  Clock,
-  FileText,
-  Wallet,
-} from "lucide-react";
+import { Bookmark, Clock, FileText, Wallet } from "lucide-react";
 
 const utilityIcons = [
   { icon: FileText, label: "Documents" },
@@ -39,7 +33,6 @@ export function DashboardSidebar() {
           ))}
         </div>
         <SidebarThemeToggle />
-        <SidebarAddProject />
       </div>
     </aside>
   );

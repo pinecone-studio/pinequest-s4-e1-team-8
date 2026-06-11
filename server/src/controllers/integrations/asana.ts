@@ -8,6 +8,7 @@ import { ensureTaskDefaults } from "../../lib/tasks/ensure-task-defaults";
 import { DEFAULT_WORKSPACE_ID } from "../../lib/tasks/task-defaults";
 import { asanaIntegrations, tasks, users } from "../../schema/schema";
 import {
+  createAsanaProject,
   getCurrentUser,
   getProjectTasks,
   getProjects,
@@ -113,6 +114,72 @@ export const getAsanaStatus = async (c: Context<{ Bindings: Bindings }>) => {
     projectGid: auth.projectGid,
     projectName: auth.projectName,
   });
+};
+
+export const postAsanaPAT = async (c: Context<{ Bindings: Bindings }>) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    userId?: string;
+    token?: string;
+  } | null;
+
+  if (!body?.userId || !body.token?.trim()) {
+    return c.json({ error: "userId and token are required" }, 400);
+  }
+
+  try {
+    const profile = await getCurrentUser(body.token.trim());
+    const db = useDB(c);
+
+    const [existingUser] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, body.userId))
+      .limit(1);
+
+    if (!existingUser) {
+      return c.json(
+        {
+          error:
+            "Your Brisk account is not synced yet. Refresh the page, wait a moment, then try again.",
+        },
+        409,
+      );
+    }
+
+    const [existing] = await db
+      .select({ id: asanaIntegrations.id })
+      .from(asanaIntegrations)
+      .where(eq(asanaIntegrations.userId, body.userId))
+      .limit(1);
+
+    const values = {
+      accessToken: body.token.trim(),
+      refreshToken: null,
+      tokenExpiresAt: null,
+      asanaUserGid: profile.gid,
+      asanaUserName: profile.name,
+      asanaUserEmail: profile.email ?? null,
+    };
+
+    if (existing) {
+      await db
+        .update(asanaIntegrations)
+        .set(values)
+        .where(eq(asanaIntegrations.id, existing.id));
+    } else {
+      await db.insert(asanaIntegrations).values({
+        id: `asana-int-${nanoid(10)}`,
+        userId: body.userId,
+        ...values,
+      });
+    }
+
+    return c.json({ asanaUserName: profile.name });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid token or Asana API error";
+    return c.json({ error: message }, 400);
+  }
 };
 
 export const postAsanaOAuthComplete = async (
@@ -276,6 +343,45 @@ export const getAsanaProjects = async (c: Context<{ Bindings: Bindings }>) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch projects";
+    return c.json({ error: message }, 502);
+  }
+};
+
+export const postAsanaCreateProject = async (
+  c: Context<{ Bindings: Bindings }>,
+) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    userId?: string;
+    workspaceGid?: string;
+    name?: string;
+  } | null;
+
+  if (!body?.userId || !body.workspaceGid || !body.name?.trim()) {
+    return c.json(
+      { error: "userId, workspaceGid, and name are required" },
+      400,
+    );
+  }
+
+  const auth = await resolveAsanaAuth(c, body.userId);
+  if (!auth) return c.json({ error: "Connect Asana first" }, 401);
+
+  try {
+    const project = await createAsanaProject(
+      auth.accessToken,
+      body.workspaceGid,
+      body.name.trim(),
+    );
+
+    return c.json({
+      project: {
+        gid: project.gid,
+        name: project.name,
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to create project";
     return c.json({ error: message }, 502);
   }
 };

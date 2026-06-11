@@ -1,17 +1,40 @@
 "use client";
 
 import { useOnboardingStore } from "@/app/onboarding/use-onboarding-store";
-import { ArrowRight } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
-
-const inputClassName =
-  "w-full rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground transition-[border-color,box-shadow] focus:border-violet-500 focus:outline-none focus:ring-[3px] focus:ring-violet-500/20";
+import { AsanaPatConnectForm } from "@/components/onboarding/asana-pat-connect-form";
+import { GithubPatConnectForm } from "@/components/onboarding/github-pat-connect-form";
+import {
+  OnboardingStepActions,
+  OnboardingStepHeading,
+  onboardingInputClassName,
+  onboardingPanelClassName,
+  onboardingTextareaClassName,
+} from "@/components/onboarding/onboarding-layout";
+import { useInternalUserId } from "@/hooks/use-internal-user-id";
+import {
+  fetchAsanaStatus,
+  setAsanaUserId,
+} from "@/lib/integrations/asana";
+import { fetchGithubStatus, setGithubUserId } from "@/lib/integrations/github";
+import { Check } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const DESCRIPTION_MIN_HEIGHT = "5.25rem";
 
 export function StepProjectSetup() {
-  const { step1, patchStep1, canAdvanceFromStep1, advanceFromStep1 } =
-    useOnboardingStore();
+  const { userId, isLoaded: userReady } = useInternalUserId();
+  const {
+    step1,
+    step3,
+    patchStep1,
+    canAdvanceFromStep1,
+    advanceFromStep1,
+    skipFromStep1,
+    setGithubConnected,
+    setAsanaConnected,
+  } = useOnboardingStore();
+  const [githubLogin, setGithubLogin] = useState<string | null>(null);
+  const [asanaUserName, setAsanaUserName] = useState<string | null>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   const resizeDescription = useCallback(() => {
@@ -27,41 +50,61 @@ export function StepProjectSetup() {
     resizeDescription();
   }, [resizeDescription, step1.description]);
 
-  return (
-    <>
-      <div className="mb-6">
-        <h2 className="text-[21px] font-semibold tracking-[-0.4px] text-foreground">
-          Set up your project
-        </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-foreground">
-          Tell us the basics. You can change any of this later in settings.
-        </p>
-      </div>
+  useEffect(() => {
+    if (!userReady) {
+      return;
+    }
 
-      <div className="flex flex-col gap-4">
+    setGithubUserId(userId);
+    setAsanaUserId(userId);
+
+    void fetchGithubStatus()
+      .then((status) => {
+        if (status.connected) {
+          setGithubConnected(true);
+          setGithubLogin(status.githubLogin ?? null);
+        }
+      })
+      .catch(() => {});
+
+    void fetchAsanaStatus()
+      .then((status) => {
+        if (status.connected) {
+          setAsanaConnected(true);
+          setAsanaUserName(status.asanaUserName ?? null);
+        }
+      })
+      .catch(() => {});
+  }, [setAsanaConnected, setGithubConnected, userId, userReady]);
+
+  return (
+    <div>
+      <OnboardingStepHeading
+        title="Set up your project"
+        description="Tell us the basics. You can change any of this later in settings."
+      />
+
+      <div className="space-y-5">
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-foreground">
+          <label className="mb-2 block text-xs font-medium text-muted-foreground">
             Project name
           </label>
           <input
-            className={`${inputClassName} h-11 px-3.5`}
+            className={onboardingInputClassName}
             placeholder="e.g. Atlas Platform"
             value={step1.projectName}
-            onChange={(event) =>
-              patchStep1({ projectName: event.target.value })
-            }
+            onChange={(event) => patchStep1({ projectName: event.target.value })}
             autoFocus
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-foreground">
-            Description{" "}
-            <span className="font-normal text-muted-foreground">(optional)</span>
+          <label className="mb-2 block text-xs font-medium text-muted-foreground">
+            Description <span className="font-normal">(optional)</span>
           </label>
           <textarea
             ref={descriptionRef}
-            className={`${inputClassName} resize-none overflow-hidden px-3.5 py-3 leading-snug`}
+            className={onboardingTextareaClassName}
             rows={1}
             style={{ minHeight: DESCRIPTION_MIN_HEIGHT }}
             placeholder="What is this project about?"
@@ -72,18 +115,66 @@ export function StepProjectSetup() {
             }}
           />
         </div>
+
+        <div className={onboardingPanelClassName}>
+          <p className="text-sm font-medium text-foreground">GitHub</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Paste a personal access token to link your repos. Optional — you can
+            also connect later in the flow.
+          </p>
+          <div className="mt-4">
+            {step3.githubConnected ? (
+              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5da283]">
+                <Check className="size-4" />
+                Connected{githubLogin ? ` as @${githubLogin}` : ""}
+              </p>
+            ) : (
+              <GithubPatConnectForm
+                userId={userId}
+                disabled={!userReady}
+                compact
+                onConnected={async (login) => {
+                  setGithubLogin(login);
+                  setGithubConnected(true);
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className={onboardingPanelClassName}>
+          <p className="text-sm font-medium text-foreground">Asana</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Paste a personal access token to link your workspaces. Optional —
+            you can also connect later in the flow.
+          </p>
+          <div className="mt-4">
+            {step3.asanaConnected ? (
+              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-[#5da283]">
+                <Check className="size-4" />
+                Connected{asanaUserName ? ` as ${asanaUserName}` : ""}
+              </p>
+            ) : (
+              <AsanaPatConnectForm
+                userId={userId}
+                disabled={!userReady}
+                compact
+                onConnected={async (name) => {
+                  setAsanaUserName(name);
+                  setAsanaConnected(true);
+                }}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-7">
-        <button
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-violet-600 text-sm font-semibold text-white transition-colors hover:bg-violet-500 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45"
-          disabled={!canAdvanceFromStep1}
-          onClick={advanceFromStep1}
-        >
-          Create Project
-          <ArrowRight size={17} />
-        </button>
-      </div>
-    </>
+      <OnboardingStepActions
+        onContinue={advanceFromStep1}
+        onSkip={skipFromStep1}
+        continueLabel="Create project"
+        continueDisabled={!canAdvanceFromStep1}
+      />
+    </div>
   );
 }

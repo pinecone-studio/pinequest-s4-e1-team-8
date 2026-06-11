@@ -29,10 +29,12 @@ for (const envFile of [".env.local", ".env"]) {
     }
   }
 }
-const apiUrl =
-  process.env.API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:8787";
+const isDev = process.env.NODE_ENV !== "production";
+const apiUrl = isDev
+  ? (process.env.LOCAL_API_URL ?? "http://localhost:8787")
+  : (process.env.API_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    "http://localhost:8787");
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -47,6 +49,9 @@ const nextConfig: NextConfig = {
       "tw-animate-css": path.join(clientRoot, "node_modules/tw-animate-css"),
       shadcn: path.join(clientRoot, "node_modules/shadcn"),
     },
+  },
+  async redirects() {
+    return [{ source: "/", destination: "/login", permanent: false }];
   },
   async rewrites() {
     return [
@@ -63,20 +68,8 @@ const nextConfig: NextConfig = {
         destination: `${apiUrl}/api/agent/stream/:path*`,
       },
       {
-        source: "/api/backend/onboarding/scoping",
-        destination: `${apiUrl}/api/onboarding/scoping`,
-      },
-      {
-        source: "/api/backend/onboarding/chat",
-        destination: `${apiUrl}/api/onboarding/chat`,
-      },
-      {
-        source: "/api/backend/onboarding/refine-selection",
-        destination: `${apiUrl}/api/onboarding/refine-selection`,
-      },
-      {
-        source: "/api/backend/onboarding/sessions/:path*",
-        destination: `${apiUrl}/api/onboarding/sessions/:path*`,
+        source: "/api/backend/onboarding/:path*",
+        destination: `${apiUrl}/api/onboarding/:path*`,
       },
     ];
   },

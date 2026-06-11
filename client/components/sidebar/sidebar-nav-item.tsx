@@ -1,21 +1,18 @@
 "use client";
 
 import { useSidebar } from "@/components/sidebar/sidebar-context";
-import type { sidebarNavItems, sidebarWorkflowItems } from "@/lib/dashboard/data";
+import type { sidebarNavItems } from "@/lib/dashboard/data";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
   FileText,
   LayoutDashboard,
-  Sparkles,
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type NavItem =
-  | (typeof sidebarNavItems)[number]
-  | (typeof sidebarWorkflowItems)[number];
+type NavItem = (typeof sidebarNavItems)[number];
 type NavHref = keyof typeof navIconsByHref;
 
 const navIconsByHref = {
@@ -23,7 +20,6 @@ const navIconsByHref = {
   "/progress": TrendingUp,
   "/analytics": BarChart3,
   "/meeting-summaries": FileText,
-  "/workflow": Sparkles,
 } as const;
 
 export function SidebarNavItem({ item }: { item: NavItem }) {
@@ -35,11 +31,11 @@ export function SidebarNavItem({ item }: { item: NavItem }) {
   const hasDot = "dot" in item && item.dot;
 
   const className = cn(
-        "relative flex items-center rounded-[14px] text-[13px] font-medium transition-colors",
-        collapsed ? "justify-center px-0 py-2.5" : "gap-2.5 px-3 py-2.5",
-        isActive
-          ? "bg-[#7c3aed] text-white shadow-[0_4px_24px_-4px_rgba(124,58,237,0.55)]"
-          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+    "relative flex items-center rounded-[14px] text-[13px] font-medium transition-colors",
+    collapsed ? "justify-center px-0 py-2.5" : "gap-2.5 px-3 py-2.5",
+    isActive
+      ? "bg-[#7c3aed] text-white shadow-[0_4px_24px_-4px_rgba(124,58,237,0.55)]"
+      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
   );
 
   const content = (
