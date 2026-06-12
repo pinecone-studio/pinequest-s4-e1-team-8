@@ -37,6 +37,11 @@ export type InitializeProjectPayload = {
   step4: InitializeProjectStep4;
   workspaceId?: string;
   projectId?: string;
+  onboardingSessionId?: string;
+  aiGoals?: string;
+  tddLayoutState?: unknown;
+  tddConfirmed?: boolean;
+  essentialResources?: Array<{ name: string; url: string }>;
 };
 
 export type InitializeProjectValidationResult =

@@ -3,6 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import { Headphones } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   createMeetingRoom,
   joinMeetingRoom,
@@ -155,10 +156,10 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
     return (
       <section className="m-auto w-full max-w-xs space-y-4 rounded-2xl border border-border/60 bg-card p-6 text-center shadow-sm">
         <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-muted">
-          <Headphones className="size-5 stroke-[1.75] text-violet-700 dark:text-violet-400" />
+          <Headphones className="size-5 stroke-[1.75] text-primary" />
         </div>
         <div>
-          <h1 className="text-[15px] font-semibold text-foreground">
+          <h1 className="font-heading text-[15px] font-semibold text-foreground">
             Select a channel
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -173,10 +174,10 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
     return (
       <section className="m-auto w-full max-w-sm space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-400">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
             {selectedRoom.roomName}
           </p>
-          <h1 className="mt-1 text-[15px] font-semibold text-foreground">
+          <h1 className="mt-1 font-heading text-[15px] font-semibold text-foreground">
             Enter display name
           </h1>
         </div>
@@ -188,13 +189,13 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
         />
 
         {error ? (
-          <p className="rounded-xl border border-red-400/30 bg-red-100 dark:bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
+          <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </p>
         ) : null}
 
-        <button
-          className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+        <Button
+          className="w-full"
           disabled={!manualDisplayName.trim() || joinStatus === "joining"}
           onClick={() => {
             void joinSelectedRoom(manualDisplayName);
@@ -202,7 +203,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
           type="button"
         >
           {joinStatus === "joining" ? "Joining..." : "Join channel"}
-        </button>
+        </Button>
       </section>
     );
   }
@@ -210,10 +211,10 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
   return (
     <section className="m-auto w-full max-w-sm space-y-4 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-400">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
           {selectedRoom.roomName}
         </p>
-        <h1 className="mt-1 text-[15px] font-semibold text-foreground">
+        <h1 className="mt-1 font-heading text-[15px] font-semibold text-foreground">
           {joinStatus === "joining" ? "Joining channel..." : "Ready to join"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -224,13 +225,13 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
       </div>
 
       {error ? (
-        <p className="rounded-xl border border-red-400/30 bg-red-100 dark:bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
+        <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </p>
       ) : null}
 
-      <button
-        className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+      <Button
+        className="w-full"
         disabled={joinStatus === "joining" || !displayName}
         onClick={() => {
           void joinSelectedRoom(displayName);
@@ -238,7 +239,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
         type="button"
       >
         {joinStatus === "joining" ? "Joining..." : "Join channel"}
-      </button>
+      </Button>
     </section>
   );
 };

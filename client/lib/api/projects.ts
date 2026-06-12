@@ -13,8 +13,15 @@ export type ProjectSummary = {
   inviteToken: string | null;
   githubConnected: boolean;
   asanaConnected: boolean;
+  aiGoals: string | null;
   isOwner: boolean;
   members: TeamMember[];
+};
+
+export type EssentialResource = {
+  id: string;
+  name: string;
+  url: string;
 };
 
 export type InitializeProjectPayload = {
@@ -41,6 +48,11 @@ export type InitializeProjectPayload = {
       isApproved: boolean;
     }>;
   };
+  onboardingSessionId?: string;
+  aiGoals?: string;
+  tddLayoutState?: unknown;
+  tddConfirmed?: boolean;
+  essentialResources?: Array<{ name: string; url: string }>;
 };
 
 export type SubTeam = {
@@ -56,9 +68,11 @@ export async function initializeProject(payload: InitializeProjectPayload) {
       workspaceId: string;
       name: string;
       inviteToken: string | null;
+      aiGoals: string | null;
     };
     members: Array<{ email: string; role: TeamRole }>;
   }>(`${PROJECTS_API_BASE}/initialize`, payload);
+  projectsCache = null;
   return data;
 }
 
@@ -176,8 +190,38 @@ export function projectToOnboardingData(
     asanaConnected: project.asanaConnected,
     isGithubDisconnected: !project.githubConnected,
     isAsanaDisconnected: !project.asanaConnected,
-    aiGoals,
+    aiGoals: project.aiGoals ?? aiGoals,
   };
+}
+
+export async function fetchProjectResources(projectId: string) {
+  const { data } = await clientApi.get<{ resources: EssentialResource[] }>(
+    `${PROJECTS_API_BASE}/${projectId}/resources`,
+  );
+  return data.resources;
+}
+
+export async function saveProjectResources(
+  projectId: string,
+  resources: EssentialResource[],
+) {
+  const { data } = await clientApi.put<{ ok: boolean; resources: EssentialResource[] }>(
+    `${PROJECTS_API_BASE}/${projectId}/resources`,
+    { resources },
+  );
+  return data.resources;
+}
+
+export async function fetchProjectTdd(projectId: string) {
+  const { data } = await clientApi.get<{
+    session: {
+      id: string;
+      status: string;
+      tddLayoutState: unknown;
+      docUrl: string | null;
+    } | null;
+  }>(`${PROJECTS_API_BASE}/${projectId}/tdd`);
+  return data.session;
 }
 
 export function milestoneDraftsToPayload(drafts: MilestoneDraft[]) {

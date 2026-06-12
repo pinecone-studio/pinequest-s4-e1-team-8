@@ -50,9 +50,6 @@ const nextConfig: NextConfig = {
       shadcn: path.join(clientRoot, "node_modules/shadcn"),
     },
   },
-  async redirects() {
-    return [{ source: "/", destination: "/login", permanent: false }];
-  },
   async rewrites() {
     return [
       { source: "/analytics/:path*", destination: `${apiUrl}/analytics/:path*` },

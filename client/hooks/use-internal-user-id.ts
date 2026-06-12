@@ -14,6 +14,14 @@ export function useInternalUserId() {
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
+  const email = user?.primaryEmailAddress?.emailAddress?.trim() ?? "";
+  const displayName =
+    user?.fullName?.trim() ||
+    user?.firstName?.trim() ||
+    user?.username?.trim() ||
+    email;
+  const avatarUrl = user?.imageUrl ?? null;
+
   useEffect(() => {
     if (!authLoaded || !userLoaded) return;
 
@@ -24,9 +32,7 @@ export function useInternalUserId() {
       return;
     }
 
-    const email = user?.primaryEmailAddress?.emailAddress?.trim();
-    const name = user?.fullName?.trim() || user?.username?.trim();
-    if (!email || !name) {
+    if (!email || !displayName) {
       setInternalUserId(null);
       setSyncError("Your profile is missing an email or display name.");
       setSyncing(false);
@@ -41,8 +47,8 @@ export function useInternalUserId() {
     syncClerkUser({
       clerkId,
       email,
-      name,
-      avatarUrl: user?.imageUrl ?? null,
+      name: displayName,
+      avatarUrl,
     })
       .then((synced) => {
         if (!cancelled) {
@@ -63,16 +69,7 @@ export function useInternalUserId() {
     return () => {
       cancelled = true;
     };
-  }, [
-    authLoaded,
-    userLoaded,
-    clerkId,
-    user?.id,
-    user?.primaryEmailAddress?.emailAddress,
-    user?.fullName,
-    user?.username,
-    user?.imageUrl,
-  ]);
+  }, [authLoaded, userLoaded, clerkId, user?.id, email, displayName, avatarUrl]);
 
   const isLoaded = authLoaded && userLoaded && !syncing && internalUserId !== null;
 

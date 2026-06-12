@@ -86,6 +86,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS `project_risks_project_id_unique` ON `project_
 CREATE TABLE IF NOT EXISTS `onboarding_sessions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
+	`project_id` text,
 	`transcript` text,
 	`tdd_layout_state` text,
 	`discovery_state` text,

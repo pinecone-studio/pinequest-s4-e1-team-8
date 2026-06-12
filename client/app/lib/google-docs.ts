@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import type { docs_v1 } from "googleapis";
 import type { TddBlock, TddLayoutState } from "@/lib/onboarding/tdd-types";
 
 type GoogleAuthClient = {
@@ -8,6 +9,8 @@ type GoogleAuthClient = {
   clientId: string;
   clientSecret: string;
 };
+
+const BATCH_CHUNK_SIZE = 200;
 
 type MarkdownSegment =
   | { kind: "heading"; level: number; text: string }
@@ -142,6 +145,13 @@ function inlineStyleRequests(textStart: number, runs: InlineRun[]): Array<Record
   });
 }
 
+function paragraphRange(startIndex: number, textLength: number) {
+  return {
+    startIndex,
+    endIndex: startIndex + textLength + 1,
+  };
+}
+
 function buildBlockRequests(block: TddBlock, startIndex: number): {
   requests: Array<Record<string, unknown>>;
   endIndex: number;
@@ -164,7 +174,7 @@ function buildBlockRequests(block: TddBlock, startIndex: number): {
   const titleStart = insertText(`${block.title}\n`);
   requests.push({
     updateParagraphStyle: {
-      range: { startIndex: titleStart, endIndex: titleStart + block.title.length },
+      range: paragraphRange(titleStart, block.title.length),
       paragraphStyle: { namedStyleType: "HEADING_1" },
       fields: "namedStyleType",
     },
@@ -177,10 +187,7 @@ function buildBlockRequests(block: TddBlock, startIndex: number): {
       const start = insertText(`${plainText}\n`);
       requests.push({
         updateParagraphStyle: {
-          range: {
-            startIndex: start,
-            endIndex: start + plainText.length,
-          },
+          range: paragraphRange(start, plainText.length),
           paragraphStyle: { namedStyleType: headingNamedStyle(segment.level) },
           fields: "namedStyleType",
         },
@@ -237,31 +244,7 @@ function buildBlockRequests(block: TddBlock, startIndex: number): {
   return { requests, endIndex: cursor };
 }
 
-export async function createGoogleDocFromTddLayout(
-  auth: GoogleAuthClient,
-  projectName: string,
-  layout: TddLayoutState,
-): Promise<{ documentId: string; documentUrl: string }> {
-  const oauth2Client = new google.auth.OAuth2(auth.clientId, auth.clientSecret);
-  oauth2Client.setCredentials({
-    access_token: auth.accessToken,
-    refresh_token: auth.refreshToken ?? undefined,
-    expiry_date: auth.expiryMs ?? undefined,
-  });
-
-  const docs = google.docs({ version: "v1", auth: oauth2Client });
-  const drive = google.drive({ version: "v3", auth: oauth2Client });
-
-  const title = `${projectName.trim() || "Brisk Project"} — TDD Document`;
-  const created = await docs.documents.create({
-    requestBody: { title },
-  });
-
-  const documentId = created.data.documentId;
-  if (!documentId) {
-    throw new Error("Google Docs API did not return a document ID.");
-  }
-
+function buildLayoutRequests(layout: TddLayoutState): Array<Record<string, unknown>> {
   const sortedBlocks = [...layout.blocks].sort((left, right) => left.order - right.order);
   const requests: Array<Record<string, unknown>> = [];
   let index = 1;
@@ -272,23 +255,130 @@ export async function createGoogleDocFromTddLayout(
     index = built.endIndex;
   }
 
-  if (requests.length > 0) {
+  return requests;
+}
+
+export function extractGoogleDocId(docUrl: string): string | null {
+  const match = docUrl.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
+  return match?.[1] ?? null;
+}
+
+async function batchUpdateInChunks(
+  docs: docs_v1.Docs,
+  documentId: string,
+  requests: Array<Record<string, unknown>>,
+): Promise<void> {
+  for (let offset = 0; offset < requests.length; offset += BATCH_CHUNK_SIZE) {
+    const chunk = requests.slice(offset, offset + BATCH_CHUNK_SIZE);
     await docs.documents.batchUpdate({
       documentId,
-      requestBody: { requests },
+      requestBody: { requests: chunk },
     });
   }
+}
 
-  await drive.permissions.create({
-    fileId: documentId,
-    requestBody: { role: "writer", type: "user" },
-    fields: "id",
+async function clearDocumentBody(docs: docs_v1.Docs, documentId: string): Promise<void> {
+  const { data } = await docs.documents.get({ documentId });
+  const body = data.body?.content ?? [];
+  const lastEnd = body.at(-1)?.endIndex;
+
+  if (!lastEnd || lastEnd <= 2) {
+    return;
+  }
+
+  await docs.documents.batchUpdate({
+    documentId,
+    requestBody: {
+      requests: [
+        {
+          deleteContentRange: {
+            range: {
+              startIndex: 1,
+              endIndex: lastEnd - 1,
+            },
+          },
+        },
+      ],
+    },
   });
+}
+
+function createGoogleClients(auth: GoogleAuthClient) {
+  const oauth2Client = new google.auth.OAuth2(auth.clientId, auth.clientSecret);
+  oauth2Client.setCredentials({
+    access_token: auth.accessToken,
+    refresh_token: auth.refreshToken ?? undefined,
+    expiry_date: auth.expiryMs ?? undefined,
+  });
+
+  return {
+    docs: google.docs({ version: "v1", auth: oauth2Client }),
+    drive: google.drive({ version: "v3", auth: oauth2Client }),
+  };
+}
+
+export function formatGoogleApiError(error: unknown): string {
+  if (error && typeof error === "object" && "response" in error) {
+    const response = (error as { response?: { data?: { error?: { message?: string } } } }).response;
+    const apiMessage = response?.data?.error?.message;
+    if (apiMessage) {
+      return apiMessage;
+    }
+  }
+  return error instanceof Error ? error.message : "Google Docs export failed.";
+}
+
+export async function syncGoogleDocFromTddLayout(
+  auth: GoogleAuthClient,
+  projectName: string,
+  layout: TddLayoutState,
+  existingDocUrl?: string | null,
+): Promise<{ documentId: string; documentUrl: string }> {
+  const { docs, drive } = createGoogleClients(auth);
+  const title = `${projectName.trim() || "Brisk Project"} — TDD Document`;
+  const requests = buildLayoutRequests(layout);
+
+  let documentId = existingDocUrl ? extractGoogleDocId(existingDocUrl) : null;
+
+  if (documentId) {
+    try {
+      await clearDocumentBody(docs, documentId);
+      await drive.files.update({
+        fileId: documentId,
+        requestBody: { name: title },
+      });
+    } catch {
+      documentId = null;
+    }
+  }
+
+  if (!documentId) {
+    const created = await docs.documents.create({
+      requestBody: { title },
+    });
+    documentId = created.data.documentId ?? null;
+    if (!documentId) {
+      throw new Error("Google Docs API did not return a document ID.");
+    }
+  }
+
+  if (requests.length > 0) {
+    await batchUpdateInChunks(docs, documentId, requests);
+  }
 
   return {
     documentId,
     documentUrl: `https://docs.google.com/document/d/${documentId}/edit`,
   };
+}
+
+/** @deprecated Use syncGoogleDocFromTddLayout */
+export async function createGoogleDocFromTddLayout(
+  auth: GoogleAuthClient,
+  projectName: string,
+  layout: TddLayoutState,
+): Promise<{ documentId: string; documentUrl: string }> {
+  return syncGoogleDocFromTddLayout(auth, projectName, layout);
 }
 
 export async function refreshGoogleAccessToken(

@@ -12,7 +12,6 @@ import {
   readOnboardingData,
   saveOnboardingData,
 } from "@/lib/onboarding-storage";
-import { resolveScopedMilestones } from "@/lib/onboarding/scoped-milestones";
 import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -24,32 +23,27 @@ export function useOnboardingData() {
   const mountedRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    const raw = readOnboardingData();
-    const local = hydrateOnboardingData(raw);
-
-    if (local && hasOnboardingProject(local)) {
-      const hadScoped = (raw?.scopedMilestones?.length ?? 0) > 0;
-      if (!hadScoped) {
-        saveOnboardingData(local);
-      }
-    }
-
-    if (mountedRef.current) {
-      setData(local);
-      setLoaded(true);
-    }
+    const local = hydrateOnboardingData(readOnboardingData());
 
     if (!isSignedIn) {
+      if (mountedRef.current) {
+        setData(local);
+        setLoaded(true);
+      }
       return;
     }
 
     try {
-      let projects = await fetchMyProjects();
-      // The active project may be newer than a cached list — refetch once.
-      if (local?.projectId && !projects.some((p) => p.id === local.projectId)) {
-        projects = await fetchMyProjects({ force: true });
-      }
-      if (projects.length === 0 || !mountedRef.current) {
+      const projects = await fetchMyProjects(
+        local?.projectId ? { force: true } : undefined,
+      );
+
+      if (projects.length === 0) {
+        if (mountedRef.current) {
+          setData(null);
+          setInviteToken(null);
+          setLoaded(true);
+        }
         return;
       }
 
@@ -58,20 +52,25 @@ export function useOnboardingData() {
         projects[0];
 
       const synced = hydrateOnboardingData(
-        projectToOnboardingData(active, local?.aiGoals ?? ""),
+        projectToOnboardingData(active),
       );
+
       if (synced) {
-        synced.scopedMilestones = resolveScopedMilestones(
-          local?.scopedMilestones ?? synced.scopedMilestones,
-        );
         saveOnboardingData(synced);
         if (mountedRef.current) {
           setData(synced);
           setInviteToken(active.inviteToken);
+          setLoaded(true);
         }
       }
     } catch {
-      // Keep hydrated local fallback when API is unavailable.
+      if (local && hasOnboardingProject(local) && mountedRef.current) {
+        setData(local);
+        setLoaded(true);
+      } else if (mountedRef.current) {
+        setData(null);
+        setLoaded(true);
+      }
     }
   }, [isSignedIn]);
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientAuthSetup } from "@/components/client-auth-setup";
 import dynamic from "next/dynamic";
 import { clearVoiceVerified } from "@/lib/voice/session";
 import { useAuth } from "@clerk/nextjs";
@@ -12,11 +13,13 @@ const DashboardAppShell = dynamic(
   { ssr: false },
 );
 
-const AUTH_ROUTES = new Set(["/login", "/onboarding"]);
+const AUTH_ROUTES = new Set(["/sign-in", "/sign-up", "/onboarding"]);
 
 function isAuthRoute(pathname: string) {
   return (
     AUTH_ROUTES.has(pathname) ||
+    pathname.startsWith("/sign-in/") ||
+    pathname.startsWith("/sign-up/") ||
     pathname.startsWith("/onboarding/") ||
     pathname.startsWith("/invite/")
   );
@@ -33,7 +36,12 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
   }, [isLoaded, isSignedIn]);
 
   if (isAuthRoute(pathname)) {
-    return <>{children}</>;
+    return (
+      <>
+        <ClientAuthSetup />
+        {children}
+      </>
+    );
   }
 
   return <DashboardAppShell>{children}</DashboardAppShell>;

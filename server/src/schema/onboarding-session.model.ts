@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { users } from "../db/schema";
+import { projects } from "./project.model";
 
 export const onboardingSessionStatuses = [
   "INTERVIEWING",
@@ -15,6 +16,9 @@ export const onboardingSessions = sqliteTable("onboarding_sessions", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  projectId: text("project_id").references(() => projects.id, {
+    onDelete: "set null",
+  }),
   transcript: text("transcript"),
   tddLayoutState: text("tdd_layout_state"),
   discoveryState: text("discovery_state"),
@@ -30,6 +34,10 @@ export const onboardingSessionsRelations = relations(onboardingSessions, ({ one 
   user: one(users, {
     fields: [onboardingSessions.userId],
     references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [onboardingSessions.projectId],
+    references: [projects.id],
   }),
 }));
 
