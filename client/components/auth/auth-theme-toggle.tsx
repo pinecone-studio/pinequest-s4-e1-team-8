@@ -22,7 +22,7 @@ export function AuthThemeToggle({ className }: { className?: string }) {
         className={cn(
           "flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-medium transition-colors",
           !isDark
-            ? "bg-[#7c3aed] text-white"
+            ? "bg-primary text-primary-foreground"
             : "text-muted-foreground hover:text-foreground",
         )}
       >
@@ -36,7 +36,7 @@ export function AuthThemeToggle({ className }: { className?: string }) {
         className={cn(
           "flex flex-1 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-medium transition-colors",
           isDark
-            ? "bg-[#7c3aed] text-white shadow-[0_2px_12px_-2px_rgba(124,58,237,0.5)]"
+            ? "bg-primary text-primary-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground",
         )}
       >

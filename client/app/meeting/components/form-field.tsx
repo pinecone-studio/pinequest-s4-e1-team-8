@@ -12,7 +12,7 @@ type FormFieldProps = {
 };
 
 const fieldClass =
-  "w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-violet-400";
+  "w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-3 focus:ring-ring/50";
 
 export const FormField = ({
   label,

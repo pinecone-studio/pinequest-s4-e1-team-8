@@ -92,8 +92,8 @@ export const ParticipantTile = ({
       className={cn(
         "group relative overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-[box-shadow,border-color]",
         onClick &&
-          "cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40",
-        isFocused && "border-violet-400/40 ring-1 ring-violet-400/30",
+          "cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        isFocused && "border-primary/40 ring-1 ring-primary/30",
         isActive ? "min-h-[360px]" : "aspect-video min-h-[150px]",
         className,
       )}
@@ -104,7 +104,7 @@ export const ParticipantTile = ({
           !isScreenShare &&
             hasVideo &&
             isActivelySpeaking &&
-            "shadow-[inset_0_0_0_1px_rgba(167,139,250,0.58),0_0_28px_rgba(124,58,237,0.22)]",
+            "shadow-[inset_0_0_0_1px_rgba(242,101,74,0.58),0_0_28px_rgba(242,101,74,0.22)]",
         )}
       >
         {hasVideo ? (
@@ -117,9 +117,9 @@ export const ParticipantTile = ({
           <div className="flex h-full flex-col items-center justify-center gap-3 px-5 text-center">
             <div
               className={cn(
-                "flex shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/15 font-semibold text-violet-900 dark:text-violet-100 ring-1 ring-violet-400/20 transition-[box-shadow]",
+                "flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary ring-1 ring-primary/20 transition-[box-shadow]",
                 isActivelySpeaking &&
-                  "shadow-[0_0_0_2px_rgba(167,139,250,0.58),0_0_24px_rgba(124,58,237,0.3)]",
+                  "shadow-[0_0_0_2px_rgba(242,101,74,0.58),0_0_24px_rgba(242,101,74,0.3)]",
                 isActive
                   ? "size-24 text-3xl"
                   : "size-14 text-xl",
@@ -139,7 +139,7 @@ export const ParticipantTile = ({
         )}
       </div>
       {isActivelySpeaking ? (
-        <span className="absolute right-3 top-3 rounded-full border border-violet-300/30 bg-violet-100 dark:bg-violet-500/15 px-2.5 py-1 text-[11px] font-medium text-violet-900 dark:text-violet-100 backdrop-blur">
+        <span className="absolute right-3 top-3 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary backdrop-blur">
           Speaking
         </span>
       ) : null}
@@ -148,8 +148,8 @@ export const ParticipantTile = ({
           className={cn(
             "absolute left-3 top-3 rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur",
             badgeTone === "live"
-              ? "border-red-300/30 bg-red-500/80 text-white"
-              : "border-violet-300/30 bg-violet-100 dark:bg-violet-500/15 text-violet-900 dark:text-violet-100",
+              ? "border-destructive/30 bg-destructive/80 text-white"
+              : "border-primary/30 bg-primary/10 text-primary",
           )}
         >
           {badge}
@@ -170,8 +170,8 @@ export const ParticipantTile = ({
           <span
             className={`w-20 shrink-0 rounded-full px-3 py-1 text-center text-xs font-medium backdrop-blur ${
               participant.isMicrophoneEnabled
-                ? "bg-violet-400/15 text-violet-900 dark:text-violet-100"
-                : "bg-red-400/15 text-red-800 dark:text-red-100"
+                ? "bg-primary/15 text-primary"
+                : "bg-destructive/15 text-destructive"
             }`}
           >
             {participant.isMicrophoneEnabled ? "Mic on" : "Muted"}
