@@ -2,6 +2,7 @@
 
 import { RecordingCard } from "@/components/recordings/recording-card";
 import { UploadRecordingDialog } from "@/components/recordings/upload-recording-dialog";
+import { VoiceVerificationPanel } from "@/components/recordings/voice-verification-panel";
 import { cn } from "@/lib/utils";
 import { recordings as initialRecordings } from "@/lib/mock-data";
 import type { Recording, RecordingStatus } from "@/types";
@@ -35,6 +36,8 @@ export default function RecordingsPage() {
           onUploaded={(recording) => setRecordings((current) => [recording, ...current])}
         />
       </div>
+
+      <VoiceVerificationPanel />
 
       <div className="inline-flex w-fit items-center gap-1 rounded-full bg-muted p-1">
         {FILTERS.map((item) => (

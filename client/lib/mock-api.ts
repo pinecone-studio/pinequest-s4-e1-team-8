@@ -41,6 +41,12 @@ function clone<T>(value: T): T {
   return structuredClone(value);
 }
 
+// Date.now() alone collides for items created in the same millisecond, which
+// produces duplicate React keys. Add a random suffix to keep ids unique.
+function createId(prefix: string): string {
+  return `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
 // Users
 
 export async function getCurrentUser(): Promise<AppUser> {
@@ -74,7 +80,7 @@ export interface ScheduleMeetingInput {
 }
 
 export async function scheduleMeeting(input: ScheduleMeetingInput): Promise<Meeting> {
-  const id = `m-${Date.now().toString(36)}`;
+  const id = createId("m");
   const meeting: Meeting = {
     id,
     title: input.title,
@@ -102,7 +108,7 @@ export async function getChatMessages(): Promise<ChatMessage[]> {
 
 export async function sendChatMessage(text: string): Promise<ChatMessage> {
   const message: ChatMessage = {
-    id: `c-${Date.now().toString(36)}`,
+    id: createId("c"),
     author: currentUser,
     text,
     timestamp: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
@@ -183,7 +189,7 @@ export interface CompleteRecordingInput {
 
 export async function completeRecording(input: CompleteRecordingInput): Promise<Recording> {
   const template = recordings.find((recording) => recording.status === "ready") ?? recordings[0];
-  const id = `rec-${Date.now().toString(36)}`;
+  const id = createId("rec");
   const recording: Recording = {
     ...clone(template),
     id,
