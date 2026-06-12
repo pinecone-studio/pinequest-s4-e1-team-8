@@ -110,9 +110,9 @@ export const LivekitRoomView = ({
         : "Not recording";
   const recordingBadgeClassName =
     recordingStatus === "active"
-      ? "border-red-400/30 bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-100"
+      ? "border-destructive/30 bg-destructive/10 text-destructive"
       : recordingStatus === "ready"
-        ? "border-emerald-400/30 bg-emerald-100 dark:bg-emerald-500/15 text-emerald-900 dark:text-emerald-100"
+        ? "border-sage bg-sage text-sage-foreground"
         : "border-border bg-muted/50 text-muted-foreground";
   const connectionLabel = isConnecting
     ? "Connecting..."
@@ -225,22 +225,22 @@ export const LivekitRoomView = ({
     <section className="flex min-h-[calc(100vh-3rem)] w-full flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-card text-foreground shadow-xl dark:shadow-2xl dark:shadow-black/30">
       <header className="flex shrink-0 flex-col gap-3 border-b border-border bg-muted/20 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <h2 className="truncate text-base font-semibold tracking-tight">
+          <h2 className="truncate font-heading text-base font-semibold tracking-tight">
             {roomName}
           </h2>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
             {isConnected ? (
-              <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
+              <span className="size-1.5 shrink-0 rounded-full bg-sage-foreground" />
             ) : null}
             {connectionLabel}
-            <span className="text-zinc-600">/</span>
+            <span className="text-muted-foreground">/</span>
             ID {meetingId}
           </p>
         </div>
 
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
-            <Users className="size-3.5 text-violet-800 dark:text-violet-300" />
+            <Users className="size-3.5 text-primary" />
             {participantCount}
           </span>
           <span
@@ -250,7 +250,7 @@ export const LivekitRoomView = ({
             {recordingLabel}
           </span>
           {screenShareParticipants.length ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-100 dark:bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-800 dark:text-red-100">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-semibold text-destructive">
               <ScreenShare className="size-3.5" />
               Screen share live
             </span>
@@ -259,12 +259,12 @@ export const LivekitRoomView = ({
       </header>
 
       {isConnecting ? (
-        <p className="mx-4 mt-4 rounded-xl border border-violet-300/20 bg-violet-100 dark:bg-violet-500/10 p-3 text-sm text-violet-900 dark:text-violet-100">
+        <p className="mx-4 mt-4 rounded-xl border border-primary/20 bg-primary/10 p-3 text-sm text-primary">
           Connecting...
         </p>
       ) : null}
       {error ? (
-        <div className="mx-4 mt-4 rounded-xl border border-red-400/30 bg-red-100 dark:bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
+        <div className="mx-4 mt-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       ) : null}
@@ -277,7 +277,7 @@ export const LivekitRoomView = ({
                 <button
                   className={`flex min-w-44 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition ${
                     focusedScreenShareParticipant?.identity === participant.identity
-                      ? "border-red-300/40 bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-100"
+                      ? "border-destructive/40 bg-destructive/10 text-destructive"
                       : "border-border bg-muted/30 text-muted-foreground hover:bg-accent"
                   }`}
                   key={`${participant.identity}-screen-share-chip`}
@@ -288,7 +288,7 @@ export const LivekitRoomView = ({
                     <span className="block truncate text-xs font-semibold">
                       {getScreenShareLabel(participant)}
                     </span>
-                    <span className="text-[10px] uppercase tracking-[0.1em] text-red-800 dark:text-red-200">
+                    <span className="text-[10px] uppercase tracking-[0.1em] text-destructive">
                       Live screen
                     </span>
                   </span>
@@ -329,7 +329,7 @@ export const LivekitRoomView = ({
                   variant="active"
                 />
               ) : (
-                <div className="flex min-h-[280px] items-center justify-center text-sm text-zinc-500">
+                <div className="flex min-h-[280px] items-center justify-center text-sm text-muted-foreground">
                   Waiting for local participant...
                 </div>
               )}
@@ -360,10 +360,10 @@ export const LivekitRoomView = ({
 
           <div className="flex shrink-0 flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-muted/30 p-3">
             <button
-              className={`inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 ${
                 localParticipant?.isMicrophoneEnabled
                   ? "bg-muted text-foreground hover:bg-accent"
-                  : "bg-red-500/20 text-red-800 dark:text-red-100 hover:bg-red-500/30"
+                  : "bg-destructive/20 text-destructive hover:bg-destructive/30"
               }`}
               disabled={!localParticipant || Boolean(pendingMediaToggle)}
               onClick={() => void toggleMicrophone()}
@@ -381,10 +381,10 @@ export const LivekitRoomView = ({
               )}
             </button>
             <button
-              className={`inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 ${
                 localParticipant?.isCameraEnabled
                   ? "bg-muted text-foreground hover:bg-accent"
-                  : "bg-red-500/20 text-red-800 dark:text-red-100 hover:bg-red-500/30"
+                  : "bg-destructive/20 text-destructive hover:bg-destructive/30"
               }`}
               disabled={!localParticipant || Boolean(pendingMediaToggle)}
               onClick={() => void toggleCamera()}
@@ -402,9 +402,9 @@ export const LivekitRoomView = ({
               )}
             </button>
             <button
-              className={`inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition focus-visible:ring-2 focus-visible:ring-violet-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 ${
                 isScreenSharing
-                  ? "bg-violet-500/25 text-violet-900 dark:text-violet-100 hover:bg-violet-500/35"
+                  ? "bg-primary/20 text-primary hover:bg-primary/30"
                   : "bg-muted text-foreground hover:bg-accent"
               }`}
               disabled={!localParticipant || Boolean(pendingMediaToggle)}
@@ -425,7 +425,7 @@ export const LivekitRoomView = ({
               roomName={livekitRoomName}
             />
             <button
-              className="inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl bg-red-500 px-5 text-sm font-semibold text-foreground shadow-lg shadow-red-950/30 transition hover:bg-red-400 focus-visible:ring-2 focus-visible:ring-red-400/40"
+              className="inline-flex h-12 shrink-0 items-center gap-2 rounded-2xl bg-destructive px-5 text-sm font-semibold text-white shadow-lg shadow-destructive/30 transition hover:bg-destructive/90 focus-visible:ring-2 focus-visible:ring-destructive/40"
               onClick={() => void handleLeave()}
               type="button"
             >

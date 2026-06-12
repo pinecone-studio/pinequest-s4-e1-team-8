@@ -13,11 +13,13 @@ const DashboardAppShell = dynamic(
   { ssr: false },
 );
 
-const AUTH_ROUTES = new Set(["/login", "/onboarding"]);
+const AUTH_ROUTES = new Set(["/sign-in", "/sign-up", "/onboarding"]);
 
 function isAuthRoute(pathname: string) {
   return (
     AUTH_ROUTES.has(pathname) ||
+    pathname.startsWith("/sign-in/") ||
+    pathname.startsWith("/sign-up/") ||
     pathname.startsWith("/onboarding/") ||
     pathname.startsWith("/invite/")
   );

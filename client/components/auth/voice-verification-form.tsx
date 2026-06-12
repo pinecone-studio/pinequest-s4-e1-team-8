@@ -17,7 +17,7 @@ import {
 import { markVoiceVerified } from "@/lib/voice/session";
 import { useUser } from "@clerk/nextjs";
 import { Loader2, Mic, ShieldCheck } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 type VoiceMode = "enroll" | "verify";
 
@@ -25,12 +25,14 @@ type VoiceVerificationFormProps = {
   onSuccess?: () => void;
   title?: string;
   description?: string;
+  footer?: ReactNode;
 };
 
 export function VoiceVerificationForm({
   onSuccess,
   title: titleOverride,
   description: descriptionOverride,
+  footer,
 }: VoiceVerificationFormProps) {
   useClientApiAuth();
 
@@ -166,7 +168,7 @@ export function VoiceVerificationForm({
   return (
     <AuthShell>
       <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex size-14 items-center justify-center rounded-full bg-violet-500/15 text-violet-400">
+        <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
           {mode === "verify" ? (
             <ShieldCheck className="size-7" />
           ) : (
@@ -191,7 +193,7 @@ export function VoiceVerificationForm({
             <Button
               type="button"
               size="lg"
-              className="min-w-[220px] bg-violet-600 text-white hover:bg-violet-500"
+              className="min-w-[220px]"
               disabled={!mode || isRecording || isSubmitting}
               onClick={() => void handleRecord()}
             >
@@ -226,6 +228,8 @@ export function VoiceVerificationForm({
             {error}
           </p>
         ) : null}
+
+        {footer}
       </div>
     </AuthShell>
   );
