@@ -3,14 +3,9 @@
 import { MeetingChannelPresenceProvider } from "@/app/meeting/components/meeting-channel-presence-provider";
 import { MeetingSessionProvider } from "@/app/meeting/components/meeting-session-provider";
 import { ClientAuthSetup } from "@/components/client-auth-setup";
-import { DashboardSidebar } from "@/components/sidebar/sidebar";
 import { usePathname } from "next/navigation";
 
-export function DashboardAppShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function DashboardAppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const scrollableMain =
     pathname === "/tasks" ||
@@ -22,7 +17,6 @@ export function DashboardAppShell({
       <MeetingSessionProvider>
         <div className="flex h-screen overflow-hidden bg-background">
           <ClientAuthSetup />
-          <DashboardSidebar />
           <main
             className={
               scrollableMain
