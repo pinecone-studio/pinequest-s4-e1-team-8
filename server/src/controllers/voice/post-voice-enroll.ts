@@ -1,4 +1,5 @@
 import { Context } from "hono";
+import type { Bindings, Variables } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import {
   getUserVoiceProfile,
@@ -6,11 +7,12 @@ import {
   setUserVoiceProfileId,
 } from "../../lib/voice/voice-profile.service";
 import { enrollVoiceSample } from "../../lib/voice/voice-verification.service";
-import type { Bindings, Variables } from "../../lib/common/types";
 
 const MIN_AUDIO_BYTES = 8_000;
 
-async function readAudioBuffer(c: Context<{ Bindings: Bindings }>) {
+async function readAudioBuffer(
+  c: Context<{ Bindings: Bindings; Variables: Variables }>,
+) {
   const audio = await c.req.arrayBuffer();
 
   if (!audio.byteLength) {
@@ -63,7 +65,8 @@ export const postVoiceEnroll = async (
       remainingEnrollmentsSpeechLength: result.remainingEnrollmentsSpeechLength,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Enrollment failed";
+    const message =
+      error instanceof Error ? error.message : "Enrollment failed";
     return c.json({ error: message }, 400);
   }
 };

@@ -101,6 +101,7 @@ export async function getMyProjects(
       inviteToken: inviteTokenById.get(project.id) ?? project.inviteToken,
       githubConnected: project.githubConnected,
       asanaConnected: project.asanaConnected,
+      aiGoals: project.aiGoals ?? null,
       isOwner: project.ownerId === userId,
       members,
     };

@@ -1,13 +1,20 @@
 import { auth } from "@clerk/nextjs/server";
-import { createGoogleDocFromTddLayout, refreshGoogleAccessToken } from "@/app/lib/google-docs";
+import {
+  formatGoogleApiError,
+  refreshGoogleAccessToken,
+  syncGoogleDocFromTddLayout,
+} from "@/app/lib/google-docs";
 import { decryptToken } from "@/lib/crypto/token-encryption";
 import type { TddLayoutState } from "@/lib/onboarding/tdd-types";
 import { buildBackendAuthHeaders } from "@/lib/api/backend-auth";
+
+export const runtime = "nodejs";
 
 type ExportRequestBody = {
   sessionId?: unknown;
   projectName?: unknown;
   tddLayoutState?: unknown;
+  existingDocUrl?: unknown;
 };
 
 type GoogleTokensResponse = {
@@ -46,6 +53,10 @@ export async function POST(request: Request) {
 
   const sessionId = typeof raw.sessionId === "string" ? raw.sessionId.trim() : "";
   const projectName = typeof raw.projectName === "string" ? raw.projectName.trim() : "Brisk Project";
+  const existingDocUrl =
+    typeof raw.existingDocUrl === "string" && raw.existingDocUrl.trim().length > 0
+      ? raw.existingDocUrl.trim()
+      : null;
 
   if (!isTddLayoutState(raw.tddLayoutState)) {
     return Response.json({ error: "tddLayoutState with blocks is required." }, { status: 400 });
@@ -102,10 +113,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { documentUrl } = await createGoogleDocFromTddLayout(
+    const { documentUrl } = await syncGoogleDocFromTddLayout(
       authClient,
       projectName,
       raw.tddLayoutState,
+      existingDocUrl,
     );
 
     if (sessionId) {
@@ -113,13 +125,13 @@ export async function POST(request: Request) {
         method: "PATCH",
         headers,
         credentials: "include",
-        body: JSON.stringify({ docUrl: documentUrl, status: "CONCLUDED" }),
+        body: JSON.stringify({ docUrl: documentUrl }),
       });
     }
 
     return Response.json({ docUrl: documentUrl });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Google Docs export failed.";
-    return Response.json({ error: message }, { status: 502 });
+    console.error("[export-google-doc]", formatGoogleApiError(error), error);
+    return Response.json({ error: formatGoogleApiError(error) }, { status: 502 });
   }
 }

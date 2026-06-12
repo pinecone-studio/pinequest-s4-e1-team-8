@@ -1,12 +1,18 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { nanoid } from "nanoid";
 import { DEFAULT_WORKSPACE_ID } from "../tasks/task-defaults";
 import { createInviteToken } from "./invite-token";
 import type { InitializeProjectPayload } from "./initialize-project.types";
+import type { TddLayoutState } from "../onboarding/tdd-types";
 import * as schema from "../../schema/schema";
 import {
+  asanaIntegrations,
+  githubIntegrations,
+  onboardingSessions,
   projectCollaborators,
+  projectIntegrations,
+  projectResources,
   projects,
   tasks,
   workspaces,
@@ -38,11 +44,11 @@ async function persistMilestones(
   workspaceId: string,
   milestoneDrafts: InitializeProjectPayload["step4"]["milestoneDrafts"],
 ) {
-  for (const draft of milestoneDrafts) {
-    if (!draft.title.trim()) {
-      continue;
-    }
+  const approvedDrafts = milestoneDrafts.filter(
+    (draft) => draft.isApproved && draft.title.trim(),
+  );
 
+  for (const draft of approvedDrafts) {
     const milestoneId = `milestone-${nanoid(8)}`;
     await db.insert(tasks).values({
       id: milestoneId,
@@ -86,6 +92,148 @@ async function persistMilestones(
   }
 }
 
+async function linkOnboardingSession(
+  db: Db,
+  ownerId: string,
+  projectId: string,
+  payload: InitializeProjectPayload,
+) {
+  const sessionId = payload.onboardingSessionId?.trim();
+  if (!sessionId) {
+    return;
+  }
+
+  const updates: Partial<{
+    projectId: string;
+    tddLayoutState: string;
+    status: "CONCLUDED";
+  }> = {
+    projectId,
+  };
+
+  const layout = payload.tddLayoutState;
+  if (
+    layout &&
+    typeof layout === "object" &&
+    Array.isArray((layout as TddLayoutState).blocks)
+  ) {
+    updates.tddLayoutState = JSON.stringify(layout);
+  }
+
+  if (payload.tddConfirmed) {
+    updates.status = "CONCLUDED";
+  }
+
+  await db
+    .update(onboardingSessions)
+    .set(updates)
+    .where(
+      and(
+        eq(onboardingSessions.id, sessionId),
+        eq(onboardingSessions.userId, ownerId),
+      ),
+    );
+}
+
+async function persistProjectIntegrations(
+  db: Db,
+  userId: string,
+  projectId: string,
+  step3: InitializeProjectPayload["step3"],
+) {
+  if (!step3.githubConnected && !step3.asanaConnected) {
+    return;
+  }
+
+  const [github] = step3.githubConnected
+    ? await db
+        .select()
+        .from(githubIntegrations)
+        .where(eq(githubIntegrations.userId, userId))
+        .limit(1)
+    : [undefined];
+
+  const [asana] = step3.asanaConnected
+    ? await db
+        .select()
+        .from(asanaIntegrations)
+        .where(eq(asanaIntegrations.userId, userId))
+        .limit(1)
+    : [undefined];
+
+  const hasGithub = Boolean(github?.repoOwner && github?.repoName);
+  const hasAsana = Boolean(asana?.projectGid);
+
+  if (!hasGithub && !hasAsana) {
+    return;
+  }
+
+  const githubRepoId =
+    github?.repoOwner && github?.repoName
+      ? `${github.repoOwner}/${github.repoName}`
+      : null;
+
+  const integrationValues = {
+    userId,
+    githubRepoOwner: github?.repoOwner ?? null,
+    githubRepoName: github?.repoName ?? null,
+    githubRepoId,
+    githubProjectId: github?.githubProjectId ?? null,
+    githubProjectTitle: null as string | null,
+    asanaWorkspaceGid: asana?.workspaceGid ?? null,
+    asanaProjectGid: asana?.projectGid ?? null,
+    asanaProjectName: asana?.projectName ?? null,
+    updatedAt: new Date(),
+  };
+
+  const [existing] = await db
+    .select({ id: projectIntegrations.id })
+    .from(projectIntegrations)
+    .where(eq(projectIntegrations.projectId, projectId))
+    .limit(1);
+
+  try {
+    if (existing) {
+      await db
+        .update(projectIntegrations)
+        .set(integrationValues)
+        .where(eq(projectIntegrations.id, existing.id));
+    } else {
+      await db.insert(projectIntegrations).values({
+        id: `pint_${nanoid(10)}`,
+        projectId,
+        ...integrationValues,
+      });
+    }
+  } catch {
+    // Unique constraints on repo/project GIDs — skip if already linked elsewhere.
+  }
+}
+
+async function persistEssentialResources(
+  db: Db,
+  projectId: string,
+  resources: InitializeProjectPayload["essentialResources"],
+) {
+  if (!resources?.length) {
+    return;
+  }
+
+  await db
+    .delete(projectResources)
+    .where(eq(projectResources.projectId, projectId));
+
+  for (const [index, resource] of resources.entries()) {
+    await db.insert(projectResources).values({
+      id: `res_${nanoid(10)}`,
+      projectId,
+      name: resource.name.trim(),
+      url: resource.url.trim(),
+      sortOrder: index,
+    });
+  }
+}
+
 export async function initializeProject(
   db: Db,
   ownerId: string,
@@ -104,6 +252,7 @@ export async function initializeProject(
     .limit(1);
 
   const inviteToken = existing?.inviteToken ?? createInviteToken();
+  const aiGoals = payload.aiGoals?.trim() || null;
 
   const projectValues = {
     id: projectId,
@@ -117,6 +266,7 @@ export async function initializeProject(
     isGithubDisconnected: payload.step3.isGithubDisconnected,
     isAsanaDisconnected: payload.step3.isAsanaDisconnected,
     inviteToken,
+    aiGoals,
   };
 
   if (existing) {
@@ -154,6 +304,10 @@ export async function initializeProject(
       payload.step4.milestoneDrafts,
     );
   }
+
+  await linkOnboardingSession(db, ownerId, projectId, payload);
+  await persistProjectIntegrations(db, ownerId, projectId, payload.step3);
+  await persistEssentialResources(db, projectId, payload.essentialResources);
 
   const [project] = await db
     .select()

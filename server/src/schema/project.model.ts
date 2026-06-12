@@ -30,6 +30,7 @@ export const projects = sqliteTable("projects", {
     .notNull()
     .default(false),
   inviteToken: text("invite_token").unique(),
+  aiGoals: text("ai_goals"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

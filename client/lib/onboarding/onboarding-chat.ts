@@ -286,6 +286,7 @@ export async function exportGoogleDoc(params: {
   sessionId: string;
   projectName: string;
   tddLayoutState: TddLayoutState;
+  existingDocUrl?: string | null;
 }): Promise<{ docUrl: string }> {
   const response = await fetch("/api/onboarding/export-google-doc", {
     method: "POST",

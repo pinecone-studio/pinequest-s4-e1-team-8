@@ -81,6 +81,25 @@ export function validateInitializeProject(
     workspaceId:
       typeof raw.workspaceId === "string" ? raw.workspaceId : undefined,
     projectId: typeof raw.projectId === "string" ? raw.projectId : undefined,
+    onboardingSessionId:
+      typeof raw.onboardingSessionId === "string"
+        ? raw.onboardingSessionId
+        : undefined,
+    aiGoals: typeof raw.aiGoals === "string" ? raw.aiGoals : undefined,
+    tddLayoutState: raw.tddLayoutState,
+    tddConfirmed: Boolean(raw.tddConfirmed),
+    essentialResources: Array.isArray(raw.essentialResources)
+      ? raw.essentialResources
+          .filter((entry) => entry && typeof entry === "object")
+          .map((entry) => {
+            const resource = entry as Record<string, unknown>;
+            return {
+              name: typeof resource.name === "string" ? resource.name : "",
+              url: typeof resource.url === "string" ? resource.url : "",
+            };
+          })
+          .filter((resource) => resource.name.trim() && resource.url.trim())
+      : undefined,
   };
 
   return { ok: true, data };

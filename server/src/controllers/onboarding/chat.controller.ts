@@ -101,6 +101,7 @@ export const postOnboardingChat = async (c: Context<HonoEnv>) => {
     session = {
       id: newSessionId,
       userId,
+      projectId: null,
       transcript: JSON.stringify([]),
       tddLayoutState: null,
       discoveryState: null,

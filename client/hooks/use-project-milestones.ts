@@ -3,11 +3,8 @@
 import { fetchTasks, type ApiTaskRecord } from "@/lib/api/tasks";
 import { useOnboardingData } from "@/hooks/use-onboarding-data";
 import { GITHUB_SYNCED_EVENT } from "@/lib/integrations/github";
-import {
-  mapScopedMilestonesToProjectMilestones,
-  resolveScopedMilestones,
-  type ProjectMilestone,
-} from "@/lib/onboarding/scoped-milestones";
+import { type ProjectMilestone } from "@/lib/onboarding/scoped-milestones";
+import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
 
 export type { ProjectMilestone };
@@ -21,19 +18,11 @@ function isMilestoneTask(task: ApiTaskRecord) {
 }
 
 export function useProjectMilestones() {
+  const { isSignedIn } = useAuth();
   const { data, loaded, hasProject } = useOnboardingData();
   const [milestones, setMilestones] = useState<ProjectMilestone[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const applyScopedMilestoneFallback = useCallback(() => {
-    const scoped = resolveScopedMilestones(data?.scopedMilestones);
-    const projectId = data?.projectId?.trim() || "demo-project";
-
-    setMilestones(mapScopedMilestonesToProjectMilestones(scoped, projectId));
-    setError(null);
-    return true;
-  }, [data?.projectId, data?.scopedMilestones]);
 
   const loadMilestones = useCallback(async () => {
     if (!hasProject) {
@@ -42,9 +31,10 @@ export function useProjectMilestones() {
       return;
     }
 
-    if (!data?.projectId?.trim()) {
-      applyScopedMilestoneFallback();
+    if (!isSignedIn || !data?.projectId?.trim()) {
+      setMilestones([]);
       setIsLoading(false);
+      setError(isSignedIn ? null : "Sign in to view project milestones.");
       return;
     }
 
@@ -69,30 +59,21 @@ export function useProjectMilestones() {
         {},
       );
 
-      if (milestoneTasks.length > 0) {
-        setMilestones(
-          milestoneTasks.map((milestone) => ({
-            ...milestone,
-            subtaskCount: subtaskCounts[milestone.id] ?? 0,
-          })),
-        );
-        return;
-      }
-
-      if (!applyScopedMilestoneFallback()) {
-        setMilestones([]);
-      }
+      setMilestones(
+        milestoneTasks.map((milestone) => ({
+          ...milestone,
+          subtaskCount: subtaskCounts[milestone.id] ?? 0,
+        })),
+      );
     } catch (err) {
-      if (!applyScopedMilestoneFallback()) {
-        const message =
-          err instanceof Error ? err.message : "Failed to load milestones.";
-        setError(message);
-        setMilestones([]);
-      }
+      const message =
+        err instanceof Error ? err.message : "Failed to load milestones.";
+      setError(message);
+      setMilestones([]);
     } finally {
       setIsLoading(false);
     }
-  }, [applyScopedMilestoneFallback, data?.projectId, hasProject]);
+  }, [data?.projectId, hasProject, isSignedIn]);
 
   useEffect(() => {
     if (!loaded) {
@@ -106,7 +87,7 @@ export function useProjectMilestones() {
     }
 
     void loadMilestones();
-  }, [data?.projectId, data?.scopedMilestones, hasProject, loadMilestones, loaded]);
+  }, [data?.projectId, hasProject, loadMilestones, loaded]);
 
   useEffect(() => {
     const handleGithubSynced = () => {

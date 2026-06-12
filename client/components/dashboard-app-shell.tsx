@@ -2,21 +2,10 @@
 
 import { MeetingChannelPresenceProvider } from "@/app/meeting/components/meeting-channel-presence-provider";
 import { MeetingSessionProvider } from "@/app/meeting/components/meeting-session-provider";
-import { DashboardSidebar } from "@/components/sidebar/sidebar";
-import { UserSync } from "@/components/user-sync";
-import { useClientApiAuth } from "@/lib/api/auth-interceptor";
+import { ClientAuthSetup } from "@/components/client-auth-setup";
 import { usePathname } from "next/navigation";
 
-const AuthSetup = () => {
-  useClientApiAuth();
-  return null;
-};
-
-export function DashboardAppShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function DashboardAppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const scrollableMain =
     pathname === "/tasks" ||
@@ -27,9 +16,7 @@ export function DashboardAppShell({
     <MeetingChannelPresenceProvider>
       <MeetingSessionProvider>
         <div className="flex h-screen overflow-hidden bg-background">
-          <AuthSetup />
-          <UserSync />
-          <DashboardSidebar />
+          <ClientAuthSetup />
           <main
             className={
               scrollableMain

@@ -40,6 +40,7 @@ export async function postInitializeProject(
       inviteToken,
       githubConnected: project?.githubConnected ?? false,
       asanaConnected: project?.asanaConnected ?? false,
+      aiGoals: project?.aiGoals ?? null,
     },
     members: collaborators.map((row) => ({
       email: row.email,

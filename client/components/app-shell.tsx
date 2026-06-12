@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientAuthSetup } from "@/components/client-auth-setup";
 import dynamic from "next/dynamic";
 import { clearVoiceVerified } from "@/lib/voice/session";
 import { useAuth } from "@clerk/nextjs";
@@ -33,7 +34,12 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
   }, [isLoaded, isSignedIn]);
 
   if (isAuthRoute(pathname)) {
-    return <>{children}</>;
+    return (
+      <>
+        <ClientAuthSetup />
+        {children}
+      </>
+    );
   }
 
   return <DashboardAppShell>{children}</DashboardAppShell>;
