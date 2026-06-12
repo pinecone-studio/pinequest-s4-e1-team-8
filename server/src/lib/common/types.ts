@@ -35,6 +35,9 @@ export interface Bindings {
   FRONTEND_URL?: string;
   GEMINI_API_KEY?: string;
   ENCRYPTION_KEY?: string;
+  AZURE_SPEECH_KEY?: string;
+  AZURE_SPEECH_REGION?: string;
+  VOICE_VERIFICATION_MODE?: string;
 }
 
 export interface Variables {

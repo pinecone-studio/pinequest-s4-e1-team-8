@@ -12,6 +12,11 @@ export const users = sqliteTable("users", {
   encryptedGoogleAccessToken: text("encrypted_google_access_token"),
   encryptedGoogleRefreshToken: text("encrypted_google_refresh_token"),
   googleTokenExpiry: integer("google_token_expiry"),
+  azureVoiceProfileId: text("azure_voice_profile_id"),
+  voiceEnrolledAt: integer("voice_enrolled_at", { mode: "timestamp" }),
+  voiceEnrollmentSignature: text("voice_enrollment_signature", {
+    mode: "json",
+  }).$type<number[]>(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

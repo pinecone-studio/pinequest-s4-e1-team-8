@@ -16,6 +16,9 @@ const OPTIONAL_ALTER_STATEMENTS = [
   "ALTER TABLE `projects` ADD `is_asana_disconnected` integer DEFAULT 0 NOT NULL",
   "ALTER TABLE `projects` ADD `invite_token` text",
   "ALTER TABLE `meeting_transcriptions` ADD `participant_names` text",
+  "ALTER TABLE `users` ADD `azure_voice_profile_id` text",
+  "ALTER TABLE `users` ADD `voice_enrolled_at` integer",
+  "ALTER TABLE `users` ADD `voice_enrollment_signature` text",
 ];
 
 const PENDING_MIGRATIONS = [
@@ -37,6 +40,8 @@ const PENDING_MIGRATIONS = [
   "0018_onboarding_discovery_state.sql",
   "0019_create_lean_tables.sql",
   "0020_eager_cargill.sql",
+  "0021_user_voice_profile.sql",
+  "0022_voice_enrollment_signature.sql",
 ];
 
 async function runWrangler(args: string[]) {

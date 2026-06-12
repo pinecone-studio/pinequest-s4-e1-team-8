@@ -1,7 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { clearVoiceVerified } from "@/lib/voice/session";
+import { useAuth } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 const DashboardAppShell = dynamic(
   () =>
@@ -21,6 +24,13 @@ function isAuthRoute(pathname: string) {
 
 export const AppShell = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
+  const { isLoaded, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      clearVoiceVerified();
+    }
+  }, [isLoaded, isSignedIn]);
 
   if (isAuthRoute(pathname)) {
     return <>{children}</>;

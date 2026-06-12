@@ -27,6 +27,7 @@ import taskReorderRoutes from "./routes/tasks/reorder";
 import taskRoutes from "./routes/tasks/task.routes";
 import reorderRoutes from "./routes/tasks/reorder";
 import userRoutes from "./routes/users/user.routes";
+import voiceRoutes from "./routes/voice/voice.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -74,6 +75,7 @@ app.route("/analytics", analyticsRoutes);
 app.route("/api/analytics", analyticsMetricsRoutes);
 app.route("/api/meeting-transcription", meetingTranscriptionRouter);
 app.route("/api/meeting-room", meetingRoomRouter);
+app.route("/api/voice", voiceRoutes);
 app.route("/api/webhooks", webhookRoutes);
 app.route("/api/mappings", mappingsRoutes);
 app.route("/api/agent", agentRoutes);

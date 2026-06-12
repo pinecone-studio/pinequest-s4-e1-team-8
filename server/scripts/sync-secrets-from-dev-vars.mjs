@@ -16,6 +16,8 @@ const DEFAULT_SECRETS = [
   "GROQ_GENERATIVE_API_KEY",
   "GROQ_MEETING_API_KEY",
   "CLERK_SECRET_KEY",
+  "AZURE_SPEECH_KEY",
+  "AZURE_SPEECH_REGION",
 ];
 
 function parseDevVars(filePath) {
