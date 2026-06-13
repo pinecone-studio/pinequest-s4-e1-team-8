@@ -4,6 +4,26 @@ const getString = (value: unknown) => {
   return typeof value === "string" && value.length > 0 ? value : null;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return Boolean(value) && typeof value === "object";
+};
+
+const getUserIdFromMetadata = (metadata: unknown): string | null => {
+  const raw = getString(metadata);
+
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+
+    if (!isRecord(parsed)) return null;
+
+    return getString(parsed.userId);
+  } catch {
+    return null;
+  }
+};
+
 const getUrl = (value: unknown) => {
   const url = getString(value);
 
@@ -89,6 +109,7 @@ export const parseLiveKitEgressCompletePayload = (
       event: null,
       isFinal: false,
       recordingUrl: null,
+      userId: null,
     };
   }
 
@@ -100,6 +121,9 @@ export const parseLiveKitEgressCompletePayload = (
       ? (egressInfo as Record<string, unknown>)
       : data;
 
+  const room = isRecord(data.room) ? data.room : null;
+  const participant = isRecord(data.participant) ? data.participant : null;
+
   return {
     event,
     egressId:
@@ -109,5 +133,8 @@ export const parseLiveKitEgressCompletePayload = (
       getString(data.egress_id),
     isFinal: isFinalEgressEvent(event, egressData),
     recordingUrl: findRecordingUrl(egressData) ?? findRecordingUrl(data),
+    userId:
+      getUserIdFromMetadata(room?.metadata) ??
+      getUserIdFromMetadata(participant?.metadata),
   };
 };

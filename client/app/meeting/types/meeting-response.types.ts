@@ -41,6 +41,7 @@ export type GetMeetingTranscriptResponse = {
   egressId: string | null;
   transcript: string | null;
   summary: string | null;
+  participantNames: string[] | null;
   errorMessage: string | null;
   status: MeetingTranscriptionStatus;
   createdAt: string | null;
@@ -54,4 +55,53 @@ export type GetMeetingTranscriptsResponse = {
 
 export type DeleteMeetingTranscriptResponse = {
   message: string;
+};
+
+export type MeetingDetailsActionItem = {
+  owner: string;
+  action: string;
+};
+
+export type MeetingDetailsSummary = {
+  id: string;
+  meetingId: string;
+  content: string;
+  keyPoints: string[] | null;
+  actionItems: MeetingDetailsActionItem[] | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type MeetingTranscriptSegment = {
+  id: string;
+  meetingId: string;
+  speakerName: string;
+  text: string;
+  timestamp: string;
+};
+
+export type MeetingListItem = {
+  id: string;
+  title: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  transcriptionStatus: MeetingTranscriptionStatus | null;
+  summaryPreview: string | null;
+};
+
+export type GetMeetingsResponse = {
+  meetings: MeetingListItem[];
+};
+
+export type GetMeetingAnalysisDetailsResponse = {
+  meeting: {
+    id: string;
+    userId: string;
+    title: string;
+    createdAt: string | null;
+    updatedAt: string | null;
+  };
+  transcription: GetMeetingTranscriptResponse | null;
+  summary: MeetingDetailsSummary | null;
+  transcriptSegments: MeetingTranscriptSegment[];
 };

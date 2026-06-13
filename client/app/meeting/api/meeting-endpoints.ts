@@ -9,6 +9,9 @@ export const MEETING_ENDPOINTS = {
   transcripts: "/meeting/api/transcripts",
   latestTranscript: "/meeting/api/transcript/latest",
   transcript: (id: string) => `/meeting/api/transcript/${id}`,
+  meetings: "/meeting/api/meetings",
+  meetingDetails: (meetingId: string) =>
+    `/meeting/api/meetings/${meetingId}/details`,
 } as const;
 
 export const BACKEND_MEETING_ENDPOINTS = {
@@ -22,4 +25,6 @@ export const BACKEND_MEETING_ENDPOINTS = {
   transcripts: "/api/meeting-transcription",
   latestTranscript: "/api/meeting-transcription/latest",
   transcript: (id: string) => `/api/meeting-transcription/${id}`,
+  meetings: "/api/meetings",
+  meetingDetails: (meetingId: string) => `/api/meetings/${meetingId}/details`,
 } as const;

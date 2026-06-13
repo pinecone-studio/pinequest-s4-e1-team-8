@@ -1,34 +1,62 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
+import {
+  AlertCircleIcon,
+  ArrowRightIcon,
+  CalendarDaysIcon,
+  Loader2Icon,
+  MicIcon,
+  VideoIcon,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { DashboardActionItems } from "@/components/dashboard/dashboard-action-items";
-import { ParticipantAvatars } from "@/components/meetings/participant-avatars";
-import { TODAY, formatMeetingDate, meetingJoinHref } from "@/lib/meetings/format";
-import { actionItems, activity, currentUser, meetings, recordings } from "@/lib/mock-data";
+import { fetchMeetings, type MeetingListItem } from "@/app/meeting";
+import { TRANSCRIPTION_STATUS_STYLES } from "@/lib/meetings/transcription-status";
 import { cn } from "@/lib/utils";
-import {
-  ArrowRightIcon,
-  CalendarDaysIcon,
-  CalendarPlusIcon,
-  ListChecksIcon,
-  MicIcon,
-  RadioIcon,
-  VideoIcon,
-} from "lucide-react";
-import Link from "next/link";
+
+const formatMeetingDate = (value: string | null) => {
+  if (!value) return "";
+
+  return new Date(value).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+};
 
 export default function DashboardPage() {
-  const ongoingMeetings = meetings.filter((meeting) => meeting.status === "ongoing");
-  const upcomingMeetings = meetings.filter((meeting) => meeting.status === "upcoming");
-  const todaysMeetingCount = meetings.filter(
-    (meeting) => meeting.date === TODAY && meeting.status !== "canceled"
-  ).length;
-  const openActionItems = actionItems.filter((item) => !item.done);
-  const readyRecordings = recordings.filter((recording) => recording.status === "ready");
+  const { user } = useUser();
+  const [meetings, setMeetings] = useState<MeetingListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const firstName = currentUser.name.split(" ")[0];
-  const todayLabel = new Date(`${TODAY}T00:00:00`).toLocaleDateString("en-US", {
+  useEffect(() => {
+    let isActive = true;
+
+    fetchMeetings()
+      .then((response) => {
+        if (isActive) setMeetings(response.meetings);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const readyMeetings = meetings.filter((meeting) => meeting.transcriptionStatus === "done");
+  const inProgressMeetings = meetings.filter(
+    (meeting) => meeting.transcriptionStatus === "pending" || meeting.transcriptionStatus === "processing",
+  );
+  const failedMeetings = meetings.filter((meeting) => meeting.transcriptionStatus === "failed");
+
+  const todayLabel = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -36,28 +64,28 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      label: "Meetings today",
-      value: todaysMeetingCount,
+      label: "Total meetings",
+      value: meetings.length,
       icon: CalendarDaysIcon,
       accent: "bg-lavender text-lavender-foreground",
     },
     {
-      label: "Live now",
-      value: ongoingMeetings.length,
-      icon: RadioIcon,
-      accent: "bg-primary/10 text-primary",
-    },
-    {
-      label: "Open action items",
-      value: openActionItems.length,
-      icon: ListChecksIcon,
+      label: "Recordings ready",
+      value: readyMeetings.length,
+      icon: MicIcon,
       accent: "bg-sage text-sage-foreground",
     },
     {
-      label: "Recordings ready",
-      value: readyRecordings.length,
-      icon: MicIcon,
-      accent: "bg-tag-yellow text-tag-yellow-foreground",
+      label: "In progress",
+      value: inProgressMeetings.length,
+      icon: Loader2Icon,
+      accent: "bg-primary/10 text-primary",
+    },
+    {
+      label: "Failed",
+      value: failedMeetings.length,
+      icon: AlertCircleIcon,
+      accent: "bg-destructive/10 text-destructive",
     },
   ];
 
@@ -66,16 +94,16 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-heading text-2xl font-semibold text-foreground">
-            Welcome back, {firstName}
+            Welcome back{user?.firstName ? `, ${user.firstName}` : ""}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {todayLabel} · Here&apos;s what&apos;s happening across your meetings today.
+            {todayLabel} · Here&apos;s what&apos;s happening across your meetings.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" render={<Link href="/meetings" />}>
-            <CalendarPlusIcon />
-            Schedule meeting
+            <CalendarDaysIcon />
+            View meetings
           </Button>
           <Button render={<Link href="/meeting" />}>
             <VideoIcon />
@@ -101,78 +129,47 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          {ongoingMeetings.length > 0 ? (
-            <Card>
-              <CardContent className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-heading text-base font-semibold text-foreground">Live now</h2>
-                  <Badge className="bg-primary/10 text-primary">{ongoingMeetings.length} ongoing</Badge>
-                </div>
-                <div className="flex flex-col gap-3">
-                  {ongoingMeetings.map((meeting) => (
-                    <div
-                      key={meeting.id}
-                      className="flex flex-col gap-3 rounded-xl border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="relative flex size-2.5 shrink-0">
-                          <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
-                          <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
-                        </span>
-                        <div>
-                          <p className="font-medium text-foreground">{meeting.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {meeting.startTime} – {meeting.endTime}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <ParticipantAvatars participants={meeting.participants} />
-                        <Button size="sm" render={<Link href={meetingJoinHref(meeting)} />}>
-                          <VideoIcon />
-                          Join
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ) : null}
-
+        <div className="lg:col-span-2">
           <Card>
             <CardContent className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-heading text-base font-semibold text-foreground">Up next</h2>
+                <h2 className="font-heading text-base font-semibold text-foreground">Recent meetings</h2>
                 <Button variant="ghost" size="sm" render={<Link href="/meetings" />}>
                   View all
                   <ArrowRightIcon />
                 </Button>
               </div>
 
-              {upcomingMeetings.length > 0 ? (
-                <div className="flex flex-col divide-y divide-border">
-                  {upcomingMeetings.map((meeting) => (
-                    <div key={meeting.id} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
-                      <div className="flex w-20 shrink-0 flex-col">
-                        <span className="text-xs font-medium text-muted-foreground uppercase">
-                          {formatMeetingDate(meeting.date)}
-                        </span>
-                        <span className="text-sm font-semibold text-foreground">{meeting.startTime}</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-foreground">{meeting.title}</p>
-                        {meeting.description ? (
-                          <p className="truncate text-sm text-muted-foreground">{meeting.description}</p>
-                        ) : null}
-                      </div>
-                      <ParticipantAvatars participants={meeting.participants} />
-                    </div>
+              {isLoading ? (
+                <div className="flex flex-col gap-3">
+                  {[0, 1, 2].map((key) => (
+                    <div key={key} className="h-14 animate-pulse rounded-xl bg-muted" />
                   ))}
                 </div>
+              ) : meetings.length > 0 ? (
+                <div className="flex flex-col divide-y divide-border">
+                  {meetings.slice(0, 5).map((meeting) => {
+                    const status = TRANSCRIPTION_STATUS_STYLES[meeting.transcriptionStatus ?? "none"];
+
+                    return (
+                      <Link
+                        key={meeting.id}
+                        href={`/meetings/${meeting.id}`}
+                        className="-mx-2 flex items-center justify-between gap-4 rounded-lg px-2 py-3 hover:bg-muted/60"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-foreground">{meeting.title}</p>
+                          <p className="truncate text-sm text-muted-foreground">
+                            {formatMeetingDate(meeting.createdAt)}
+                          </p>
+                        </div>
+                        <Badge className={cn(status.className)}>{status.label}</Badge>
+                      </Link>
+                    );
+                  })}
+                </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No upcoming meetings scheduled.</p>
+                <p className="text-sm text-muted-foreground">No meetings yet. Start one to see it here.</p>
               )}
             </CardContent>
           </Card>
@@ -182,69 +179,36 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-heading text-base font-semibold text-foreground">Action items</h2>
-                <Badge className="bg-sage text-sage-foreground">{openActionItems.length} open</Badge>
-              </div>
-              <DashboardActionItems items={actionItems} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex flex-col gap-4">
-              <h2 className="font-heading text-base font-semibold text-foreground">Team activity</h2>
-              <ul className="flex flex-col gap-4">
-                {activity.map((item) => (
-                  <li key={item.id} className="flex items-start gap-3">
-                    <Avatar size="sm">
-                      <AvatarFallback>{item.user.initials}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-foreground">
-                        <span className="font-medium">{item.user.name}</span> {item.action}
-                      </p>
-                      <p className="truncate text-sm text-muted-foreground">{item.target}</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {item.team}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">{item.timestamp}</span>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
                 <h2 className="font-heading text-base font-semibold text-foreground">Recent recordings</h2>
-                <Button variant="ghost" size="sm" render={<Link href="/recordings" />}>
+                <Button variant="ghost" size="sm" render={<Link href="/meetings" />}>
                   View all
                   <ArrowRightIcon />
                 </Button>
               </div>
-              <ul className="flex flex-col divide-y divide-border">
-                {readyRecordings.slice(0, 3).map((recording) => (
-                  <li key={recording.id} className="first:pt-0 last:pb-0">
-                    <Link
-                      href={`/recordings/${recording.id}`}
-                      className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-muted/60"
-                    >
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-lavender text-lavender-foreground">
-                        <MicIcon className="size-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-foreground">{recording.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {recording.team} · {recording.durationLabel}
-                        </p>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              {readyMeetings.length > 0 ? (
+                <ul className="flex flex-col divide-y divide-border">
+                  {readyMeetings.slice(0, 3).map((meeting) => (
+                    <li key={meeting.id} className="first:pt-0 last:pb-0">
+                      <Link
+                        href={`/meetings/${meeting.id}`}
+                        className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-muted/60"
+                      >
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-lavender text-lavender-foreground">
+                          <MicIcon className="size-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-foreground">{meeting.title}</p>
+                          {meeting.summaryPreview ? (
+                            <p className="truncate text-xs text-muted-foreground">{meeting.summaryPreview}</p>
+                          ) : null}
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No recordings ready yet.</p>
+              )}
             </CardContent>
           </Card>
         </div>

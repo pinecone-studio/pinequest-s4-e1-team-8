@@ -39,6 +39,7 @@ export const postMeetingSummary = async (
         db,
         env: c.env,
         transcriptionId,
+        meetingId,
         recordingUrl,
         summary: savedSummary,
       });

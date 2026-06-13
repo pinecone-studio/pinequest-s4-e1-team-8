@@ -16,6 +16,7 @@ export * from "./project-risk.model";
 export * from "./onboarding-session.model";
 export * from "./project-integration.model";
 export * from "./project-resource.model";
+export * from "./meeting.model";
 export * from "./meetingTranscription/meeting-transcription.schema";
 export { syncMappings, syncMappingsRelations } from "../db/schema";
 export type { SyncMapping, NewSyncMapping } from "../db/schema";

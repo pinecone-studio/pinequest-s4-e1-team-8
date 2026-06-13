@@ -6,12 +6,13 @@ type RoomParticipantsRouteContext = {
 };
 
 export const GET = async (
-  _request: Request,
+  request: Request,
   { params }: RoomParticipantsRouteContext,
 ) => {
   const { roomName } = await params;
 
   return proxyMeetingGetRequest(
+    request,
     BACKEND_MEETING_ENDPOINTS.roomParticipants(roomName),
   );
 };

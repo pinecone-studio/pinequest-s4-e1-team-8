@@ -2,6 +2,7 @@ type ProxyMeetingRequestOptions = {
   body?: unknown;
   method: "DELETE" | "GET" | "POST";
   path: string;
+  authorization?: string | null;
 };
 
 const DEPLOYED_BACKEND_FALLBACK_URL =
@@ -133,6 +134,7 @@ export const proxyMeetingRequest = async ({
   body,
   method,
   path,
+  authorization,
 }: ProxyMeetingRequestOptions) => {
   const targetUrls = getBackendBaseUrls().map((baseUrl) =>
     getTargetUrl(baseUrl, path)
@@ -146,11 +148,15 @@ export const proxyMeetingRequest = async ({
     );
   }
 
+  const headers: Record<string, string> = {};
+  if (body) headers["Content-Type"] = "application/json";
+  if (authorization) headers["Authorization"] = authorization;
+
   for (const targetUrl of targetUrls) {
     try {
       const response = await fetch(targetUrl, {
         body: body ? JSON.stringify(body) : undefined,
-        headers: body ? { "Content-Type": "application/json" } : undefined,
+        headers: Object.keys(headers).length ? headers : undefined,
         method,
       });
       const responseBody = await readResponseBody(response);
@@ -194,14 +200,29 @@ export const proxyMeetingPostRequest = async (
       body: await request.json(),
       method: "POST",
       path,
+      authorization: request.headers.get("Authorization"),
     });
   } catch {
     return Response.json({ error: "Invalid JSON request body." }, { status: 400 });
   }
 };
 
-export const proxyMeetingGetRequest = async (path: string) =>
-  proxyMeetingRequest({ method: "GET", path });
+export const proxyMeetingGetRequest = async (
+  request: Request,
+  path: string,
+) =>
+  proxyMeetingRequest({
+    method: "GET",
+    path,
+    authorization: request.headers.get("Authorization"),
+  });
 
-export const proxyMeetingDeleteRequest = async (path: string) =>
-  proxyMeetingRequest({ method: "DELETE", path });
+export const proxyMeetingDeleteRequest = async (
+  request: Request,
+  path: string,
+) =>
+  proxyMeetingRequest({
+    method: "DELETE",
+    path,
+    authorization: request.headers.get("Authorization"),
+  });
