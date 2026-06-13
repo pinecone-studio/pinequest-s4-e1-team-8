@@ -1,4 +1,3 @@
-import { VoiceVerificationForm } from "@/components/auth/voice-verification-form";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function SettingsPage() {
@@ -12,8 +11,10 @@ export default function SettingsPage() {
       </div>
 
       <Card className="max-w-xl">
-        <CardContent className="py-2">
-          <VoiceVerificationForm variant="embedded" />
+        <CardContent className="py-6">
+          <p className="text-sm text-muted-foreground">
+            Account preferences are coming soon.
+          </p>
         </CardContent>
       </Card>
     </div>
