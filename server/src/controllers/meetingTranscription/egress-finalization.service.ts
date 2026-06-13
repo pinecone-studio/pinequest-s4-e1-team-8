@@ -96,10 +96,12 @@ export const finalizeEgressRecording = async ({
   db,
   env,
   egress,
+  userId,
 }: {
   db: MeetingTranscriptionDb;
   env: Bindings;
   egress: EgressInfo;
+  userId?: string | null;
 }) => {
   const recordingUrl = getEgressRecordingUrl(egress);
 
@@ -127,12 +129,13 @@ export const finalizeEgressRecording = async ({
     throw new Error("LiveKit egress completed without recording URL");
   }
 
-  return finalizeRecordingUrl({
-    db,
-    env,
+  await env.MEETING_TRANSCRIPTION_QUEUE.send({
     egressId: egress.egressId,
     recordingUrl,
+    userId: userId ?? null,
   });
+
+  return { status: "queued" as const };
 };
 
 export const finalizeRecordingUrl = async ({
@@ -140,11 +143,13 @@ export const finalizeRecordingUrl = async ({
   env,
   egressId,
   recordingUrl,
+  userId,
 }: {
   db: MeetingTranscriptionDb;
   env: Bindings;
   egressId: string;
   recordingUrl: string;
+  userId?: string | null;
 }) => {
   const transcription = await findByEgressId(db, egressId);
 
@@ -181,9 +186,11 @@ export const finalizeRecordingUrl = async ({
     db,
     env,
     transcriptionId: transcription.id,
+    meetingId: transcription.meetingId,
     recordingUrl,
     summary: transcription.summary,
     participantNames: transcription.participantNames,
+    userId,
   });
 
   console.info("[meetingTranscription] Recording finalized", {

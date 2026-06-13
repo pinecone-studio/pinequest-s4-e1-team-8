@@ -1,13 +1,13 @@
 "use client";
 
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
+import { syncClerkUser } from "@/lib/api/users";
 import {
   enrollVoice,
   formatVoiceApiError,
   getVoiceStatus,
   verifyVoice,
 } from "@/lib/api/voice";
-import { syncClerkUser } from "@/lib/api/users";
 import {
   recordWavBlob,
   VOICE_RECORD_DURATION_MS,
@@ -29,6 +29,7 @@ type VoiceVerificationFormProps = {
   title?: string;
   description?: string;
   footer?: ReactNode;
+  variant?: "page" | "embedded";
 };
 
 export function VoiceVerificationForm({
@@ -36,6 +37,7 @@ export function VoiceVerificationForm({
   title: titleOverride,
   description: descriptionOverride,
   footer,
+  variant = "page",
 }: VoiceVerificationFormProps) {
   useClientApiAuth();
 
@@ -268,4 +270,6 @@ export function VoiceVerificationForm({
       </div>
     </div>
   );
+
+  return variant === "embedded" ? content : <AuthShell>{content}</AuthShell>;
 }

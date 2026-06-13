@@ -28,7 +28,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${plusJakartaSans.variable} h-full font-sans antialiased`}
+      className={`${plusJakartaSans.variable} dark h-full font-sans antialiased`}
     >
       <body className="h-full font-sans">
         <ClerkProvider appearance={{ theme: shadcn }}>

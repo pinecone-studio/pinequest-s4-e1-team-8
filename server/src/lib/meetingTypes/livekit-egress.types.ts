@@ -3,4 +3,5 @@ export type LiveKitEgressCompletePayload = {
   event: string | null;
   isFinal: boolean;
   recordingUrl: string | null;
+  userId: string | null;
 };

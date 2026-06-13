@@ -20,7 +20,7 @@ export function Topbar() {
         <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search meetings, notes, recordings..."
-          className="rounded-full bg-muted pl-8"
+          className="rounded-full bg-inset pl-8"
         />
       </div>
 

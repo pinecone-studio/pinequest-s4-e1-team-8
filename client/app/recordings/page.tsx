@@ -7,34 +7,54 @@ import { cn } from "@/lib/utils";
 import { recordings as initialRecordings } from "@/lib/mock-data";
 import type { Recording, RecordingStatus } from "@/types";
 import { FolderOpenIcon } from "lucide-react";
-import { useState } from "react";
+import { MeetingListCard } from "@/components/meetings/meeting-list-card";
+import { fetchMeetings, type MeetingListItem } from "@/app/meeting";
+import { cn } from "@/lib/utils";
 
-const FILTERS: { value: RecordingStatus | "all"; label: string }[] = [
+type FilterValue = "all" | "done" | "processing";
+
+const FILTERS: { value: FilterValue; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "ready", label: "Ready" },
+  { value: "done", label: "Ready" },
   { value: "processing", label: "Processing" },
-  { value: "failed", label: "Failed" },
 ];
 
 export default function RecordingsPage() {
-  const [recordings, setRecordings] = useState<Recording[]>(initialRecordings);
-  const [filter, setFilter] = useState<RecordingStatus | "all">("all");
+  const [meetings, setMeetings] = useState<MeetingListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterValue>("all");
+
+  useEffect(() => {
+    let isActive = true;
+
+    fetchMeetings()
+      .then((response) => {
+        if (isActive) setMeetings(response.meetings);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const recordings = meetings.filter(
+    (meeting) => meeting.transcriptionStatus === "done" || meeting.transcriptionStatus === "processing",
+  );
 
   const filteredRecordings =
-    filter === "all" ? recordings : recordings.filter((recording) => recording.status === filter);
+    filter === "all" ? recordings : recordings.filter((meeting) => meeting.transcriptionStatus === filter);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold text-foreground">Recordings</h1>
-          <p className="text-sm text-muted-foreground">
-            Review AI summaries, action items, and transcripts from your meetings.
-          </p>
-        </div>
-        <UploadRecordingDialog
-          onUploaded={(recording) => setRecordings((current) => [recording, ...current])}
-        />
+      <div>
+        <h1 className="font-heading text-2xl font-semibold text-foreground">Recordings</h1>
+        <p className="text-sm text-muted-foreground">
+          Review AI summaries, action items, and transcripts from your meetings.
+        </p>
       </div>
 
       <VoiceVerificationPanel />
@@ -57,10 +77,16 @@ export default function RecordingsPage() {
         ))}
       </div>
 
-      {filteredRecordings.length > 0 ? (
+      {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredRecordings.map((recording) => (
-            <RecordingCard key={recording.id} recording={recording} />
+          {[0, 1, 2].map((key) => (
+            <div key={key} className="h-32 animate-pulse rounded-2xl bg-muted" />
+          ))}
+        </div>
+      ) : filteredRecordings.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filteredRecordings.map((meeting) => (
+            <MeetingListCard key={meeting.id} meeting={meeting} />
           ))}
         </div>
       ) : (
@@ -68,7 +94,11 @@ export default function RecordingsPage() {
           <FolderOpenIcon className="size-8 text-muted-foreground" />
           <div>
             <p className="font-medium text-foreground">No recordings here</p>
-            <p className="text-sm text-muted-foreground">Try a different filter or upload a recording.</p>
+            <p className="text-sm text-muted-foreground">
+              {recordings.length === 0
+                ? "Recordings appear here once a meeting finishes processing."
+                : "Try a different filter."}
+            </p>
           </div>
         </div>
       )}

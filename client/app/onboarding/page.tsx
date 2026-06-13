@@ -1,7 +1,6 @@
 "use client";
 
-import { VoiceVerificationForm } from "@/components/auth/voice-verification-form";
-import { useRouter } from "next/navigation";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 
 export default function OnboardingPage() {
   const router = useRouter();

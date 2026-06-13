@@ -4,6 +4,7 @@ import { members } from "./member.model";
 import { subTeamMembers } from "./sub-team.model";
 import { tasks } from "./task.model";
 import { aiConversations } from "./ai.model";
+import { meetings } from "./meeting.model";
 
 export { users };
 
@@ -13,6 +14,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   assignedTasks: many(tasks),
   aiConversations: many(aiConversations),
   syncMappings: many(syncMappings),
+  meetings: many(meetings),
 }));
 
 export type User = typeof users.$inferSelect;
