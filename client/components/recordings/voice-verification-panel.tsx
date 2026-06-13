@@ -1,15 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
 import {
   enrollVoice,
@@ -18,21 +8,20 @@ import {
   verifyVoice,
 } from "@/lib/api/voice";
 import { recordWavBlob, VOICE_RECORD_DURATION_MS } from "@/lib/audio/record-wav";
-import { CheckCircle2Icon, MicIcon, ShieldCheckIcon, XCircleIcon } from "lucide-react";
+import { ORB_CORE_SHADOW, orbGradientStyle } from "@/lib/voice/orb-style";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
-type PanelState = {
-  kind: "idle" | "success" | "error";
-  message: string;
-  score?: number | null;
-};
+type OrbState = "loading" | "idle" | "listening" | "success" | "error";
 
 export function VoiceVerificationPanel() {
   useClientApiAuth();
 
   const [enrolled, setEnrolled] = useState<boolean | null>(null);
-  const [busy, setBusy] = useState<"enroll" | "verify" | null>(null);
-  const [state, setState] = useState<PanelState>({ kind: "idle", message: "" });
+  const [busy, setBusy] = useState(false);
+  const [orb, setOrb] = useState<OrbState>("loading");
+  const [label, setLabel] = useState("Preparing…");
+  const [sublabel, setSublabel] = useState<string>("");
 
   const seconds = Math.round(VOICE_RECORD_DURATION_MS / 1000);
 
@@ -40,9 +29,18 @@ export function VoiceVerificationPanel() {
     try {
       const status = await getVoiceStatus();
       setEnrolled(status.enrolled);
+      setOrb("idle");
+      setLabel(status.enrolled ? "Tap to verify" : "Tap to enroll");
+      setSublabel(
+        status.enrolled
+          ? "Confirm it’s really you"
+          : "Record your voice to get started",
+      );
     } catch (error) {
       setEnrolled(false);
-      setState({ kind: "error", message: formatVoiceApiError(error) });
+      setOrb("error");
+      setLabel("Couldn’t load voice status");
+      setSublabel(formatVoiceApiError(error));
     }
   };
 
@@ -50,118 +48,118 @@ export function VoiceVerificationPanel() {
     void refreshStatus();
   }, []);
 
-  const handleEnroll = async () => {
-    if (busy) return;
-    setBusy("enroll");
-    setState({ kind: "idle", message: `Recording ${seconds}s — speak naturally...` });
+  const handlePress = async () => {
+    if (busy || orb === "loading") return;
+
+    const mode = enrolled ? "verify" : "enroll";
+    setBusy(true);
+    setOrb("listening");
+    setLabel("Listening…");
+    setSublabel(`Speak naturally for ${seconds}s`);
+
     try {
       const audio = await recordWavBlob(VOICE_RECORD_DURATION_MS);
-      const result = await enrollVoice(audio);
-      if (result.enrolled) {
-        setEnrolled(true);
-        setState({ kind: "success", message: "Voice enrolled. You can verify now." });
+
+      if (mode === "enroll") {
+        const result = await enrollVoice(audio);
+        if (result.enrolled) {
+          setEnrolled(true);
+          setOrb("success");
+          setLabel("Voice enrolled");
+          setSublabel("Tap again to verify");
+        } else {
+          setOrb("idle");
+          setLabel("Almost there");
+          setSublabel("Tap once more to finish enrolling");
+        }
       } else {
-        setState({
-          kind: "idle",
-          message: "Almost there — record once more to finish enrolling.",
-        });
+        const result = await verifyVoice(audio);
+        setOrb("success");
+        setLabel("Verified — it’s you");
+        setSublabel(
+          typeof result.score === "number"
+            ? `Match score ${result.score.toFixed(2)}`
+            : "Identity confirmed",
+        );
       }
     } catch (error) {
-      setState({ kind: "error", message: formatVoiceApiError(error) });
+      setOrb("error");
+      setLabel(enrolled ? "Verification failed" : "Enrollment failed");
+      setSublabel(formatVoiceApiError(error));
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
-  const handleVerify = async () => {
-    if (busy) return;
-    setBusy("verify");
-    setState({ kind: "idle", message: `Recording ${seconds}s — speak naturally...` });
-    try {
-      const audio = await recordWavBlob(VOICE_RECORD_DURATION_MS);
-      const result = await verifyVoice(audio);
-      setState({
-        kind: "success",
-        message: "Voice verified — it's you.",
-        score: result.score,
-      });
-    } catch (error) {
-      setState({ kind: "error", message: formatVoiceApiError(error), score: null });
-    } finally {
-      setBusy(null);
-    }
-  };
+  const gradientStyle = orbGradientStyle(orb === "loading" ? "idle" : orb);
+  const isListening = orb === "listening";
 
   return (
-    <Card className="shrink-0">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShieldCheckIcon className="size-4 text-primary" />
-          Voice verification
-        </CardTitle>
-        <CardDescription>
-          Confirm it&apos;s really you before accessing recordings.
-        </CardDescription>
-        <CardAction>
-          {enrolled !== null ? (
-            <Badge
-              variant="outline"
-              className={
-                enrolled ? "gap-1 text-sage-foreground" : "gap-1 text-muted-foreground"
-              }
-            >
-              {enrolled ? <CheckCircle2Icon className="size-3" /> : null}
-              {enrolled ? "Enrolled" : "Not enrolled"}
-            </Badge>
-          ) : null}
-        </CardAction>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" disabled={Boolean(busy)} onClick={() => void handleEnroll()}>
-            <MicIcon />
-            {busy === "enroll" ? `Recording ${seconds}s...` : enrolled ? "Re-enroll" : "Enroll voice"}
-          </Button>
-          <Button
-            size="sm"
-            disabled={Boolean(busy) || enrolled === false}
-            onClick={() => void handleVerify()}
-          >
-            <ShieldCheckIcon />
-            {busy === "verify" ? `Recording ${seconds}s...` : "Verify voice"}
-          </Button>
-          {!enrolled ? (
-            <span className="text-xs text-muted-foreground">
-              Enroll once (record twice) to get started.
-            </span>
-          ) : null}
-        </div>
+    <div className="flex shrink-0 flex-col items-center justify-center gap-5 rounded-3xl border border-border bg-gradient-to-b from-ink/[0.03] to-transparent py-10 dark:from-white/[0.02]">
+      <button
+        type="button"
+        onClick={() => void handlePress()}
+        disabled={busy || orb === "loading"}
+        aria-label={label}
+        className="group relative grid size-40 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background disabled:cursor-not-allowed"
+      >
+        {/* Outer ambient glow */}
+        <span
+          className={cn(
+            "pointer-events-none absolute inset-0 rounded-full opacity-60 blur-2xl",
+            isListening ? "animate-orb-glow" : "animate-orb-breathe",
+          )}
+          style={gradientStyle}
+        />
 
-        {state.message ? (
-          <div
-            className={
-              state.kind === "success"
-                ? "flex items-center gap-2 rounded-lg bg-sage/15 px-3 py-2 text-sm text-sage-foreground"
-                : state.kind === "error"
-                  ? "flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
-                  : "flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground"
-            }
-            role="status"
-          >
-            {state.kind === "success" ? (
-              <CheckCircle2Icon className="size-4 shrink-0" />
-            ) : state.kind === "error" ? (
-              <XCircleIcon className="size-4 shrink-0" />
-            ) : null}
-            <span>
-              {state.message}
-              {typeof state.score === "number"
-                ? ` (match score ${state.score.toFixed(2)})`
-                : ""}
-            </span>
-          </div>
+        {/* Listening ripples */}
+        {isListening ? (
+          <>
+            <span
+              className="pointer-events-none absolute inset-2 rounded-full"
+              style={{ ...gradientStyle, animation: "orb-ripple 1.8s ease-out infinite" }}
+            />
+            <span
+              className="pointer-events-none absolute inset-2 rounded-full"
+              style={{ ...gradientStyle, animation: "orb-ripple 1.8s ease-out 0.9s infinite" }}
+            />
+          </>
         ) : null}
-      </CardContent>
-    </Card>
+
+        {/* Glassy ring */}
+        <span className="pointer-events-none absolute inset-3 rounded-full border border-white/30 bg-white/5 backdrop-blur-sm" />
+
+        {/* Core orb */}
+        <span
+          className={cn(
+            "relative grid size-28 place-items-center overflow-hidden rounded-full transition-transform group-active:scale-95",
+            isListening ? "animate-orb-listen" : "animate-orb-breathe",
+          )}
+          style={{ ...gradientStyle, boxShadow: ORB_CORE_SHADOW }}
+        >
+          {/* Inner light highlight */}
+          <span className="absolute left-1/2 top-1/2 h-8 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70 blur-md animate-orb-shimmer" />
+        </span>
+      </button>
+
+      <div className="flex min-h-12 flex-col items-center gap-1 text-center">
+        <p
+          className={cn(
+            "text-base font-medium",
+            orb === "error"
+              ? "text-destructive"
+              : orb === "success"
+                ? "text-sage-foreground"
+                : "text-foreground",
+          )}
+          role="status"
+        >
+          {label}
+        </p>
+        {sublabel ? (
+          <p className="max-w-xs text-sm text-muted-foreground">{sublabel}</p>
+        ) : null}
+      </div>
+    </div>
   );
 }
