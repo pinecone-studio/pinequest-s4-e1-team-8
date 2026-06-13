@@ -68,6 +68,53 @@ test("local voice verification rejects very different samples", () => {
   expect(result.recognitionResult).toBe("Reject");
 });
 
+function createVoiceWav(durationSeconds: number, fundamental: number) {
+  const sampleRate = 16_000;
+  const sampleCount = Math.floor(sampleRate * durationSeconds);
+  const buffer = new ArrayBuffer(44 + sampleCount * 2);
+  const view = new DataView(buffer);
+
+  const writeString = (offset: number, value: string) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + sampleCount * 2, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, "data");
+  view.setUint32(40, sampleCount * 2, true);
+
+  // A few harmonics to emulate a voiced sound with a distinct timbre.
+  const harmonics = [1, 2, 3, 4, 5];
+  for (let index = 0; index < sampleCount; index += 1) {
+    let sample = 0;
+    for (const h of harmonics) {
+      sample += Math.sin((2 * Math.PI * fundamental * h * index) / sampleRate) / h;
+    }
+    view.setInt16(44 + index * 2, (sample / 2) * 0x7fff, true);
+  }
+
+  return buffer;
+}
+
+test("local voice verification rejects a different speaker's voice", () => {
+  const speakerA = enrollLocalVoice(createVoiceWav(4, 130));
+  const speakerB = createVoiceWav(4, 330);
+  const result = verifyLocalVoice(speakerB, speakerA.signature);
+
+  expect(result.recognitionResult).toBe("Reject");
+});
+
 test("extractVoiceSignature returns normalized features", () => {
   const signature = extractVoiceSignature(createTestWav(4, 200));
   const magnitude = Math.sqrt(

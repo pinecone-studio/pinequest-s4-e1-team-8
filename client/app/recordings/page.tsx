@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { RecordingCard } from "@/components/recordings/recording-card";
+import { UploadRecordingDialog } from "@/components/recordings/upload-recording-dialog";
+import { VoiceVerificationPanel } from "@/components/recordings/voice-verification-panel";
+import { cn } from "@/lib/utils";
+import { recordings as initialRecordings } from "@/lib/mock-data";
+import type { Recording, RecordingStatus } from "@/types";
 import { FolderOpenIcon } from "lucide-react";
 import { MeetingListCard } from "@/components/meetings/meeting-list-card";
 import { fetchMeetings, type MeetingListItem } from "@/app/meeting";
@@ -52,6 +57,8 @@ export default function RecordingsPage() {
         </p>
       </div>
 
+      <VoiceVerificationPanel />
+
       <div className="inline-flex w-fit items-center gap-1 rounded-full bg-muted p-1">
         {FILTERS.map((item) => (
           <button
@@ -59,10 +66,10 @@ export default function RecordingsPage() {
             type="button"
             onClick={() => setFilter(item.value)}
             className={cn(
-              "h-11 rounded-full px-5 text-base font-medium whitespace-nowrap transition-colors",
+              "inline-flex h-8 min-w-20 items-center justify-center rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors",
               filter === item.value
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
+                ? "bg-background text-foreground shadow-sm ring-1 ring-foreground/10"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {item.label}
