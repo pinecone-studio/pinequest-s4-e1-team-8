@@ -5,6 +5,8 @@ import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 export default function OnboardingPage() {
   const router = useRouter();
 
+  // Always show the voice step after sign-in. The form auto-selects "enroll"
+  // for first-time users and "verify" for returning users.
   return (
     <VoiceVerificationForm
       title="Voice sign-in"

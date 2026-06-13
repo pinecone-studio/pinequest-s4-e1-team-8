@@ -1,7 +1,5 @@
 "use client";
 
-import { AuthShell } from "@/components/auth/auth-shell";
-import { Button } from "@/components/ui/button";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
 import { syncClerkUser } from "@/lib/api/users";
 import {
@@ -15,15 +13,14 @@ import {
   VOICE_RECORD_DURATION_MS,
 } from "@/lib/audio/record-wav";
 import { markVoiceVerified } from "@/lib/voice/session";
-import { useUser } from "@clerk/nextjs";
-import { Loader2, Mic, ShieldCheck } from "lucide-react";
 import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+  ORB_CORE_SHADOW,
+  orbGradientStyle,
+  type OrbVariant,
+} from "@/lib/voice/orb-style";
+import { cn } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 type VoiceMode = "enroll" | "verify";
 
@@ -167,70 +164,110 @@ export function VoiceVerificationForm({
   const title =
     titleOverride ??
     (mode === "verify" ? "Verify your voice" : "Enroll your voice");
-  const description =
-    descriptionOverride ??
-    (mode === "verify"
-      ? "Speak naturally for a few seconds so Brisk can confirm it is really you."
-      : "Record a short voice sample once. Brisk will use it before you join meetings.");
 
-  const content = (
-    <div className="flex flex-col items-center gap-6 text-center">
-      <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-        {mode === "verify" ? (
-          <ShieldCheck className="size-7" />
-        ) : (
-          <Mic className="size-7" />
-        )}
-      </div>
+  const busy = isRecording || isSubmitting;
+  const variant: OrbVariant = error
+    ? "error"
+    : busy
+      ? "listening"
+      : "idle";
+  const gradientStyle = orbGradientStyle(variant);
+  const isListening = variant === "listening";
 
-      <div className="space-y-2">
+  const label = isLoadingStatus
+    ? "Checking voice profile…"
+    : isRecording
+      ? "Listening…"
+      : isSubmitting
+        ? mode === "verify"
+          ? "Verifying…"
+          : "Enrolling…"
+        : needsMoreEnrollment
+          ? "Tap to record again"
+          : mode === "verify"
+            ? "Tap to verify"
+            : "Tap to enroll";
+
+  const sublabel = error
+    ? error
+    : isRecording
+      ? `Speak naturally — ${countdown}s`
+      : isLoadingStatus
+        ? ""
+        : descriptionOverride ??
+          (mode === "verify"
+            ? "Confirm it’s really you"
+            : "Record a short sample to get started");
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-5 py-12">
+      <div className="flex flex-col items-center gap-7 text-center">
         <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
-      </div>
 
-      {isLoadingStatus ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" />
-          Checking voice profile...
-        </div>
-      ) : (
-        <>
-          <Button
-            type="button"
-            size="lg"
-            className="h-11 min-w-[220px] gap-2 px-5 text-base [&_svg:not([class*='size-'])]:size-5"
-            disabled={!mode || isRecording || isSubmitting}
-            onClick={() => void handleRecord()}
-          >
-            {isRecording ? (
-              <>
-                <Loader2 className="size-5 animate-spin" />
-                Recording {countdown}s
-              </>
-            ) : isSubmitting ? (
-              <>
-                <Loader2 className="size-5 animate-spin" />
-                Verifying...
-              </>
-            ) : needsMoreEnrollment ? (
-              "Record again"
-            ) : (
-              <>
-                <Mic className="size-5" />
-                {mode === "verify" ? "Verify voice" : "Start recording"}
-              </>
+        <button
+          type="button"
+          onClick={() => void handleRecord()}
+          disabled={!mode || busy || isLoadingStatus}
+          aria-label={label}
+          className="group relative grid size-44 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background disabled:cursor-not-allowed"
+        >
+          {/* Outer ambient glow */}
+          <span
+            className={cn(
+              "pointer-events-none absolute inset-0 rounded-full opacity-60 blur-2xl",
+              isListening ? "animate-orb-glow" : "animate-orb-breathe",
             )}
-          </Button>
-        </>
-      )}
+            style={gradientStyle}
+          />
 
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
+          {/* Listening ripples */}
+          {isListening ? (
+            <>
+              <span
+                className="pointer-events-none absolute inset-2 rounded-full"
+                style={{ ...gradientStyle, animation: "orb-ripple 1.8s ease-out infinite" }}
+              />
+              <span
+                className="pointer-events-none absolute inset-2 rounded-full"
+                style={{ ...gradientStyle, animation: "orb-ripple 1.8s ease-out 0.9s infinite" }}
+              />
+            </>
+          ) : null}
 
-      {footer}
+          {/* Glassy ring */}
+          <span className="pointer-events-none absolute inset-4 rounded-full border border-white/30 bg-white/5 backdrop-blur-sm" />
+
+          {/* Core orb */}
+          <span
+            className={cn(
+              "relative grid size-32 place-items-center overflow-hidden rounded-full transition-transform group-active:scale-95",
+              isListening ? "animate-orb-listen" : "animate-orb-breathe",
+            )}
+            style={{ ...gradientStyle, boxShadow: ORB_CORE_SHADOW }}
+          >
+            <span className="absolute left-1/2 top-1/2 h-9 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70 blur-md animate-orb-shimmer" />
+          </span>
+        </button>
+
+        <div className="flex min-h-12 flex-col items-center gap-1">
+          <p
+            className={cn(
+              "text-base font-medium",
+              error ? "text-destructive" : "text-foreground",
+            )}
+            role={error ? "alert" : "status"}
+          >
+            {label}
+          </p>
+          {sublabel ? (
+            <p className="max-w-xs text-sm leading-6 text-muted-foreground">
+              {sublabel}
+            </p>
+          ) : null}
+        </div>
+
+        {footer}
+      </div>
     </div>
   );
 
