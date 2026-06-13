@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { workspaces, members, users, projects, subTeamMembers, subTeams, tasks, aiConversations, aiMessages, syncMappings, githubInstallations, githubRepositories, githubUserAuthorizations, githubSyncedItems, activityEvents, githubIntegrations, asanaIntegrations, projectCollaborators, analyticsMetrics, reportSnapshots, projectRisks, inviteTokens, milestones } from "./schema";
+import { workspaces, members, users, projects, subTeamMembers, subTeams, tasks, aiConversations, aiMessages, syncMappings, githubInstallations, githubRepositories, githubUserAuthorizations, githubSyncedItems, activityEvents, githubIntegrations, asanaIntegrations, projectCollaborators, analyticsMetrics, reportSnapshots, projectRisks, inviteTokens, milestones, onboardingSessions } from "./schema";
 
 export const membersRelations = relations(members, ({one}) => ({
 	workspace: one(workspaces, {
@@ -40,6 +40,7 @@ export const usersRelations = relations(users, ({many}) => ({
 	analyticsMetrics: many(analyticsMetrics),
 	reportSnapshots: many(reportSnapshots),
 	projectRisks: many(projectRisks),
+	onboardingSessions: many(onboardingSessions),
 }));
 
 export const projectsRelations = relations(projects, ({one, many}) => ({
@@ -267,5 +268,12 @@ export const milestonesRelations = relations(milestones, ({one}) => ({
 	project: one(projects, {
 		fields: [milestones.projectId],
 		references: [projects.id]
+	}),
+}));
+
+export const onboardingSessionsRelations = relations(onboardingSessions, ({one}) => ({
+	user: one(users, {
+		fields: [onboardingSessions.userId],
+		references: [users.id]
 	}),
 }));
