@@ -2,7 +2,14 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
 import {
   enrollVoice,
@@ -86,20 +93,28 @@ export function VoiceVerificationPanel() {
   };
 
   return (
-    <Card>
+    <Card className="shrink-0">
       <CardHeader>
-        <div className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2">
           <ShieldCheckIcon className="size-4 text-primary" />
-          <CardTitle>Voice verification</CardTitle>
+          Voice verification
+        </CardTitle>
+        <CardDescription>
+          Confirm it&apos;s really you before accessing recordings.
+        </CardDescription>
+        <CardAction>
           {enrolled !== null ? (
-            <Badge variant="outline" className="ml-1">
+            <Badge
+              variant="outline"
+              className={
+                enrolled ? "gap-1 text-sage-foreground" : "gap-1 text-muted-foreground"
+              }
+            >
+              {enrolled ? <CheckCircle2Icon className="size-3" /> : null}
               {enrolled ? "Enrolled" : "Not enrolled"}
             </Badge>
           ) : null}
-        </div>
-        <CardDescription>
-          Confirm it&apos;s really you before accessing recordings. Enroll once, then verify.
-        </CardDescription>
+        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -115,23 +130,28 @@ export function VoiceVerificationPanel() {
             <ShieldCheckIcon />
             {busy === "verify" ? `Recording ${seconds}s...` : "Verify voice"}
           </Button>
+          {!enrolled ? (
+            <span className="text-xs text-muted-foreground">
+              Enroll once (record twice) to get started.
+            </span>
+          ) : null}
         </div>
 
         {state.message ? (
           <div
             className={
               state.kind === "success"
-                ? "flex items-center gap-2 text-sm text-sage-foreground"
+                ? "flex items-center gap-2 rounded-lg bg-sage/15 px-3 py-2 text-sm text-sage-foreground"
                 : state.kind === "error"
-                  ? "flex items-center gap-2 text-sm text-destructive"
-                  : "flex items-center gap-2 text-sm text-muted-foreground"
+                  ? "flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                  : "flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground"
             }
             role="status"
           >
             {state.kind === "success" ? (
-              <CheckCircle2Icon className="size-4" />
+              <CheckCircle2Icon className="size-4 shrink-0" />
             ) : state.kind === "error" ? (
-              <XCircleIcon className="size-4" />
+              <XCircleIcon className="size-4 shrink-0" />
             ) : null}
             <span>
               {state.message}

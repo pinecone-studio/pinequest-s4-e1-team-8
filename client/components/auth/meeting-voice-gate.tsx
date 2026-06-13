@@ -2,7 +2,6 @@
 
 import { VoiceVerificationForm } from "@/components/auth/voice-verification-form";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
-import { isVoiceVerifiedThisSession } from "@/lib/voice/session";
 import { useAuth } from "@clerk/nextjs";
 import { useState, type ReactNode } from "react";
 
@@ -14,13 +13,15 @@ export function MeetingVoiceGate({ children }: MeetingVoiceGateProps) {
   useClientApiAuth();
 
   const { isLoaded, isSignedIn } = useAuth();
-  const [verified, setVerified] = useState(() => isVoiceVerifiedThisSession());
+  // Always verify when entering a room. Don't trust the sign-in enrollment
+  // flag — joining a meeting is a separate identity check each time.
+  const [verified, setVerified] = useState(false);
 
   if (!isLoaded) {
     return null;
   }
 
-  if (!isSignedIn || verified || isVoiceVerifiedThisSession()) {
+  if (!isSignedIn || verified) {
     return <>{children}</>;
   }
 

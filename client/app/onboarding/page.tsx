@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 export default function OnboardingPage() {
   const router = useRouter();
 
+  // Always show the voice step after sign-in. The form auto-selects "enroll"
+  // for first-time users and "verify" for returning users.
   return (
     <VoiceVerificationForm
-      title="Set up voice sign-in"
-      description="Record a short voice sample so Brisk can recognize you before joining meetings."
+      title="Voice sign-in"
+      description="Record your voice so Brisk can confirm it's really you before you join meetings."
       onSuccess={() => router.replace("/dashboard")}
       footer={
         <button

@@ -9,7 +9,7 @@ export default async function SignInPage() {
 
   return (
     <AuthShell variant="plain">
-      <SignIn fallbackRedirectUrl="/dashboard" signUpUrl="/sign-up" />
+      <SignIn fallbackRedirectUrl="/onboarding" signUpUrl="/sign-up" />
     </AuthShell>
   );
 }
