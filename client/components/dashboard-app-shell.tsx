@@ -2,10 +2,10 @@
 
 import { MeetingChannelPresenceProvider } from "@/app/meeting/components/meeting-channel-presence-provider";
 import { MeetingSessionProvider } from "@/app/meeting/components/meeting-session-provider";
+import { ClientAuthSetup } from "@/components/client-auth-setup";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
-import { ClientAuthSetup } from "@/components/client-auth-setup";
 
 export function DashboardAppShell({ children }: { children: React.ReactNode }) {
   return (

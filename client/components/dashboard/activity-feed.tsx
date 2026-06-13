@@ -23,12 +23,17 @@ type ActivityFeedProps = {
 export function ActivityFeed({ meetings, todayLabel }: ActivityFeedProps) {
   const { user } = useUser();
 
-  const readyMeetings = meetings.filter((meeting) => meeting.transcriptionStatus === "done");
+  const readyMeetings = meetings.filter(
+    (meeting) => meeting.transcriptionStatus === "done",
+  );
   const inProgressMeetings = meetings.filter(
     (meeting) =>
-      meeting.transcriptionStatus === "pending" || meeting.transcriptionStatus === "processing",
+      meeting.transcriptionStatus === "pending" ||
+      meeting.transcriptionStatus === "processing",
   );
-  const failedMeetings = meetings.filter((meeting) => meeting.transcriptionStatus === "failed");
+  const failedMeetings = meetings.filter(
+    (meeting) => meeting.transcriptionStatus === "failed",
+  );
 
   const stats = [
     {
@@ -62,10 +67,11 @@ export function ActivityFeed({ meetings, todayLabel }: ActivityFeedProps) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-heading text-2xl font-semibold text-foreground">
-            Welcome back{user?.firstName ? `, ${user.firstName}` : ""}
+            Welcome back{user?.firstName ? `, ${user.firstName}!` : ""}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {todayLabel} · Here&apos;s what&apos;s happening across your meetings.
+            {todayLabel} · Here&apos;s what&apos;s happening across your
+            meetings.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -108,7 +114,9 @@ export function ActivityFeed({ meetings, todayLabel }: ActivityFeedProps) {
                   <stat.icon className="size-5" />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-foreground">{stat.value}</p>
+                  <p className="text-2xl font-semibold text-foreground">
+                    {stat.value}
+                  </p>
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
                 </div>
               </CardContent>
@@ -118,7 +126,9 @@ export function ActivityFeed({ meetings, todayLabel }: ActivityFeedProps) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h2 className="font-heading text-base font-semibold text-foreground">Recent activity</h2>
+        <h2 className="font-heading text-base font-semibold text-foreground">
+          Recent activity
+        </h2>
 
         <div className="flex flex-col gap-3">
           <AnimatePresence initial={false}>
@@ -137,7 +147,12 @@ export function ActivityFeed({ meetings, todayLabel }: ActivityFeedProps) {
         </div>
 
         {meetings.length > 6 ? (
-          <Button variant="ghost" size="sm" className="self-start" render={<Link href="/meetings" />}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start"
+            render={<Link href="/meetings" />}
+          >
             View all meetings
             <ArrowRightIcon />
           </Button>

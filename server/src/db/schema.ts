@@ -17,6 +17,13 @@ export const users = sqliteTable("users", {
   voiceEnrollmentSignature: text("voice_enrollment_signature", {
     mode: "json",
   }).$type<number[]>(),
+  hasVoiceData: integer("has_voice_data", { mode: "boolean" })
+    .notNull()
+    .$defaultFn(() => false),
+  voiceOnboardingRecordingKey: text("voice_onboarding_recording_key"),
+  voiceOnboardingCompletedAt: integer("voice_onboarding_completed_at", {
+    mode: "timestamp",
+  }),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

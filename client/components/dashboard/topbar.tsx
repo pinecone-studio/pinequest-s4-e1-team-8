@@ -1,9 +1,9 @@
 "use client";
 
 import { NotificationsMenu } from "@/components/dashboard/notifications-menu";
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useTheme } from "@/components/theme-provider";
 import { UserButton } from "@clerk/nextjs";
 import { MoonIcon, SearchIcon, SunIcon } from "lucide-react";
 
