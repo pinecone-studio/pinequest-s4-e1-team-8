@@ -18,6 +18,7 @@ import { useMeetingSession } from "./meeting-session-provider";
 type MeetingJoinStatus = "idle" | "joining";
 
 type MeetingRoomFormProps = {
+  autoRecord?: boolean;
   selectedRoom: Pick<MeetingRoomListItem, "meetingId" | "roomName"> | null;
 };
 
@@ -61,7 +62,7 @@ const getParticipantIdentity = ({
   return `${displayName.trim()}__${stableId}`;
 };
 
-export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
+export const MeetingRoomForm = ({ autoRecord, selectedRoom }: MeetingRoomFormProps) => {
   const router = useRouter();
   const { isLoaded, isSignedIn, user } = useUser();
   const authenticatedName = useMemo(() => getClerkDisplayName(user), [user]);
@@ -149,6 +150,7 @@ export const MeetingRoomForm = ({ selectedRoom }: MeetingRoomFormProps) => {
   if (activeSession && (!selectedRoom || selectedRoomKey === activeSessionRoomKey)) {
     return (
       <ConnectedMeetingPanel
+        autoRecord={autoRecord}
         meetingId={activeSession.meetingId}
         onLeave={() => undefined}
         response={activeSession.response}

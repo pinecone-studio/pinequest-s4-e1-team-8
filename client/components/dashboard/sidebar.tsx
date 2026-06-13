@@ -31,7 +31,7 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
@@ -48,7 +48,7 @@ export function Sidebar() {
           className={cn(
             "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
             isNavItemActive(pathname, "/settings")
-              ? "bg-primary/10 text-primary"
+              ? "bg-primary/15 text-primary"
               : "text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >

@@ -3,13 +3,13 @@
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { useClientApiAuth } from "@/lib/api/auth-interceptor";
+import { syncClerkUser } from "@/lib/api/users";
 import {
   enrollVoice,
   formatVoiceApiError,
   getVoiceStatus,
   verifyVoice,
 } from "@/lib/api/voice";
-import { syncClerkUser } from "@/lib/api/users";
 import {
   recordWavBlob,
   VOICE_RECORD_DURATION_MS,
@@ -17,7 +17,13 @@ import {
 import { markVoiceVerified } from "@/lib/voice/session";
 import { useUser } from "@clerk/nextjs";
 import { Loader2, Mic, ShieldCheck } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 type VoiceMode = "enroll" | "verify";
 
@@ -179,9 +185,7 @@ export function VoiceVerificationForm({
 
       <div className="space-y-2">
         <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          {description}
-        </p>
+        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
       </div>
 
       {isLoadingStatus ? (
@@ -194,33 +198,29 @@ export function VoiceVerificationForm({
           <Button
             type="button"
             size="lg"
-            className="min-w-[220px]"
+            className="h-11 min-w-[220px] gap-2 px-5 text-base [&_svg:not([class*='size-'])]:size-5"
             disabled={!mode || isRecording || isSubmitting}
             onClick={() => void handleRecord()}
           >
             {isRecording ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <Loader2 className="size-5 animate-spin" />
                 Recording {countdown}s
               </>
             ) : isSubmitting ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <Loader2 className="size-5 animate-spin" />
                 Verifying...
               </>
             ) : needsMoreEnrollment ? (
               "Record again"
             ) : (
               <>
-                <Mic className="size-4" />
+                <Mic className="size-5" />
                 {mode === "verify" ? "Verify voice" : "Start recording"}
               </>
             )}
           </Button>
-
-          <p className="text-xs text-muted-foreground">
-            Allow microphone access, then speak naturally for about 4 seconds.
-          </p>
         </>
       )}
 

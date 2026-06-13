@@ -55,7 +55,11 @@ export default function MeetingsPage() {
             Review your past meetings, recordings, and AI summaries.
           </p>
         </div>
-        <Button render={<Link href="/meeting" />}>
+        <Button
+          size="lg"
+          className="h-11 gap-2 px-5 text-base [&_svg:not([class*='size-'])]:size-5"
+          render={<Link href="/meeting" />}
+        >
           <VideoIcon />
           New meeting
         </Button>

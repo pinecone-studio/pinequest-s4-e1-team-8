@@ -11,6 +11,7 @@ import {
 } from "../index";
 
 type RecordingControlsProps = {
+  autoStart?: boolean;
   meetingId: string;
   onStatusChange?: (status: RecordingStatus) => void;
   participantNames?: string[];
@@ -20,6 +21,7 @@ type RecordingControlsProps = {
 export type RecordingStatus = "active" | "not-started" | "ready";
 
 export const RecordingControls = ({
+  autoStart,
   meetingId,
   onStatusChange,
   participantNames,
@@ -105,6 +107,11 @@ export const RecordingControls = ({
   useEffect(() => {
     onStatusChange?.(recordingStatus);
   }, [onStatusChange, recordingStatus]);
+
+  useEffect(() => {
+    if (autoStart) void handleStartRecording();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>

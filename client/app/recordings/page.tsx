@@ -59,7 +59,7 @@ export default function RecordingsPage() {
             type="button"
             onClick={() => setFilter(item.value)}
             className={cn(
-              "h-8 rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors",
+              "h-11 rounded-full px-5 text-base font-medium whitespace-nowrap transition-colors",
               filter === item.value
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",

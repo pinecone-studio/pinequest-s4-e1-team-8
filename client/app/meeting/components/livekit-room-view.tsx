@@ -26,6 +26,7 @@ import {
 import { RecordingControls, type RecordingStatus } from "./recording-controls";
 
 type LivekitRoomViewProps = {
+  autoRecord?: boolean;
   livekitRoomName: string;
   meetingId: string;
   onLeave: () => void;
@@ -33,6 +34,7 @@ type LivekitRoomViewProps = {
 };
 
 export const LivekitRoomView = ({
+  autoRecord,
   livekitRoomName,
   meetingId,
   onLeave,
@@ -419,6 +421,7 @@ export const LivekitRoomView = ({
               )}
             </button>
             <RecordingControls
+              autoStart={autoRecord}
               meetingId={meetingId}
               onStatusChange={setRecordingStatus}
               participantNames={participants.map((participant) => participant.displayName)}

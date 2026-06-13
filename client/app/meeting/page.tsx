@@ -2,6 +2,7 @@ import { MeetingPageContent } from "./components/meeting-page-content";
 
 type MeetingPageProps = {
   searchParams: Promise<{
+    autoRecord?: string;
     meetingId?: string;
     roomName?: string;
   }>;
@@ -17,7 +18,12 @@ const MeetingPage = async ({ searchParams }: MeetingPageProps) => {
         }
       : null;
 
-  return <MeetingPageContent selectedRoom={selectedRoom} />;
+  return (
+    <MeetingPageContent
+      autoRecord={params.autoRecord === "1"}
+      selectedRoom={selectedRoom}
+    />
+  );
 };
 
 export default MeetingPage;
