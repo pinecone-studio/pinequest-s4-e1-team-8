@@ -66,7 +66,7 @@ export const stopEgress = async (c: Context<{ Bindings: Bindings }>) => {
         {
           transcriptionId: transcription.id,
           egressId,
-          status: "done",
+          status: "queued",
         },
         200,
       );

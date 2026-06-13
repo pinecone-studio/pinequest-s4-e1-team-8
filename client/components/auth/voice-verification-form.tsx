@@ -26,6 +26,7 @@ type VoiceVerificationFormProps = {
   title?: string;
   description?: string;
   footer?: ReactNode;
+  variant?: "page" | "embedded";
 };
 
 export function VoiceVerificationForm({
@@ -33,6 +34,7 @@ export function VoiceVerificationForm({
   title: titleOverride,
   description: descriptionOverride,
   footer,
+  variant = "page",
 }: VoiceVerificationFormProps) {
   useClientApiAuth();
 
@@ -165,72 +167,72 @@ export function VoiceVerificationForm({
       ? "Speak naturally for a few seconds so Brisk can confirm it is really you."
       : "Record a short voice sample once. Brisk will use it before you join meetings.");
 
-  return (
-    <AuthShell>
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-          {mode === "verify" ? (
-            <ShieldCheck className="size-7" />
-          ) : (
-            <Mic className="size-7" />
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {description}
-          </p>
-        </div>
-
-        {isLoadingStatus ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Checking voice profile...
-          </div>
+  const content = (
+    <div className="flex flex-col items-center gap-6 text-center">
+      <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+        {mode === "verify" ? (
+          <ShieldCheck className="size-7" />
         ) : (
-          <>
-            <Button
-              type="button"
-              size="lg"
-              className="min-w-[220px]"
-              disabled={!mode || isRecording || isSubmitting}
-              onClick={() => void handleRecord()}
-            >
-              {isRecording ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Recording {countdown}s
-                </>
-              ) : isSubmitting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Verifying...
-                </>
-              ) : needsMoreEnrollment ? (
-                "Record again"
-              ) : (
-                <>
-                  <Mic className="size-4" />
-                  {mode === "verify" ? "Verify voice" : "Start recording"}
-                </>
-              )}
-            </Button>
-
-            <p className="text-xs text-muted-foreground">
-              Allow microphone access, then speak naturally for about 4 seconds.
-            </p>
-          </>
+          <Mic className="size-7" />
         )}
-
-        {error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        {footer}
       </div>
-    </AuthShell>
+
+      <div className="space-y-2">
+        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          {description}
+        </p>
+      </div>
+
+      {isLoadingStatus ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Checking voice profile...
+        </div>
+      ) : (
+        <>
+          <Button
+            type="button"
+            size="lg"
+            className="min-w-[220px]"
+            disabled={!mode || isRecording || isSubmitting}
+            onClick={() => void handleRecord()}
+          >
+            {isRecording ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Recording {countdown}s
+              </>
+            ) : isSubmitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Verifying...
+              </>
+            ) : needsMoreEnrollment ? (
+              "Record again"
+            ) : (
+              <>
+                <Mic className="size-4" />
+                {mode === "verify" ? "Verify voice" : "Start recording"}
+              </>
+            )}
+          </Button>
+
+          <p className="text-xs text-muted-foreground">
+            Allow microphone access, then speak naturally for about 4 seconds.
+          </p>
+        </>
+      )}
+
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {footer}
+    </div>
   );
+
+  return variant === "embedded" ? content : <AuthShell>{content}</AuthShell>;
 }

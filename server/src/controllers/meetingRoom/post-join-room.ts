@@ -1,12 +1,15 @@
 import { Context } from "hono";
 import { AccessToken } from "livekit-server-sdk";
-import type { Bindings } from "../../lib/common/types";
+import { getAuthenticatedUserId } from "../../lib/auth/clerk";
+import type { Bindings, Variables } from "../../lib/common/types";
 
 const getLiveKitFrontendUrl = (env: Bindings) => {
   return env.LIVEKIT_WS_URL ?? env.LIVEKIT_URL;
 };
 
-export const postJoinRoom = async (c: Context<{ Bindings: Bindings }>) => {
+export const postJoinRoom = async (
+  c: Context<{ Bindings: Bindings; Variables: Variables }>,
+) => {
   try {
     const { roomName, participantName } = await c.req.json();
 
@@ -14,10 +17,13 @@ export const postJoinRoom = async (c: Context<{ Bindings: Bindings }>) => {
     if (!participantName)
       return c.json({ error: "participantName is required" }, 400);
 
+    const userId = await getAuthenticatedUserId(c);
+    const metadata = userId ? JSON.stringify({ userId }) : undefined;
+
     const token = new AccessToken(
       c.env.LIVEKIT_API_KEY,
       c.env.LIVEKIT_API_SECRET,
-      { identity: participantName },
+      { identity: participantName, metadata },
     );
 
     token.addGrant({

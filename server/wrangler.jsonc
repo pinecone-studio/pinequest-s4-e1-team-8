@@ -13,6 +13,21 @@
       "migrations_dir": "drizzle",
     },
   ],
+  "queues": {
+    "producers": [
+      {
+        "queue": "meeting-transcription-jobs",
+        "binding": "MEETING_TRANSCRIPTION_QUEUE",
+      },
+    ],
+    "consumers": [
+      {
+        "queue": "meeting-transcription-jobs",
+        "max_retries": 3,
+        "max_batch_size": 1,
+      },
+    ],
+  },
   "vars": {
     "ENVIRONMENT": "production",
     "D1_DATABASE_NAME": "server-preset-db",
@@ -35,6 +50,21 @@
           "migrations_dir": "drizzle",
         },
       ],
+      "queues": {
+        "producers": [
+          {
+            "queue": "meeting-transcription-jobs",
+            "binding": "MEETING_TRANSCRIPTION_QUEUE",
+          },
+        ],
+        "consumers": [
+          {
+            "queue": "meeting-transcription-jobs",
+            "max_retries": 3,
+            "max_batch_size": 1,
+          },
+        ],
+      },
       "vars": {
         "ENVIRONMENT": "production",
         "D1_DATABASE_NAME": "brisk",

@@ -1,7 +1,6 @@
 import { Context } from "hono";
 import { WebhookReceiver } from "livekit-server-sdk";
 import { useDB } from "../../lib/db/db";
-import { finalizeRecordingUrl } from "./egress-finalization.service";
 import {
   findByEgressId,
   markFailed,
@@ -45,7 +44,7 @@ export const liveKitWebhook = async (c: Context<{ Bindings: Bindings }>) => {
 
   try {
     const payload = JSON.parse(rawBody);
-    const { egressId, event, isFinal, recordingUrl } =
+    const { egressId, event, isFinal, recordingUrl, userId } =
       parseLiveKitEgressCompletePayload(payload);
 
     if (!egressId) return c.json({ error: "egressId is required" }, 400);
@@ -94,18 +93,24 @@ export const liveKitWebhook = async (c: Context<{ Bindings: Bindings }>) => {
       return c.json({ error: "recordingUrl is required" }, 400);
     }
 
-    await finalizeRecordingUrl({
-      db,
-      env: c.env,
+    await c.env.MEETING_TRANSCRIPTION_QUEUE.send({
       egressId,
       recordingUrl,
+      userId,
+    });
+
+    console.info("[meetingTranscription] Queued recording for transcription", {
+      ...getRuntimeLogContext(c.env),
+      egressId,
+      roomName: transcription.roomName,
+      transcriptionId: transcription.id,
     });
 
     return c.json(
       {
         transcriptionId: transcription.id,
         egressId,
-        status: "done",
+        status: "queued",
       },
       200,
     );

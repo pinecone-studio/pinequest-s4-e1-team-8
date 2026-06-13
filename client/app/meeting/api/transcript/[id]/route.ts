@@ -9,19 +9,19 @@ type TranscriptRouteContext = {
 };
 
 export const GET = async (
-  _request: Request,
+  request: Request,
   { params }: TranscriptRouteContext
 ) => {
   const { id } = await params;
 
-  return proxyMeetingGetRequest(BACKEND_MEETING_ENDPOINTS.transcript(id));
+  return proxyMeetingGetRequest(request, BACKEND_MEETING_ENDPOINTS.transcript(id));
 };
 
 export const DELETE = async (
-  _request: Request,
+  request: Request,
   { params }: TranscriptRouteContext
 ) => {
   const { id } = await params;
 
-  return proxyMeetingDeleteRequest(BACKEND_MEETING_ENDPOINTS.transcript(id));
+  return proxyMeetingDeleteRequest(request, BACKEND_MEETING_ENDPOINTS.transcript(id));
 };

@@ -3,10 +3,12 @@ import { cors } from "hono/cors";
 
 import type { Bindings } from "./lib/common/types";
 import meetingRoomRouter from "./routes/meetingRoom/meeting-room.routes";
+import meetingsRouter from "./routes/meetings/meetings.routes";
 import meetingTranscriptionRouter from "./routes/meetingTranscription/meeting-transcription.routes";
 import userRoutes from "./routes/users/user.routes";
 import voiceRoutes from "./routes/voice/voice.routes";
 import webhookRoutes from "./routes/webhooks/webhook.routes";
+import { handleMeetingTranscriptionQueue } from "./queues/meeting-transcription-queue";
 
 const app = new Hono<{ Bindings: Bindings }>();
 const DEPLOYED_CLIENT_ORIGIN =
@@ -46,7 +48,11 @@ app.use(
 app.route("/users", userRoutes);
 app.route("/api/meeting-transcription", meetingTranscriptionRouter);
 app.route("/api/meeting-room", meetingRoomRouter);
+app.route("/api/meetings", meetingsRouter);
 app.route("/api/voice", voiceRoutes);
 app.route("/api/webhooks", webhookRoutes);
 
-export default app;
+export default {
+  fetch: app.fetch,
+  queue: handleMeetingTranscriptionQueue,
+};

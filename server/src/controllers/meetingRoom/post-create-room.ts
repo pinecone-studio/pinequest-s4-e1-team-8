@@ -1,6 +1,7 @@
 import { Context } from "hono";
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
-import type { Bindings } from "../../lib/common/types";
+import { getAuthenticatedUserId } from "../../lib/auth/clerk";
+import type { Bindings, Variables } from "../../lib/common/types";
 
 const getLiveKitApiUrl = (env: Bindings) => {
   const url = env.LIVEKIT_API_URL ?? env.LIVEKIT_URL;
@@ -14,12 +15,17 @@ const getLiveKitFrontendUrl = (env: Bindings) => {
   return env.LIVEKIT_WS_URL ?? env.LIVEKIT_URL;
 };
 
-export const postCreateRoom = async (c: Context<{ Bindings: Bindings }>) => {
+export const postCreateRoom = async (
+  c: Context<{ Bindings: Bindings; Variables: Variables }>,
+) => {
   try {
     const { roomName, hostName } = await c.req.json();
 
     if (!roomName) return c.json({ error: "roomName is required" }, 400);
     if (!hostName) return c.json({ error: "hostName is required" }, 400);
+
+    const userId = await getAuthenticatedUserId(c);
+    const metadata = userId ? JSON.stringify({ userId }) : undefined;
 
     const roomService = new RoomServiceClient(
       getLiveKitApiUrl(c.env),
@@ -31,12 +37,13 @@ export const postCreateRoom = async (c: Context<{ Bindings: Bindings }>) => {
       name: roomName,
       emptyTimeout: 600,
       maxParticipants: 20,
+      metadata,
     });
 
     const token = new AccessToken(
       c.env.LIVEKIT_API_KEY,
       c.env.LIVEKIT_API_SECRET,
-      { identity: hostName },
+      { identity: hostName, metadata },
     );
 
     token.addGrant({

@@ -19,6 +19,20 @@ const SUMMARY_PROMPT_PREFIX =
 const SUMMARY_PROMPT_SUFFIX =
   "\n\nIMPORTANT: Always respond in Mongolian language.";
 
+const SEGMENTS_PROMPT_PREFIX =
+  "Split the following meeting transcript into per-speaker dialogue segments. " +
+  "Respond in Mongolian. " +
+  "Return ONLY a JSON object (no markdown, no commentary) with this exact shape:\n" +
+  '{"segments": [{ "speakerName": string, "text": string, "timestampSeconds": number }]}\n\n' +
+  '"speakerName" must match one of the provided participant names as closely as ' +
+  'possible (use "Тодорхойгүй" if no participant name matches), "text" is the verbatim ' +
+  'text spoken during that turn, and "timestampSeconds" is the estimated number of ' +
+  'seconds from the start of the meeting when that turn began. Segments must be ordered ' +
+  'by "timestampSeconds" ascending, starting at 0.\n\n';
+
+const SEGMENTS_PROMPT_SUFFIX =
+  "\n\nIMPORTANT: Always respond in Mongolian language.";
+
 type GroqResponse = {
   choices?: Array<{
     message?: { content?: string };
@@ -26,19 +40,14 @@ type GroqResponse = {
   error?: { message?: string };
 };
 
-export async function generateGroqSummary(
+async function requestGroqCompletion(
   bindings: Bindings,
-  transcript: string,
-  participantNames?: string[] | null,
+  prompt: string,
 ): Promise<string> {
   const apiKey = resolveMeetingGroqKey(bindings);
   if (!apiKey) {
     throw new Error("Groq meeting API key is not configured");
   }
-
-  const participantsSection = participantNames?.length
-    ? `Meeting participants: ${participantNames.join(", ")}\n\n`
-    : "";
 
   const response = await fetch(GROQ_API_URL, {
     method: "POST",
@@ -49,12 +58,7 @@ export async function generateGroqSummary(
     body: JSON.stringify({
       model: resolveGroqModel(bindings),
       response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "user",
-          content: `${SUMMARY_PROMPT_PREFIX}${participantsSection}Transcript:\n${transcript}${SUMMARY_PROMPT_SUFFIX}`,
-        },
-      ],
+      messages: [{ role: "user", content: prompt }],
     }),
   });
 
@@ -66,4 +70,35 @@ export async function generateGroqSummary(
   }
 
   return text;
+}
+
+const getParticipantsSection = (participantNames?: string[] | null) =>
+  participantNames?.length
+    ? `Meeting participants: ${participantNames.join(", ")}\n\n`
+    : "";
+
+export async function generateGroqSummary(
+  bindings: Bindings,
+  transcript: string,
+  participantNames?: string[] | null,
+): Promise<string> {
+  const participantsSection = getParticipantsSection(participantNames);
+
+  return requestGroqCompletion(
+    bindings,
+    `${SUMMARY_PROMPT_PREFIX}${participantsSection}Transcript:\n${transcript}${SUMMARY_PROMPT_SUFFIX}`,
+  );
+}
+
+export async function generateGroqTranscriptSegments(
+  bindings: Bindings,
+  transcript: string,
+  participantNames?: string[] | null,
+): Promise<string> {
+  const participantsSection = getParticipantsSection(participantNames);
+
+  return requestGroqCompletion(
+    bindings,
+    `${SEGMENTS_PROMPT_PREFIX}${participantsSection}Transcript:\n${transcript}${SEGMENTS_PROMPT_SUFFIX}`,
+  );
 }

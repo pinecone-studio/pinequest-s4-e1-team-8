@@ -6,29 +6,8 @@ import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { ClientAuthSetup } from "@/components/client-auth-setup";
-import { usePathname } from "next/navigation";
-
-const IMMERSIVE_ROUTE = /^\/meetings\/[^/]+\/room/;
 
 export function DashboardAppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const scrollableMain = pathname === "/tasks" || pathname.startsWith("/tasks/");
-
-  if (IMMERSIVE_ROUTE.test(pathname)) {
-    return (
-      <MeetingChannelPresenceProvider>
-        <MeetingSessionProvider>
-          <div className="flex h-screen overflow-hidden bg-background">
-            <ClientAuthSetup />
-            <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              {children}
-            </main>
-          </div>
-        </MeetingSessionProvider>
-      </MeetingChannelPresenceProvider>
-    );
-  }
-
   return (
     <MeetingChannelPresenceProvider>
       <MeetingSessionProvider>
@@ -37,13 +16,7 @@ export function DashboardAppShell({ children }: { children: React.ReactNode }) {
           <Sidebar />
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <Topbar />
-            <main
-              className={
-                scrollableMain
-                  ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto pb-16 lg:pb-0"
-                  : "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pb-16 lg:pb-0"
-              }
-            >
+            <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pb-16 lg:pb-0">
               {children}
             </main>
             <BottomNav />

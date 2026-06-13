@@ -13,7 +13,8 @@ and `client/app/meeting/`.
 
 ```
 Client (LiveKit Room)
-  │  publishes mic audio, no audio processing config
+  │  publishes mic audio with audioCaptureDefaults:
+  │    noiseSuppression / echoCancellation / autoGainControl
   ▼
 Server: POST /api/meeting-transcription/start-egress
   │  startRoomEgress() → LiveKit RoomCompositeEgress (audioOnly: true, MP3)
@@ -44,7 +45,9 @@ Client reads results via
   GET /api/meeting-transcription
 ```
 
-There is **no background-noise-cancellation step** in this flow (see §3 and §6.1).
+Noise suppression / echo cancellation / auto gain control are applied at capture time
+via LiveKit's `audioCaptureDefaults` (see §2.1, §6.1). There is still no dedicated
+server-side denoising step on the recorded `.mp3` before it reaches Chimege.
 
 ---
 
@@ -54,13 +57,21 @@ There is **no background-noise-cancellation step** in this flow (see §3 and §6
 
 - `client/app/meeting/hooks/use-livekit-room.ts` creates the room with:
   ```ts
-  const activeRoom = new Room();
+  const activeRoom = new Room({
+    audioCaptureDefaults: {
+      noiseSuppression: true,
+      echoCancellation: true,
+      autoGainControl: true,
+    },
+  });
   ```
-- No `RoomOptions`, no `audioCaptureDefaults`, no `noiseSuppression` /
-  `echoCancellation` / `autoGainControl`, and no Krisp (or any) noise-cancellation
-  plugin is configured.
-- Audio published to LiveKit is therefore **raw browser mic capture**, subject only
-  to whatever defaults the browser's `getUserMedia` applies.
+- These are passed through to the browser's `getUserMedia` constraints for the
+  published mic track, so the publishing track applies WebRTC-level noise
+  suppression, echo cancellation, and automatic gain control before the audio
+  reaches LiveKit/egress.
+- ✅ §6.1 is resolved for client-side capture — see below. A server-side denoising
+  pass on the egress `.mp3` (before Chimege) is still not implemented and may still
+  be worth considering for noisy environments.
 
 ### 2.2 Egress / recording (server)
 
@@ -149,29 +160,57 @@ Files: `server/src/lib/groq/groq-client.ts`, `server/src/lib/groq/groq-keys.ts`
 - `resolveMeetingGroqKey` / `resolveGenerativeGroqKey` pick
   `GROQ_MEETING_API_KEY || GROQ_API_KEY` and `GROQ_GENERATIVE_API_KEY || GROQ_API_KEY`
   respectively.
-- The function returns the **raw JSON text as a string** — it is not parsed or
-  validated before storage (see §6.3).
+- The function returns the **raw JSON text as a string**. `transcribeRecording` now
+  also parses this text via `parseMeetingSummary`
+  (`server/src/lib/groq/parse-meeting-summary.ts`) into
+  `{ mainTopics, keyDecisions, actionItems }` for structured persistence — see §2.8,
+  §6.3, §6.4.
 
 ### 2.8 Persistence
 
 File: `server/src/controllers/meetingTranscription/meeting-transcription.service.ts`
 
-- `transcribeRecording` (line 88):
-  1. `downloadRecordingFromR2`
-  2. `transcribeAudio` → `transcript: string`
-  3. `generateGroqSummary` (only if no `summary` was passed in) → `summary: string` (raw JSON text)
-  4. Updates the `meetingTranscriptions` row: `transcript`, `summary`, `status: "done"`, `completedAt`.
-- **⚠️ Line 109: `// TODO: Move audio download and Chimege polling into a Queue/Workflow for production Workers.`**
+- `transcribeRecording` (takes `meetingId` and optional `userId` in addition to
+  `transcriptionId`, see §2.10):
+  1. If `userId` is provided: `INSERT INTO meetings (id, userId, title) ...
+     ON CONFLICT (id) DO NOTHING` — `id: meetingId`, `title: "Meeting - <localeDateString>"`.
+     Runs before any Chimege/Groq calls, and is idempotent (a pre-existing `meetings`
+     row for this `meetingId` is left untouched).
+  2. `downloadRecordingFromR2`
+  3. `transcribeAudio` → `transcript: string`
+  4. `generateGroqSummary` (only if no `summary` was passed in) → `summary: string` (raw JSON text)
+  5. `parseMeetingSummary(summary)` → `{ mainTopics, keyDecisions, actionItems } | null`
+  6. Batches (via `runD1Statements`/`db.batch`) the following writes:
+     - always: update the `meetingTranscriptions` row — `transcript`, `summary`
+       (raw JSON text, kept for backward compatibility), `status: "done"`, `completedAt`.
+     - if the summary parsed successfully **and** a `meetings` row exists with
+       `id === meetingId`: upsert (`onConflictDoUpdate` on `meetingId`) a
+       `meetingSummaries` row — `content` (= `mainTopics.join("\n")`), `keyPoints`
+       (= `keyDecisions`), `actionItems` (= `actionItems`).
+     - if no matching `meetings` row exists (i.e. step 1 didn't run because `userId`
+       was `null`, and no other flow created one), the `meetingSummaries` write is
+       **skipped** and a warning is logged (see §6.3).
+- **⚠️ TODO: Move audio download and Chimege polling into a Queue/Workflow for production Workers.**
+  (see §6.6)
 
-Storage target is the **existing flat table** `meetingTranscriptions`
-(`server/src/schema/meetingTranscription/meeting-transcription.schema.ts`):
+Storage targets:
 
-```
-id, meetingId (string, no FK), roomName, audioUrl, egressId,
-transcript (text), summary (text), participantNames (json string[]),
-errorMessage, status (pending|processing|done|failed),
-createdAt, updatedAt, completedAt
-```
+- **Existing flat table** `meetingTranscriptions`
+  (`server/src/schema/meetingTranscription/meeting-transcription.schema.ts`):
+  ```
+  id, meetingId (string, no FK), roomName, audioUrl, egressId,
+  transcript (text), summary (text), participantNames (json string[]),
+  errorMessage, status (pending|processing|done|failed),
+  createdAt, updatedAt, completedAt
+  ```
+- **New normalized table** `meetingSummaries`
+  (`server/src/schema/meeting.model.ts`), conditionally — see §3 and §6.3:
+  ```
+  id, meetingId (FK → meetings, cascade, unique),
+  content (text), keyPoints (json string[]),
+  actionItems (json { owner, action }[]),
+  createdAt, updatedAt
+  ```
 
 ### 2.9 Retrieval
 
@@ -179,20 +218,66 @@ createdAt, updatedAt, completedAt
   `GET /api/meeting-transcription` — read directly from `meetingTranscriptions`.
 - `DELETE /api/meeting-transcription/:id` — deletes a row.
 
+### 2.10 Token generation & userId propagation (new)
+
+Files: `server/src/controllers/meetingRoom/post-create-room.ts`,
+`server/src/controllers/meetingRoom/post-join-room.ts`
+
+- Both routes call `getAuthenticatedUserId(c)` (`server/src/lib/auth/clerk.ts`), which
+  resolves a Clerk Bearer token (from the `Authorization` header) to our internal
+  `users.id`, or returns `null` if no/invalid token is present.
+- If a `userId` is resolved, it's serialized as `metadata: JSON.stringify({ userId })`
+  and attached to:
+  - `postCreateRoom`: both `roomService.createRoom({ ..., metadata })` (LiveKit **Room**
+    metadata, persisted on the room) and the host's `AccessToken` (participant metadata).
+  - `postJoinRoom`: the joining participant's `AccessToken` (participant metadata only).
+- LiveKit echoes `room.metadata` / `participant.metadata` back in webhook payloads.
+  `parseLiveKitEgressCompletePayload` (`livekit-webhook-parser.ts`) now extracts `userId`
+  from `payload.room.metadata`, falling back to `payload.participant.metadata`, and
+  returns it alongside `egressId` / `recordingUrl` / etc.
+- `liveKitWebhook` passes this `userId` to `finalizeRecordingUrl` → `transcribeRecording`,
+  which uses it to create the `meetings` row before running Chimege/Groq (see §2.8, §6.3).
+- ✅ The client side of this is now wired up too:
+  - `client/app/meeting/api/meeting-api.ts`'s `meetingApi` reads
+    `window.Clerk.session.getToken()` (set by `<ClerkProvider>`) and attaches
+    `Authorization: Bearer <token>` to every request to the Next.js `meeting/api/*`
+    routes.
+  - The Next.js proxy (`meeting-proxy.ts`'s `proxyMeetingPostRequest` /
+    `proxyMeetingRequest`) reads the incoming `Authorization` header and forwards it
+    unchanged to the Cloudflare Worker (`/api/meeting-room/create`, `/join-room`, etc.).
+  - `getAuthenticatedUserId(c)` on the server can therefore resolve a real `users.id`
+    for signed-in users, completing the chain described above.
+- Caveat: if the signed-in user has no Clerk session (e.g. guest/unauthenticated
+  participants joining via `postJoinRoom`), `getAuthenticatedUserId` still returns
+  `null` and `metadata` is omitted for that token — this is expected, not a bug.
+
 ---
 
-## 3. The new normalized schema (added, not yet wired up)
+## 3. The new normalized schema (partially wired up)
 
 `server/src/schema/meeting.model.ts` defines a clean, relational schema for the
 speech-to-text pivot:
 
 - `meetings` — `id, userId (FK → users, cascade), title, createdAt, updatedAt`
 - `meetingTranscriptSegments` — `id, meetingId (FK → meetings, cascade), speakerName, text, timestamp`
-- `meetingSummaries` — `id, meetingId (FK → meetings, cascade, unique), content, keyPoints (json), actionItems (json), createdAt, updatedAt`
+- `meetingSummaries` — `id, meetingId (FK → meetings, cascade, unique), content, keyPoints (json string[]), actionItems (json { owner, action }[]), createdAt, updatedAt`
 
-This schema models exactly what the product wants (per-speaker segments + structured
-summary with action items), but **nothing in the pipeline writes to these tables yet**
-— see §6.3 and §6.4.
+`meetings`, `meetingSummaries`, and `meetingTranscriptSegments` now all have writers in
+`transcribeRecording` (§2.8): if a `userId` is available (propagated via LiveKit
+room/participant metadata, §2.10), a `meetings` row is created (idempotently) before
+transcription runs, which then unblocks the `meetingSummaries` upsert and the
+`meetingTranscriptSegments` bulk insert (§6.2). The client now sends a Clerk
+`Authorization` header through the meeting-room proxy chain (§2.10 / §6.3), so for
+signed-in users `userId` resolves to a real `users.id` end-to-end and all three writes
+go through.
+
+A read path now exists too: `GET /api/meetings/:id/details`
+(`server/src/controllers/meetings/get-meeting-details.ts`, routed via
+`server/src/routes/meetings/meetings.routes.ts`) requires
+`getAuthenticatedUserId(c)`, checks `meetings.userId === userId`, and returns
+`{ meeting, transcription, summary, transcriptSegments }` — the latest
+`meetingTranscriptions` row plus the joined `meetingSummaries` and
+`meetingTranscriptSegments` rows for that meeting (§6.4).
 
 ---
 
@@ -228,55 +313,110 @@ summary with action items), but **nothing in the pipeline writes to these tables
 These are the gaps between "record → cancel noise → Chimege → summary → action" and
 what the code actually does today.
 
-### 6.1 ❌ No real background noise cancellation
-- **Client**: `new Room()` in `use-livekit-room.ts` has no `RoomOptions`,
-  `audioCaptureDefaults`, `noiseSuppression`, `echoCancellation`, `autoGainControl`,
-  or any Krisp/RNNoise-style plugin.
-- **Server**: `transcribeRecording` feeds the raw egress `.mp3` straight to Chimege —
-  no denoising step exists anywhere in `meetingTranscription/`.
-- The only place "noise-canceling" appears in the codebase is as a **cosmetic UI
-  label** (`STAGE_LABELS["noise-canceling"] = "Reducing background noise"` in
-  `client/components/recordings/upload-recording-dialog.tsx`) driven by **fully
-  mocked** data (`PROCESSING_STAGES`, `runProcessingStages`, `completeRecording` in
-  `client/lib/mock-api.ts`). This is part of an unrelated "Recordings" upload feature
-  and is **not connected to the real LiveKit/Chimege pipeline** at all.
-- **Action needed**: either (a) enable LiveKit's built-in audio processing
-  (`audioCaptureDefaults: { noiseSuppression: true, echoCancellation: true,
-  autoGainControl: true }` and/or a Krisp noise-filter plugin) on the publishing
-  track, and/or (b) add a server-side denoising pass on the egress `.mp3` before
-  it's sent to Chimege.
+### 6.1 ✅ FIXED (client capture) — background noise suppression now enabled
+- **Client**: `new Room()` in `use-livekit-room.ts` now passes
+  `audioCaptureDefaults: { noiseSuppression: true, echoCancellation: true,
+  autoGainControl: true }`, so the published mic track requests these WebRTC
+  constraints from the browser before audio is sent to LiveKit/egress.
+- **Server**: `transcribeRecording` still feeds the raw egress `.mp3` straight to
+  Chimege — there is no additional server-side denoising pass, but the audio it
+  receives has already gone through browser-level noise suppression.
+- The "noise-canceling" **cosmetic UI label**
+  (`STAGE_LABELS["noise-canceling"] = "Reducing background noise"` in
+  `client/components/recordings/upload-recording-dialog.tsx`, driven by **fully
+  mocked** data in `client/lib/mock-api.ts`) is part of an unrelated "Recordings"
+  upload feature and is still **not connected to the real LiveKit/Chimege pipeline**
+  — left as-is, out of scope for this fix.
+- **Optional follow-up**: a server-side denoising pass on the egress `.mp3` (or a
+  Krisp-style plugin) could still help for very noisy rooms, but browser-level
+  suppression covers the common case.
 
-### 6.2 ❌ No speaker diarization or timestamps from Chimege
-- Chimege's `stt-long` API returns one flat transcription string for the whole
-  recording — no per-speaker segments, no timestamps.
-- The new `meetingTranscriptSegments` table (`speakerName, text, timestamp`) has
-  **no writer at all**.
-- `participantNames` is captured at egress-stop time and passed to Groq as prompt
-  context, but it is never used to attribute parts of the transcript to specific
-  speakers.
-- **Action needed**: either switch to a diarization-capable STT provider/endpoint, or
-  post-process the flat transcript (e.g., LLM-based speaker attribution) to populate
-  `meetingTranscriptSegments`.
+### 6.2 ✅ FIXED (LLM post-processing) — `meetingTranscriptSegments` now populated via Groq
+- Chimege's `stt-long` API still returns one flat transcription string for the whole
+  recording — no per-speaker segments, no timestamps. That has not changed.
+- `transcribeRecording` (`meeting-transcription.service.ts`) now makes a second,
+  targeted Groq call right after Chimege returns: `generateGroqTranscriptSegments`
+  (`server/src/lib/groq/groq-client.ts`) sends the flat Mongolian transcript plus
+  `participantNames` and asks for
+  `{"segments": [{ "speakerName": string, "text": string, "timestampSeconds": number }]}`,
+  with `speakerName` matched against the real participant names (or `"Тодорхойгүй"` if
+  none match) and `timestampSeconds` an LLM-estimated, increasing-from-0 offset.
+- `parseMeetingTranscriptSegments` (`server/src/lib/groq/parse-meeting-transcript-segments.ts`)
+  validates the raw JSON with a `zod` schema (`{ segments: { speakerName, text,
+  timestampSeconds }[] }`), returning `null` if parsing/validation fails or the array
+  is empty.
+- If segments are returned, `transcribeRecording` converts each `timestampSeconds`
+  into a `Date` (`now + timestampSeconds` seconds) and, in the same `db.batch()` as the
+  `meetingTranscriptions`/`meetingSummaries` writes, bulk-inserts one row per segment
+  into `meetingTranscriptSegments` (`id, meetingId, speakerName, text, timestamp`) —
+  gated on the same `meetings` row lookup as §6.3, so it requires `userId` propagation
+  to have created that row.
+- The Groq call for segments is wrapped in its own try/catch: if it throws (e.g. rate
+  limit, malformed JSON), `transcriptSegments` is left `null`, a warning is logged, and
+  the rest of the pipeline (transcript + summary) proceeds unaffected.
+- **Remaining limitation**: `timestampSeconds` is an LLM estimate, not derived from real
+  audio timing — Chimege still doesn't expose per-word/segment timestamps, so these
+  values are approximate ordering markers rather than precise wall-clock offsets.
 
-### 6.3 ❌ Summary is unparsed JSON text; new `meetingSummaries` table is unused
-- `generateGroqSummary` returns the model's raw JSON string
-  (`{mainTopics, keyDecisions, actionItems}`), which is stored verbatim in
-  `meetingTranscriptions.summary` (a `text` column) — never parsed or validated.
-- The new `meetingSummaries` table (`content`, `keyPoints` JSON, `actionItems` JSON)
-  is **not populated by anything**.
-- **Action needed**: parse/validate the Groq JSON response and write structured rows
-  into `meetingSummaries` (and `meetings`, since `meetingSummaries.meetingId` is a
-  FK into the new `meetings` table, not `meetingTranscriptions`).
+### 6.3 ✅ FIXED — `meetings`/`meetingSummaries` writers exist and are wired end-to-end for signed-in users
+- `generateGroqSummary`'s raw JSON string is still stored verbatim in
+  `meetingTranscriptions.summary` (kept for backward compatibility with the existing
+  `GET /api/meeting-transcription/*` responses and `MeetingSummaryCard` client UI).
+- `transcribeRecording` now also calls `parseMeetingSummary` (
+  `server/src/lib/groq/parse-meeting-summary.ts`) to extract
+  `{ mainTopics, keyDecisions, actionItems }`, and — in the same `db.batch()` as the
+  `meetingTranscriptions` update — upserts a `meetingSummaries` row keyed by
+  `meetingId` (`content = mainTopics.join("\n")`, `keyPoints = keyDecisions`,
+  `actionItems = actionItems`).
+- `meetingSummaries.meetingId` is a `NOT NULL` FK to `meetings.id`. To satisfy this,
+  `postCreateRoom`/`postJoinRoom` embed `JSON.stringify({ userId })` as LiveKit
+  room/participant metadata (§2.10), `parseLiveKitEgressCompletePayload` extracts
+  `userId` from the webhook payload's `room.metadata`/`participant.metadata`, and
+  `transcribeRecording` uses it to `INSERT ... ON CONFLICT DO NOTHING` a `meetings`
+  row (`id: meetingId, userId, title`) before the `meetingSummaries` upsert runs.
+- The previously-missing piece — the client never sent a Clerk `Authorization` header
+  through the proxy chain — is now fixed: `meeting-api.ts`'s `meetingApi` retrieves a
+  token via `window.Clerk.session.getToken()` and sends `Authorization: Bearer <token>`
+  on every call; `meeting-proxy.ts` forwards that header unchanged to
+  `/api/meeting-room/create` and `/join-room`. `getAuthenticatedUserId(c)` now resolves
+  a real `users.id` for signed-in users, so the `meetings` row is created and the
+  `meetingSummaries` upsert fires instead of logging the `"No meetings row for
+  meetingId; skipping meetingSummaries write"` warning.
+- **Remaining caveat**: this only works when at least one participant who calls
+  `postCreateRoom`/`postJoinRoom` is signed in via Clerk. A fully anonymous/guest
+  session (no Clerk token at all) still yields `userId: null`, `metadata` is omitted
+  from that token, and the `meetings` row is never created for that meeting — the
+  `meetingSummaries` write would still be skipped with the warning above in that case.
+  This is expected behavior, not a bug, given the schema's `NOT NULL` FK to `users`.
 
-### 6.4 ❌ Action items are generated but nothing "acts" on them
-- Groq's `actionItems: { owner, action }[]` is produced but only ever lives inside
-  the raw JSON string in `meetingTranscriptions.summary`.
-- There is no code that creates tasks/reminders/notifications from these items, and
-  no dedicated read path exposes them as structured data.
-- **Action needed**: once §6.3 is fixed and `actionItems` are structured rows in
-  `meetingSummaries.actionItems`, decide what "taking action" means (e.g., create
-  follow-up tasks, send notifications/emails, or simply expose them via an API for
-  the client to render as a checklist).
+### 6.4 ✅ FIXED — relational meeting details now have a read path and a UI
+- `meetingSummaries.actionItems` is typed `{ owner: string; action: string }[]`
+  (matches Groq's actual output) and is populated by `transcribeRecording` for
+  signed-in users now that §6.3's `meetings`/`meetingSummaries` writers are wired up
+  end-to-end.
+- `GET /api/meetings/:id/details` (see §3) exposes `meeting`, the latest
+  `transcription` (`meetingTranscriptions` row, including `status`), `summary`
+  (`meetingSummaries` row) and `transcriptSegments`
+  (`meetingTranscriptSegments[]`) in one response.
+- Client: `fetchMeetingAnalysisDetails(meetingId)`
+  (`client/app/meeting/api/fetch-meeting-analysis-details.ts`) calls this endpoint
+  through the existing `meetingApi()` wrapper (Clerk `Authorization: Bearer <token>`
+  attached automatically) via
+  `MEETING_ENDPOINTS.meetingDetails` → `client/app/meeting/api/meetings/[id]/details/route.ts`
+  → `BACKEND_MEETING_ENDPOINTS.meetingDetails` → `/api/meetings/:id/details`.
+- New presentational components render the structured data:
+  `client/components/meetings/ActionItemsChecklist.tsx` renders
+  `meetingSummaries.actionItems` as an interactive checklist with an owner badge per
+  item, and `client/components/meetings/MeetingDiarizedTranscript.tsx` renders
+  `meetingTranscriptSegments` as a chronological, script-style dialogue timeline with
+  per-segment relative timestamps (`mm:ss` / `h:mm:ss` from the first segment).
+- Both are wired into `client/components/meetings/MeetingAnalysisPanel.tsx`, which is
+  rendered from `client/app/meetings/[id]/page.tsx` (see §6.6 for the
+  loading/polling behavior).
+- **Remaining limitation**: the checklist's "completed" state is local UI state only
+  (not persisted), and there is still no code that turns action items into
+  tasks/reminders/notifications — the checklist is the full extent of "acting on"
+  them today.
 
 ### 6.5 ✅ FIXED — LiveKit webhook signatures are now verified
 - `livekit-webhook.ts` now reads the raw body (`c.req.text()`) and `Authorization`
@@ -288,32 +428,81 @@ what the code actually does today.
 - Only after successful verification is the raw body `JSON.parse`'d and handed to
   `parseLiveKitEgressCompletePayload` as before.
 
-### 6.6 ❌ Chimege polling & R2 download run synchronously in the request lifecycle
-- `chimege-client.ts` line 88 and `meeting-transcription.service.ts` line 109 both
-  flag that `transcribeRecording` (R2 download + up to 60s of Chimege polling) runs
-  inline inside a single request handler.
-- On longer meetings this risks hitting Cloudflare Workers' execution time limits and
-  leaves the transcription stuck in `status: "processing"` if the Worker is killed.
-- **Action needed**: move this work to a Queue (Cloudflare Queues) or Workflow so it
-  survives outside a single request's CPU budget, with retries.
+### 6.6 ✅ FIXED — Chimege polling & R2 download moved to a Cloudflare Queue
+- `chimege-client.ts` line 88 and `meeting-transcription.service.ts` line 109 used to
+  flag that `transcribeRecording` (R2 download + up to 60s of Chimege polling) ran
+  inline inside a single request handler — risking Cloudflare Workers' execution time
+  limits on longer meetings and leaving the transcription stuck in
+  `status: "processing"` if the Worker was killed mid-request.
+- `server/wrangler.jsonc` now declares a `meeting-transcription-jobs` queue with a
+  producer binding `MEETING_TRANSCRIPTION_QUEUE` (and a consumer with
+  `max_retries: 3`, `max_batch_size: 1`) in both the default and `production` envs.
+  `Bindings.MEETING_TRANSCRIPTION_QUEUE: Queue<MeetingTranscriptionJob>` and the
+  `MeetingTranscriptionJob = { egressId, recordingUrl, userId? }` type live in
+  `server/src/lib/common/types.ts`.
+- Both entry points that used to call `transcribeRecording` synchronously now enqueue
+  a job instead and return immediately (leaving `meetingTranscriptions.status` as
+  `"processing"`):
+  - `livekit-webhook.ts` (`liveKitWebhook`) sends `{ egressId, recordingUrl, userId }`
+    (`userId` from LiveKit room/participant metadata, §2.10/§6.3) and responds with
+    `status: "queued"`.
+  - `stop-egress.ts` (`stopEgress`), via `finalizeEgressRecording`
+    (`egress-finalization.service.ts`), extracts `recordingUrl` from the finished
+    LiveKit egress, sends `{ egressId, recordingUrl, userId: null }`, and responds
+    with `status: "queued"` (its missing-`recordingUrl` → `markFailed` guard is
+    unchanged).
+- The actual work moved to a new consumer:
+  `server/src/queues/meeting-transcription-queue.ts` exports
+  `handleMeetingTranscriptionQueue(batch, env)`, wired up in `server/src/index.ts` as
+  `export default { fetch: app.fetch, queue: handleMeetingTranscriptionQueue }`. For
+  each message it calls the existing `finalizeRecordingUrl` (→ `transcribeRecording`,
+  R2 download + Chimege polling + Groq summary/segments + D1 writes, all unchanged) —
+  on success it `ack()`s the message; on failure (which already calls `markFailed`
+  internally) it `retry()`s while `message.attempts < 3`, then `ack()`s to stop
+  retrying a job whose `"failed"` status is already persisted.
+- **Frontend unaffected**: `client/app/meeting/hooks/use-transcription-status.ts`
+  already polls `GET /api/meeting-transcription/:id` every 4s while `status` is
+  `"pending"`/`"processing"` and stops at `"done"`/`"failed"` (§6.4); `"queued"` is
+  just a transient response from `/stop-egress` and `/livekit-webhook` and isn't a
+  `meetingTranscriptions.status` value, so no client changes were needed.
+- **Deployment prerequisite**: the queue must exist before this works —
+  `wrangler queues create meeting-transcription-jobs` (and re-run
+  `wrangler deploy`/`wrangler dev` to pick up the new bindings).
+- **Chimege polling within the consumer**: `transcribeAudio`'s up-to-60s poll loop
+  (`chimege-client.ts`) is mostly `fetch`/`setTimeout` I/O wait rather than CPU time,
+  so it should fit Cloudflare Queue consumers' default CPU-time limits; no
+  `limits.cpu_ms` override was added. Revisit if Chimege transcriptions start timing
+  out in the consumer.
 
-### 6.7 ❓ `validate-meeting-audio.ts` appears orphaned
-- `validateMeetingAudio(file)` (line 4) checks MIME type
-  (`audio/mpeg|wav|mp4|ogg`) and a 100MB max size, but is **not referenced** by
-  `meeting-transcription.routes.ts` or any other route.
-- **Action needed**: either wire this into a manual-upload route (if one is planned)
-  or remove it if the upload path is no longer needed.
+### 6.7 ✅ FIXED — orphaned `validate-meeting-audio.ts` removed
+- `validateMeetingAudio(file)` (MIME type check for `audio/mpeg|wav|mp4|ogg` + 100MB
+  max size) had zero references anywhere in `server/` or `client/` and no
+  manual-upload route exists.
+- The file `server/src/controllers/meetingTranscription/validate-meeting-audio.ts`
+  has been deleted. If a manual-upload route is added later, equivalent validation
+  should be (re)written alongside that route.
 
 ---
 
 ## 7. Suggested next steps (priority order)
 
-1. Wire `transcribeRecording`'s output into the new `meetings` /
-   `meetingTranscriptSegments` / `meetingSummaries` tables (§6.2–6.4) — this is the
-   core of the speech-to-text pivot.
-2. Decide on and implement an actual noise-suppression strategy (§6.1) — client-side
-   `audioCaptureDefaults`/Krisp is the cheapest first step.
+1. ~~Wire the client's meeting-room calls to send a Clerk `Authorization: Bearer
+   <token>` header through `meeting-api.ts` → the Next.js `meeting/api/*` proxy routes
+   → `meeting-proxy.ts` → `/api/meeting-room/create` and `/join-room` (§2.10/§6.3)~~ —
+   done. The `userId` → `meetings` row → `meetingSummaries` upsert chain is now live
+   end-to-end for signed-in users.
+   ~~Populate `meetingTranscriptSegments` via an LLM diarization pass over the flat
+   Chimege transcript (§6.2)~~ — done.
+   ~~Add a read path + UI for `meetingSummaries`/`meetingTranscriptSegments`
+   (§6.4)~~ — done via `GET /api/meetings/:id/details` and
+   `MeetingAnalysisPanel`/`ActionItemsChecklist`/`MeetingDiarizedTranscript`. Next:
+   persist action-item completion and decide on follow-up
+   tasks/notifications/reminders.
+2. ~~Decide on and implement an actual noise-suppression strategy (§6.1)~~ — client-side
+   `audioCaptureDefaults` done; server-side denoising remains optional.
 3. ~~Verify LiveKit webhook signatures (§6.5)~~ — done.
-4. Move Chimege polling + R2 download off the request path (§6.6) — needed before
-   relying on this for real meeting lengths.
-5. Resolve or remove `validate-meeting-audio.ts` (§6.7).
+4. ~~Move Chimege polling + R2 download off the request path (§6.6)~~ — done (now
+   runs in `handleMeetingTranscriptionQueue` via `MEETING_TRANSCRIPTION_QUEUE`); run
+   `wrangler queues create meeting-transcription-jobs` before deploying.
+5. ~~Resolve or remove `validate-meeting-audio.ts` (§6.7)~~ — done (removed).
+

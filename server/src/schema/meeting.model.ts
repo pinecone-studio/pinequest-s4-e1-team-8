@@ -27,6 +27,11 @@ export const meetingTranscriptSegments = sqliteTable("meeting_transcript_segment
   timestamp: integer("timestamp", { mode: "timestamp" }).notNull(),
 });
 
+export type MeetingSummaryActionItem = {
+  owner: string;
+  action: string;
+};
+
 export const meetingSummaries = sqliteTable("meeting_summaries", {
   id: text("id").primaryKey(),
   meetingId: text("meeting_id")
@@ -35,7 +40,9 @@ export const meetingSummaries = sqliteTable("meeting_summaries", {
     .references(() => meetings.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   keyPoints: text("key_points", { mode: "json" }).$type<string[]>(),
-  actionItems: text("action_items", { mode: "json" }).$type<string[]>(),
+  actionItems: text("action_items", { mode: "json" }).$type<
+    MeetingSummaryActionItem[]
+  >(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
