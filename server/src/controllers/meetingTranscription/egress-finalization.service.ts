@@ -96,10 +96,12 @@ export const finalizeEgressRecording = async ({
   db,
   env,
   egress,
+  userId,
 }: {
   db: MeetingTranscriptionDb;
   env: Bindings;
   egress: EgressInfo;
+  userId?: string | null;
 }) => {
   const recordingUrl = getEgressRecordingUrl(egress);
 
@@ -130,7 +132,7 @@ export const finalizeEgressRecording = async ({
   await env.MEETING_TRANSCRIPTION_QUEUE.send({
     egressId: egress.egressId,
     recordingUrl,
-    userId: null,
+    userId: userId ?? null,
   });
 
   return { status: "queued" as const };

@@ -1,5 +1,6 @@
 import { Context } from "hono";
 import { useDB } from "../../lib/db/db";
+import { getAuthenticatedUserId } from "../../lib/auth/clerk";
 import {
   findByEgressId,
   markFailed,
@@ -13,7 +14,7 @@ import {
 } from "./egress-finalization.service";
 import { pollEgressUntilFinal } from "./egress-polling.service";
 import { stopRoomEgress } from "./livekit-egress.service";
-import type { Bindings } from "../../lib/common/types";
+import type { Bindings, Variables } from "../../lib/common/types";
 
 const getEgressErrorMessage = (egressStatus: string, error?: string) => {
   return error
@@ -21,9 +22,12 @@ const getEgressErrorMessage = (egressStatus: string, error?: string) => {
     : `LiveKit egress failed with ${egressStatus}`;
 };
 
-export const stopEgress = async (c: Context<{ Bindings: Bindings }>) => {
+export const stopEgress = async (
+  c: Context<{ Bindings: Bindings; Variables: Variables }>,
+) => {
   try {
     const { egressId, participantNames } = await c.req.json();
+    const userId = await getAuthenticatedUserId(c);
 
     if (typeof egressId !== "string" || !egressId.trim()) {
       return c.json({ error: "egressId is required" }, 400);
@@ -60,6 +64,7 @@ export const stopEgress = async (c: Context<{ Bindings: Bindings }>) => {
         db,
         env: c.env,
         egress: finalEgress,
+        userId,
       });
 
       return c.json(
