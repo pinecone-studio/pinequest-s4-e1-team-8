@@ -1,5 +1,5 @@
 import type { Bindings } from "../common/types";
-import { generateGeminiJson, parseJsonFromGeminiText } from "../gemini/gemini-client";
+import { generateGeminiJson, parseJsonFromGeminiText } from "./gemini-client";
 
 export type RefineSelectionParams = {
   blockTitle: string;

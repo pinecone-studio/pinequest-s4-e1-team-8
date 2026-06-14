@@ -8,11 +8,11 @@ import {
 } from "../../schema/meeting.model";
 import { transcribeAudio } from "./chimege-client";
 import {
-  generateGroqSummary,
-  generateGroqTranscriptSegments,
-} from "../../lib/groq/groq-client";
-import { parseMeetingSummary } from "../../lib/groq/parse-meeting-summary";
-import { parseMeetingTranscriptSegments } from "../../lib/groq/parse-meeting-transcript-segments";
+  generateMeetingSummary,
+  generateTranscriptSegments,
+} from "../../lib/gemini/meeting-analysis";
+import { parseMeetingSummary } from "../../lib/gemini/parse-meeting-summary";
+import { parseMeetingTranscriptSegments } from "../../lib/gemini/parse-meeting-transcript-segments";
 import { downloadRecordingFromR2 } from "./r2-recording-download.service";
 import { runD1Statements } from "../../lib/db/d1-batch";
 import type { Bindings } from "../../lib/common/types";
@@ -150,7 +150,7 @@ export const transcribeRecording = async ({
 
     let transcriptSegments: ReturnType<typeof parseMeetingTranscriptSegments> = null;
     try {
-      const segmentsRaw = await generateGroqTranscriptSegments(
+      const segmentsRaw = await generateTranscriptSegments(
         env,
         transcript,
         participantNames,
@@ -164,7 +164,7 @@ export const transcribeRecording = async ({
     }
 
     const finalSummary =
-      summary ?? (await generateGroqSummary(env, transcript, participantNames));
+      summary ?? (await generateMeetingSummary(env, transcript, participantNames));
 
     const statements: BatchStatement[] = [
       db
@@ -192,7 +192,7 @@ export const transcribeRecording = async ({
         const now = new Date();
 
         if (structuredSummary) {
-          // mainTopics doubles as the free-text overview, since Groq doesn't
+          // mainTopics doubles as the free-text overview, since Gemini doesn't
           // return a separate summary paragraph.
           const content = structuredSummary.mainTopics.join("\n");
 

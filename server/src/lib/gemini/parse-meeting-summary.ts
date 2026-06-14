@@ -29,7 +29,7 @@ const toActionItems = (value: unknown): MeetingSummaryActionItem[] => {
     .filter((item) => item.action.length > 0);
 };
 
-// Groq returns a raw JSON string shaped like
+// Gemini returns a raw JSON string shaped like
 // { mainTopics: string[], keyDecisions: string[], actionItems: { owner, action }[] }.
 // Parse it defensively since model output (or a caller-supplied summary) can be
 // missing, empty, or malformed.

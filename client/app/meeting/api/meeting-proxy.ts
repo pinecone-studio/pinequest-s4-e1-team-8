@@ -35,7 +35,7 @@ const getNormalizedBaseUrl = (url: string) => {
   }
 };
 
-const getBackendBaseUrls = () => {
+export const getBackendBaseUrls = () => {
   const genericUrls = [process.env.API_URL, process.env.NEXT_PUBLIC_API_URL];
   const normalizedGenericUrls = genericUrls
     .filter((url): url is string => Boolean(url))

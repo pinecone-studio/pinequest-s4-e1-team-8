@@ -1,103 +1,72 @@
 "use client";
 
-import { RecordingCard } from "@/components/recordings/recording-card";
-import { UploadRecordingDialog } from "@/components/recordings/upload-recording-dialog";
-import { VoiceVerificationPanel } from "@/components/recordings/voice-verification-panel";
-import { cn } from "@/lib/utils";
-import { recordings as initialRecordings } from "@/lib/mock-data";
-import type { Recording, RecordingStatus } from "@/types";
+import { listRecordings } from "@/app/recordings/api/recordings-api";
+import type { StandaloneRecording } from "@/app/recordings/types";
+import { RecordingResultCard } from "@/components/recordings/recording-result-card";
+import { VoiceRecorderCard } from "@/components/recordings/voice-recorder-card";
 import { FolderOpenIcon } from "lucide-react";
-import { MeetingListCard } from "@/components/meetings/meeting-list-card";
-import { fetchMeetings, type MeetingListItem } from "@/app/meeting";
-import { cn } from "@/lib/utils";
-
-type FilterValue = "all" | "done" | "processing";
-
-const FILTERS: { value: FilterValue; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "done", label: "Ready" },
-  { value: "processing", label: "Processing" },
-];
+import { useCallback, useEffect, useState } from "react";
 
 export default function RecordingsPage() {
-  const [meetings, setMeetings] = useState<MeetingListItem[]>([]);
+  const [recordings, setRecordings] = useState<StandaloneRecording[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterValue>("all");
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    let isActive = true;
-
-    fetchMeetings()
-      .then((response) => {
-        if (isActive) setMeetings(response.meetings);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (isActive) setIsLoading(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
+  const loadRecordings = useCallback(async () => {
+    try {
+      const response = await listRecordings();
+      setRecordings(response.recordings);
+      setError("");
+    } catch (caughtError) {
+      setError((caughtError as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const recordings = meetings.filter(
-    (meeting) => meeting.transcriptionStatus === "done" || meeting.transcriptionStatus === "processing",
-  );
-
-  const filteredRecordings =
-    filter === "all" ? recordings : recordings.filter((meeting) => meeting.transcriptionStatus === filter);
+  useEffect(() => {
+    void loadRecordings();
+  }, [loadRecordings]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:p-6">
       <div>
-        <h1 className="font-heading text-2xl font-semibold text-foreground">Recordings</h1>
+        <h1 className="font-heading text-2xl font-semibold text-foreground">
+          Voice Recordings
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Review AI summaries, action items, and transcripts from your meetings.
+          Record or upload audio and get an AI transcript, key points, and a
+          speaker-by-speaker script.
         </p>
       </div>
 
-      <VoiceVerificationPanel />
+      <VoiceRecorderCard onUploaded={() => void loadRecordings()} />
 
-      <div className="inline-flex w-fit items-center gap-1 rounded-full bg-muted p-1">
-        {FILTERS.map((item) => (
-          <button
-            key={item.value}
-            type="button"
-            onClick={() => setFilter(item.value)}
-            className={cn(
-              "inline-flex h-8 min-w-20 items-center justify-center rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors",
-              filter === item.value
-                ? "bg-background text-foreground shadow-sm ring-1 ring-foreground/10"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {error ? (
+        <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {[0, 1, 2].map((key) => (
-            <div key={key} className="h-32 animate-pulse rounded-2xl bg-muted" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[0, 1].map((key) => (
+            <div key={key} className="h-48 animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
-      ) : filteredRecordings.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredRecordings.map((meeting) => (
-            <MeetingListCard key={meeting.id} meeting={meeting} />
+      ) : recordings.length > 0 ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {recordings.map((recording) => (
+            <RecordingResultCard key={recording.id} recording={recording} />
           ))}
         </div>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-16 text-center">
           <FolderOpenIcon className="size-8 text-muted-foreground" />
           <div>
-            <p className="font-medium text-foreground">No recordings here</p>
+            <p className="font-medium text-foreground">No recordings yet</p>
             <p className="text-sm text-muted-foreground">
-              {recordings.length === 0
-                ? "Recordings appear here once a meeting finishes processing."
-                : "Try a different filter."}
+              Record from your microphone or upload a file to get started.
             </p>
           </div>
         </div>

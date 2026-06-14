@@ -67,9 +67,9 @@ export const useLivekitRoom = ({
     const attemptId = attemptIdRef.current + 1;
     const activeRoom = new Room({
       audioCaptureDefaults: {
-        noiseSuppression: true,
-        echoCancellation: true,
-        autoGainControl: true,
+        noiseSuppression: false,
+        echoCancellation: false,
+        autoGainControl: false,
       },
     });
     const currentUrlDiagnostics = getLivekitUrlDiagnostics(livekitUrl);
