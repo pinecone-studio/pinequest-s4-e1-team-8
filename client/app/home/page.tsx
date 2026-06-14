@@ -34,53 +34,57 @@ export default function HomePage() {
     day: "numeric",
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto bg-zinc-50/50 p-4 lg:p-6 dark:bg-background">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((key) => (
-            <div key={key} className="h-36 animate-pulse rounded-xl bg-muted" />
-          ))}
-        </div>
-        <div className="flex flex-col gap-3">
-          {[0, 1, 2].map((key) => (
-            <div key={key} className="h-32 animate-pulse rounded-xl bg-muted" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden bg-zinc-50/50 dark:bg-background">
-      <div className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto p-4 lg:p-6 xl:w-[72%]">
-        <AnimatePresence mode="wait">
-          {meetings.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="flex min-h-0 flex-1 flex-col"
-            >
-              <EmptyState />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="active"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-            >
-              <HomeDashboard meetings={meetings} todayLabel={todayLabel} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+    <div className="relative flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <div className="pointer-events-none absolute -top-32 right-0 size-112 rounded-full bg-lavender/40 blur-[120px] dark:bg-lavender/10" />
+      <div className="pointer-events-none absolute top-1/3 left-1/4 size-96 rounded-full bg-primary/10 blur-[120px]" />
 
-      <ScheduleSidebar />
+      {isLoading ? (
+        <div className="relative z-10 flex min-h-0 w-full flex-1 flex-col gap-6 overflow-y-auto px-6 py-4 lg:px-8 lg:py-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((key) => (
+              <div key={key} className="h-36 animate-pulse rounded-xl bg-muted" />
+            ))}
+          </div>
+          <div className="flex flex-col gap-3">
+            {[0, 1, 2].map((key) => (
+              <div key={key} className="h-32 animate-pulse rounded-xl bg-muted" />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="relative z-10 flex min-h-0 w-full flex-1 flex-col overflow-hidden px-6 py-4 lg:px-8 lg:py-6 xl:w-[70%]">
+            <AnimatePresence mode="wait">
+              {meetings.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-none"
+                >
+                  <EmptyState />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="active"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex min-h-0 flex-1 flex-col"
+                >
+                  <HomeDashboard meetings={meetings} todayLabel={todayLabel} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <ScheduleSidebar />
+        </>
+      )}
     </div>
   );
 }

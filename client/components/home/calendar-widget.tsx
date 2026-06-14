@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { todaysAgenda } from "@/lib/home/agenda-data";
 import { cn } from "@/lib/utils";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -41,8 +42,10 @@ export function CalendarWidget() {
     setCursor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1));
   };
 
+  const hasAgendaToday = todaysAgenda.length > 0;
+
   return (
-    <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <p className="font-heading text-sm font-semibold text-foreground">{monthLabel}</p>
         <div className="flex items-center gap-1">
@@ -67,7 +70,7 @@ export function CalendarWidget() {
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 gap-y-1 text-center">
+      <div className="grid grid-cols-7 gap-y-1.5 text-center">
         {WEEKDAY_LABELS.map((label) => (
           <span key={label} className="text-xs font-medium text-muted-foreground">
             {label}
@@ -82,7 +85,10 @@ export function CalendarWidget() {
             date.getDate() === today.getDate();
 
           return (
-            <div key={date.toISOString()} className="flex items-center justify-center py-0.5">
+            <div
+              key={date.toISOString()}
+              className="flex flex-col items-center justify-center gap-1 py-0.5"
+            >
               <button
                 type="button"
                 className={cn(
@@ -96,6 +102,12 @@ export function CalendarWidget() {
               >
                 {date.getDate()}
               </button>
+              <span
+                className={cn(
+                  "size-1 rounded-full",
+                  isToday && hasAgendaToday ? "bg-primary" : "bg-transparent",
+                )}
+              />
             </div>
           );
         })}

@@ -11,7 +11,7 @@ export function Topbar() {
   const { resolvedTheme, setTheme } = useTheme();
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background px-4 lg:px-6">
+    <header className="flex h-16 shrink-0 items-center gap-3 bg-background px-4 lg:px-6">
       <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground lg:hidden">
         B
       </div>

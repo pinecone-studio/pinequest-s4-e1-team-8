@@ -328,6 +328,14 @@
   background-color: var(--muted-foreground);
 }
 
+/* Fully hidden scrollbar for independently scrolling feed columns. */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

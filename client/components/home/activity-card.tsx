@@ -12,18 +12,39 @@ import { users } from "@/lib/mock-data";
 import { formatMeetingDate } from "@/lib/meetings/format-meeting-date";
 import { TRANSCRIPTION_STATUS_STYLES } from "@/lib/meetings/transcription-status";
 import { cn } from "@/lib/utils";
-import { FolderIcon, MoreVerticalIcon, RadioIcon, VideoIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  ClockIcon,
+  MoreVerticalIcon,
+  RadioIcon,
+  SparklesIcon,
+  UsersIcon,
+  VideoIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 type ActivityCardProps = {
   meeting: MeetingListItem;
 };
 
+function getDurationLabel(meeting: MeetingListItem) {
+  if (!meeting.createdAt || !meeting.updatedAt) return null;
+
+  const minutes = Math.round(
+    (new Date(meeting.updatedAt).getTime() - new Date(meeting.createdAt).getTime()) / 60000,
+  );
+
+  if (minutes <= 0) return null;
+
+  return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} hr`;
+}
+
 export function ActivityCard({ meeting }: ActivityCardProps) {
   const status = TRANSCRIPTION_STATUS_STYLES[meeting.transcriptionStatus ?? "none"];
   const isRecording = meeting.title === "Instant Meeting";
   const SourceIcon = isRecording ? RadioIcon : VideoIcon;
   const sourceLabel = isRecording ? "Recording" : "Video meeting";
+  const durationLabel = getDurationLabel(meeting);
 
   const participants = users.slice(0, 1 + (meeting.id.charCodeAt(0) % 3));
 
@@ -31,28 +52,18 @@ export function ActivityCard({ meeting }: ActivityCardProps) {
     <Card className="ring-1 ring-foreground/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <Link href={`/meetings/${meeting.id}`} className="hover:underline">
-              <h3 className="truncate font-heading text-base font-semibold text-foreground">
-                {meeting.title}
-              </h3>
-            </Link>
-            <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-              <SourceIcon className="size-3.5" />
-              <span>{formatMeetingDate(meeting.createdAt)}</span>
-              <span aria-hidden="true">·</span>
-              <span>{sourceLabel}</span>
-            </div>
-          </div>
+          <Link href={`/meetings/${meeting.id}`} className="min-w-0 hover:underline">
+            <h3 className="truncate font-heading text-base font-semibold text-foreground">
+              {meeting.title}
+            </h3>
+          </Link>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Badge variant="outline" className="gap-1 text-muted-foreground">
-              <FolderIcon className="size-3" />
-              Meetings
-            </Badge>
+            <Badge className={cn("gap-1", status.className)}>{status.label}</Badge>
+
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 aria-label="More options"
               >
                 <MoreVerticalIcon className="size-4" />
@@ -66,18 +77,41 @@ export function ActivityCard({ meeting }: ActivityCardProps) {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <CalendarIcon className="size-3.5" />
+            {formatMeetingDate(meeting.createdAt)}
+          </span>
+          {durationLabel ? (
+            <span className="flex items-center gap-1.5">
+              <ClockIcon className="size-3.5" />
+              {durationLabel}
+            </span>
+          ) : null}
+          <span className="flex items-center gap-1.5">
+            <SourceIcon className="size-3.5" />
+            {sourceLabel}
+          </span>
+        </div>
+
         {meeting.summaryPreview ? (
-          <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+          <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
             {meeting.summaryPreview}
           </p>
         ) : null}
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge className={cn(status.className)}>{status.label}</Badge>
             {meeting.summaryPreview ? (
-              <Badge className="bg-lavender text-lavender-foreground">AI summary</Badge>
+              <Badge className="gap-1 bg-sage text-sage-foreground">
+                <SparklesIcon className="size-3" />
+                AI summary
+              </Badge>
             ) : null}
+            <Badge className="gap-1 bg-tag-yellow text-tag-yellow-foreground">
+              <UsersIcon className="size-3" />
+              Participants: {participants.length}
+            </Badge>
           </div>
 
           <AvatarStack users={participants} size="sm" max={3} />
