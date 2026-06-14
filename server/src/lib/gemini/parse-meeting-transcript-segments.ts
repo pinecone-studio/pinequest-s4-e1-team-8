@@ -12,7 +12,7 @@ const segmentsResponseSchema = z.object({
 
 export type ParsedMeetingTranscriptSegment = z.infer<typeof segmentSchema>;
 
-// Groq returns a raw JSON string shaped like
+// Gemini returns a raw JSON string shaped like
 // { segments: { speakerName, text, timestampSeconds }[] }.
 // Parse it defensively since model output can be missing, empty, or malformed.
 export const parseMeetingTranscriptSegments = (

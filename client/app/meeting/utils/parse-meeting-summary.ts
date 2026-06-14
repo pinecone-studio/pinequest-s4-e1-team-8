@@ -17,7 +17,7 @@ const toActionItems = (value: unknown) => {
     .filter((item) => item.action.length > 0);
 };
 
-// The Groq summary is stored as a raw JSON string with the shape
+// The Gemini summary is stored as a raw JSON string with the shape
 // { mainTopics: string[], keyDecisions: string[], actionItems: { owner, action }[] }.
 // Parse it defensively since the model output, transcription status, or stored
 // value could be missing, empty, or malformed.

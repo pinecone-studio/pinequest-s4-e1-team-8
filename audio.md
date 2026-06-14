@@ -7,6 +7,50 @@ end, and calls out the pieces that are **missing or incomplete** relative to the
 Everything below is based on the current code under `server/src/controllers/meetingTranscription/`
 and `client/app/meeting/`.
 
+> **Heads-up on naming:** §2.7 and §6 below still describe the LLM step as **Groq**.
+> The code has since migrated to **Google Gemini** (`server/src/lib/gemini/*`; the old
+> `server/src/lib/groq/*` and `groq-keys.ts` are gone). The stack table in §0 reflects
+> the current Gemini implementation — read it as the source of truth where the two
+> disagree.
+
+---
+
+## 0. Audio Tech Stack (current)
+
+Brisk has **two** audio pipelines that converge on the same STT + LLM backend:
+
+- **Meeting pipeline** — multi-party live call recorded server-side via LiveKit egress.
+- **Standalone Voice Recordings** — single-file mic capture / upload in the browser.
+
+| Layer | Meeting pipeline | Standalone Recordings pipeline | Tech / files |
+| --- | --- | --- | --- |
+| **Capture** | `livekit-client` `Room` with `audioCaptureDefaults` (noise suppression / echo cancel / AGC) | Browser `MediaRecorder` → WebM/Opus (`audio/webm;codecs=opus`), with a noise-cleanup toggle on `getUserMedia` constraints | `client/app/meeting/hooks/use-livekit-room.ts`, `client/components/recordings/voice-recorder-card.tsx` |
+| **Transport / recording** | LiveKit `RoomCompositeEgress` (`audioOnly`, MP3) | Direct multipart upload of the recorded blob | `server/.../livekit-egress.service.ts`, `server/src/controllers/recordings/upload-recording.ts` |
+| **Storage** | Cloudflare **R2** via `S3Upload` (egress writes the MP3 directly) | Cloudflare **R2** (`recordings/${userId}/${id}.mp3`) | R2 bucket binding; `recordings.service.ts:buildRecordingKey` |
+| **Async processing** | Cloudflare **Queue** consumer (`max_retries: 3`) | Same Queue, `type: "standalone"` job | `server/src/queues/transcription-queue.ts` |
+| **Transcode** | none — egress already emits MP3 | In-Worker **WebM/Opus → mono 48 kHz MP3** (pure-TS EBML demux + libopus **WASM** decode + `@breezystack/lamejs` MP3 encode, +0.8s trailing silence pad) | `server/src/lib/audio/*` (`webm-to-mp3.ts`, `opus-decoder.ts`, `mp3-encoder.ts`) |
+| **Speech-to-text** | **Chimege** `v1.2/stt-long` (Mongolian) — upload + poll, returns one flat string, **no timestamps, no diarization** | same Chimege client | `server/.../chimege-client.ts` |
+| **LLM analysis** | **Google Gemini** `gemini-2.5-flash` (JSON mode) — meeting summary + LLM-estimated per-speaker segments | same Gemini client — `speakerCount` + key points + labelled segments | `server/src/lib/gemini/*` (`gemini-client.ts`, `meeting-analysis.ts`, parsers) |
+| **Speaker count** | inferred by Gemini from flat text (unreliable — no acoustic diarization) | Gemini `speakerCount`, floored to distinct segment labels | `parse-standalone-analysis.ts`, `parse-meeting-transcript-segments.ts` |
+| **Persistence** | D1 (`meetingTranscriptions`, `meetingSummaries`, `meetingTranscriptSegments`) | D1 (`standaloneRecordings`) | Drizzle schema under `server/src/schema/` |
+| **Retrieval / UI** | `GET /api/meeting-transcription/*`, `GET /api/meetings/:id/details` | `GET` recordings endpoints + recording cards | `client/app/meeting/*`, `client/components/recordings/*` |
+
+**Key services & libraries**
+
+- **LiveKit** (`livekit-client`, `livekit-server-sdk`) — real-time SFU, room composite egress, webhook signature verification.
+- **Chimege** — Mongolian STT (`api.chimege.com`). Only accepts compressed audio (MP3/MP4/M4A); rejects WAV/PCM — hence the in-Worker MP3 transcode.
+- **Google Gemini** (`gemini-2.5-flash`, `generativelanguage.googleapis.com`) — all summarization/diarization-by-text, JSON response mode. Requires `GEMINI_API_KEY`.
+- **Cloudflare R2** — audio object storage (SigV4-signed GETs in the Worker).
+- **Cloudflare Queues** — moves R2 download + Chimege polling + Gemini calls off the request path.
+- **Cloudflare D1** (Drizzle ORM) — transcripts, summaries, segments, standalone recordings.
+- **In-Worker audio codecs** — pure-TS WebM/Opus demuxer, libopus **WASM** decoder, `@breezystack/lamejs` MP3 encoder. No ffmpeg, no WebCodecs.
+
+**Known limitation (relevant to "how many people spoke"):** there is **no acoustic
+speaker diarization** anywhere in the stack. Chimege returns flat text and speaker
+counts are *guessed* by Gemini from that text, so shared-mic / single-connection
+meetings undercount speakers. A dedicated diarization API on the recorded audio is the
+fix — see the conversation notes / a future §6 item.
+
 ---
 
 ## 1. End-to-end flow (as implemented today)

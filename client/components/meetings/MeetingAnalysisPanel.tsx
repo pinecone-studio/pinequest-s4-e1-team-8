@@ -1,8 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircleIcon, Loader2Icon, SparklesIcon } from "lucide-react";
+import {
+  AlertCircleIcon,
+  Loader2Icon,
+  MoreHorizontalIcon,
+  SparklesIcon,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   fetchMeetingAnalysisDetails,
   type GetMeetingAnalysisDetailsResponse,
@@ -14,6 +27,39 @@ import { MeetingDiarizedTranscript } from "./MeetingDiarizedTranscript";
 type MeetingAnalysisPanelProps = {
   meetingId: string;
 };
+
+// "..." action — opens the full, unedited Chimege transcript (every word as
+// returned by STT, before the LLM diarization/summarization passes).
+const RawTranscriptDialog = ({ transcript }: { transcript: string | null }) => (
+  <Dialog>
+    <DialogTrigger
+      type="button"
+      aria-label="Show full transcript"
+      className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      <MoreHorizontalIcon className="size-4.5" />
+    </DialogTrigger>
+    <DialogContent className="sm:max-w-lg">
+      <DialogHeader>
+        <DialogTitle>Full transcript</DialogTitle>
+        <DialogDescription>
+          Every word as returned by Chimege, before diarization.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="max-h-[60vh] overflow-y-auto rounded-xl bg-muted/50 p-4">
+        {transcript && transcript.trim().length > 0 ? (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+            {transcript}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No transcript is available yet.
+          </p>
+        )}
+      </div>
+    </DialogContent>
+  </Dialog>
+);
 
 const EmptyState = ({ message }: { message: string }) => (
   <Card>
@@ -134,9 +180,12 @@ export const MeetingAnalysisPanel = ({ meetingId }: MeetingAnalysisPanelProps) =
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h2 className="font-heading text-base font-semibold text-foreground">
-            Diarized transcript
-          </h2>
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="font-heading text-base font-semibold text-foreground">
+              Diarized transcript
+            </h2>
+            <RawTranscriptDialog transcript={details.transcription.transcript} />
+          </div>
           <MeetingDiarizedTranscript segments={details.transcriptSegments} />
         </CardContent>
       </Card>

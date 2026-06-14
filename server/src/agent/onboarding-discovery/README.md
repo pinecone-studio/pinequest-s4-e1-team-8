@@ -114,7 +114,7 @@ intermediate artifact:
 - `openQuestionsAndAssumptions`
 - `tddOutline`
 
-`server/src/lib/groq/onboarding-tdd-synthesis.ts` consumes this brief to
+`server/src/lib/gemini/onboarding-tdd-synthesis.ts` consumes this brief to
 generate the four-block TDD canvas document (`project_overview`,
 `core_features`, `database_schema`, `tdd_specs`) — that step is unchanged by
 this agent beyond taking a brief instead of a raw transcript.

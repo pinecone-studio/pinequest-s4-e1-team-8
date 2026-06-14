@@ -1,5 +1,5 @@
 import type { Bindings } from "../common/types";
-import { generateGeminiJson, parseJsonFromGeminiText } from "../gemini/gemini-client";
+import { generateGeminiJson, parseJsonFromGeminiText } from "./gemini-client";
 import type { TddBlockType, TddPlanningBrief } from "../onboarding/tdd-types";
 import { createDefaultTddBlocks, TDD_BLOCK_TITLES } from "../onboarding/tdd-types";
 

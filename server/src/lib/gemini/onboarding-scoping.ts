@@ -1,5 +1,5 @@
 import type { Bindings } from "../common/types";
-import { generateGeminiJson, parseJsonFromGeminiText } from "../gemini/gemini-client";
+import { generateGeminiJson, parseJsonFromGeminiText } from "./gemini-client";
 
 export type ScopingChatMessage = {
   role: "user" | "assistant";
@@ -131,7 +131,7 @@ function normalizeMilestones(value: unknown): ScopingMilestoneResult[] {
 
 function normalizeScopingResult(raw: unknown): ScopingResult {
   if (!raw || typeof raw !== "object") {
-    throw new Error("Groq scoping response was not a JSON object.");
+    throw new Error("Scoping response was not a JSON object.");
   }
 
   const record = raw as Record<string, unknown>;
@@ -141,7 +141,7 @@ function normalizeScopingResult(raw: unknown): ScopingResult {
   if (isClarification === false) {
     const milestones = normalizeMilestones(record.milestones);
     if (milestones.length === 0) {
-      throw new Error("Groq scoping response did not include any milestones.");
+      throw new Error("Scoping response did not include any milestones.");
     }
     return {
       isClarification: false,
