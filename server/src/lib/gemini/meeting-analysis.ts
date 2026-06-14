@@ -83,15 +83,23 @@ export async function generateTranscriptSegments(
   );
 }
 
-const ACOUSTIC_SPEAKER_COUNT_PROMPT = `Listen to this audio file carefully. Do not try to transcribe the words or understand the language textually.
-Your only task is to perform acoustic speaker diarization based on the physical sound, tone, pitch, and timbre of the voices.
+const ACOUSTIC_SPEAKER_COUNT_PROMPT = `Listen to this audio carefully. Do NOT transcribe or interpret the words — judge ONLY the physical voice characteristics: pitch, timbre, vocal resonance, and speaking style.
 
-Pay close attention to moments where people interrupt each other, speak over one another, or give short interjections (like "yes", "ok").
-Count exactly how many UNIQUE human beings are talking in this single recording.
+Your task: count how many UNIQUE human speakers are in this single recording.
 
-You must respond ONLY with a JSON object matching this schema:
+Counting rules — follow them strictly:
+- A "speaker" is a distinct vocal identity. The SAME person can sound different across the recording — louder/softer, calm/excited, laughing, closer/farther from the mic, or over a phone. Do NOT split one person into multiple speakers because their tone or volume changed.
+- Do NOT create a new speaker for brief backchannels or fillers (e.g. "тийм", "за", " за за", "ok", "mhm", "aha"), laughter, coughs, or background noise. Only count a voice if it clearly speaks as its own person.
+- Two segments should be treated as DIFFERENT speakers only when their pitch and timbre are clearly distinguishable.
+- When you are genuinely unsure whether two segments are the same person or two people, assume they are the SAME person. Prefer the smaller, most confident count — it is better to undercount than to invent speakers that may not exist.
+- Ignore music, jingles, TV/radio in the background, and synthesized/announcement voices unless they are clearly part of the conversation.
+
+First think through the distinct voices you can actually distinguish, then commit to a final number.
+
+Respond ONLY with a JSON object matching this schema (no markdown, no extra text):
 {
-  "speakerCount": number
+  "reasoning": string,   // one short sentence: the distinct voices you identified and your confidence
+  "speakerCount": number // your final, conservative count of unique speakers
 }`;
 
 // Acoustic speaker diarization: feeds the raw audio to Gemini and asks it to
