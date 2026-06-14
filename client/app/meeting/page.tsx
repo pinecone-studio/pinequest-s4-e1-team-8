@@ -1,8 +1,10 @@
 import { MeetingPageContent } from "./components/meeting-page-content";
+import { parseTranscriptLanguage } from "./utils/transcript-language";
 
 type MeetingPageProps = {
   searchParams: Promise<{
     autoRecord?: string;
+    lang?: string;
     meetingId?: string;
     roomName?: string;
   }>;
@@ -22,6 +24,7 @@ const MeetingPage = async ({ searchParams }: MeetingPageProps) => {
     <MeetingPageContent
       autoRecord={params.autoRecord === "1"}
       selectedRoom={selectedRoom}
+      transcriptLanguage={parseTranscriptLanguage(params.lang)}
     />
   );
 };

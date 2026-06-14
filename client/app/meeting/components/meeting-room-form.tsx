@@ -11,6 +11,7 @@ import {
 } from "../index";
 import type { MeetingRoomListItem } from "../types/meeting-room.types";
 import { slugifyRoomName } from "../utils/slugify-room-name";
+import type { TranscriptLanguage } from "../utils/transcript-language";
 import { ConnectedMeetingPanel } from "./connected-meeting-panel";
 import { FormField } from "./form-field";
 import { useMeetingSession } from "./meeting-session-provider";
@@ -20,6 +21,7 @@ type MeetingJoinStatus = "idle" | "joining";
 type MeetingRoomFormProps = {
   autoRecord?: boolean;
   selectedRoom: Pick<MeetingRoomListItem, "meetingId" | "roomName"> | null;
+  transcriptLanguage?: TranscriptLanguage;
 };
 
 const LIVEKIT_PLACEHOLDER_HOST = ["your-project", "livekit", "cloud"].join(".");
@@ -62,7 +64,11 @@ const getParticipantIdentity = ({
   return `${displayName.trim()}__${stableId}`;
 };
 
-export const MeetingRoomForm = ({ autoRecord, selectedRoom }: MeetingRoomFormProps) => {
+export const MeetingRoomForm = ({
+  autoRecord,
+  selectedRoom,
+  transcriptLanguage,
+}: MeetingRoomFormProps) => {
   const router = useRouter();
   const { isLoaded, isSignedIn, user } = useUser();
   const authenticatedName = useMemo(() => getClerkDisplayName(user), [user]);
@@ -154,6 +160,7 @@ export const MeetingRoomForm = ({ autoRecord, selectedRoom }: MeetingRoomFormPro
         meetingId={activeSession.meetingId}
         onLeave={() => undefined}
         response={activeSession.response}
+        transcriptLanguage={transcriptLanguage}
       />
     );
   }

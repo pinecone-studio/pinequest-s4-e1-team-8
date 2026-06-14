@@ -10,9 +10,12 @@ type HomeDashboardProps = {
 
 export function HomeDashboard({ meetings, todayLabel }: HomeDashboardProps) {
   return (
-    <div className="flex flex-col gap-6">
-      <WelcomeHeader todayLabel={todayLabel} />
-      <QuickActions />
+    <div className="flex h-full min-h-0 flex-col gap-6">
+      <div className="flex shrink-0 flex-col gap-6">
+        <WelcomeHeader todayLabel={todayLabel} />
+        <QuickActions />
+      </div>
+
       <RecentActivityFeed meetings={meetings} />
     </div>
   );

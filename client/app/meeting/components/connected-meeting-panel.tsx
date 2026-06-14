@@ -1,6 +1,7 @@
 "use client";
 
 import type { MeetingRoomTokenResponse } from "../index";
+import type { TranscriptLanguage } from "../utils/transcript-language";
 import { LivekitRoomView } from "./livekit-room-view";
 
 type ConnectedMeetingPanelProps = {
@@ -8,6 +9,7 @@ type ConnectedMeetingPanelProps = {
   meetingId: string;
   onLeave: () => void;
   response: MeetingRoomTokenResponse;
+  transcriptLanguage?: TranscriptLanguage;
 };
 
 export const ConnectedMeetingPanel = ({
@@ -15,6 +17,7 @@ export const ConnectedMeetingPanel = ({
   meetingId,
   onLeave,
   response,
+  transcriptLanguage,
 }: ConnectedMeetingPanelProps) => (
   <LivekitRoomView
     autoRecord={autoRecord}
@@ -22,5 +25,6 @@ export const ConnectedMeetingPanel = ({
     meetingId={meetingId}
     onLeave={onLeave}
     roomName={response.displayRoomName ?? response.roomName}
+    transcriptLanguage={transcriptLanguage}
   />
 );

@@ -1,13 +1,27 @@
 "use client";
 
 import { parseRoomCodeInput } from "@/app/meeting/utils/parse-room-code";
+import { slugifyRoomName } from "@/app/meeting/utils/slugify-room-name";
+import {
+  TRANSCRIPT_LANGUAGE_LABELS,
+  type TranscriptLanguage,
+} from "@/app/meeting/utils/transcript-language";
 import { UploadDropzone } from "@/components/dashboard/upload-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import {
   ArrowRightIcon,
   KeyRoundIcon,
+  LanguagesIcon,
   Radio,
   UploadIcon,
   VideoIcon,
@@ -16,33 +30,18 @@ import {
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-const createInstantRoom = () => ({
-  meetingId: `instant-${Date.now()}`,
-  roomName: "Instant Meeting",
-});
-
-const buildMeetingHref = (
-  room: { meetingId: string; roomName: string },
-  autoRecord = false,
-) => {
-  const params = new URLSearchParams({
-    meetingId: room.meetingId,
-    roomName: room.roomName,
-  });
-
-  if (autoRecord) params.set("autoRecord", "1");
-
-  return `/meeting?${params.toString()}`;
-};
-
-type ActionTab = "meeting" | "join" | "recording" | "upload";
+type ActionTab = "meeting" | "recording" | "join" | "upload";
 
 const TABS: { id: ActionTab; label: string; icon: LucideIcon }[] = [
   { id: "meeting", label: "New meeting", icon: VideoIcon },
-  { id: "join", label: "Join with code", icon: KeyRoundIcon },
   { id: "recording", label: "Instant recording", icon: Radio },
-  { id: "upload", label: "Upload files", icon: UploadIcon },
+  { id: "join", label: "Join with code", icon: KeyRoundIcon },
+  { id: "upload", label: "Upload recording", icon: UploadIcon },
 ];
+
+const TRANSCRIPT_LANGUAGES = (
+  Object.entries(TRANSCRIPT_LANGUAGE_LABELS) as [TranscriptLanguage, string][]
+).map(([value, label]) => ({ value, label }));
 
 type QuickActionsProps = {
   variant?: "compact" | "hero";
@@ -50,16 +49,41 @@ type QuickActionsProps = {
 
 export function QuickActions({ variant = "compact" }: QuickActionsProps) {
   const router = useRouter();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<ActionTab>("meeting");
+  const [meetingName, setMeetingName] = useState("");
+  const [inviteEmails, setInviteEmails] = useState("");
+  const [transcriptLanguage, setTranscriptLanguage] =
+    useState<TranscriptLanguage>("en");
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState(false);
 
-  const handleStartInstantMeeting = () => {
-    router.push(buildMeetingHref(createInstantRoom()));
-  };
+  const handleStartCapture = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-  const handleStartInstantRecording = () => {
-    router.push(buildMeetingHref(createInstantRoom(), true));
+    const trimmedName = meetingName.trim();
+    const roomName = trimmedName || "Instant Meeting";
+    const meetingId = trimmedName
+      ? slugifyRoomName(trimmedName) || `instant-${Date.now()}`
+      : `instant-${Date.now()}`;
+
+    const params = new URLSearchParams({
+      meetingId,
+      roomName,
+      lang: transcriptLanguage,
+    });
+
+    if (activeTab === "recording") params.set("autoRecord", "1");
+
+    if (inviteEmails.trim()) {
+      toast.add({
+        title: "Invites aren't available yet",
+        description: "We'll email your teammates once meeting invites ship.",
+        type: "info",
+      });
+    }
+
+    router.push(`/meeting?${params.toString()}`);
   };
 
   const handleJoinWithCode = (event: FormEvent<HTMLFormElement>) => {
@@ -73,108 +97,127 @@ export function QuickActions({ variant = "compact" }: QuickActionsProps) {
     }
 
     setJoinError(false);
-    router.push(buildMeetingHref(parsed));
+
+    const params = new URLSearchParams({
+      meetingId: parsed.meetingId,
+      roomName: parsed.roomName,
+    });
+
+    router.push(`/meeting?${params.toString()}`);
   };
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 rounded-2xl bg-card p-4 ring-1 ring-foreground/10",
-        variant === "hero" && "p-5",
-      )}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-muted p-1">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-                  isActive
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon className="size-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {activeTab === "meeting" ? (
-          <Button
-            onClick={handleStartInstantMeeting}
-            className="gap-2 rounded-full bg-primary px-5 text-primary-foreground hover:bg-primary/80 focus-visible:ring-2 focus-visible:ring-ring/50"
-          >
-            <VideoIcon className="size-4" />
-            Start instant meeting
-          </Button>
-        ) : null}
-
-        {activeTab === "recording" ? (
-          <Button
-            onClick={handleStartInstantRecording}
-            className="gap-2 rounded-full bg-primary px-5 text-primary-foreground hover:bg-primary/80 focus-visible:ring-2 focus-visible:ring-ring/50"
-          >
-            <Radio className="size-4" />
-            Start instant recording
-          </Button>
-        ) : null}
+    <div className="flex flex-col gap-3">
+      <div className="flex w-full items-center gap-1 overflow-x-auto rounded-full bg-muted/70 p-1 scrollbar-none">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                isActive
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      {activeTab === "meeting" ? (
-        <p className="text-sm text-muted-foreground">
-          Create a room and jump in right away — share the link with your team
-          once you&apos;re in.
-        </p>
-      ) : null}
-
-      {activeTab === "recording" ? (
-        <p className="text-sm text-muted-foreground">
-          Capture audio from your microphone and get a transcript and AI summary
-          automatically.
-        </p>
-      ) : null}
-
-      {activeTab === "join" ? (
-        <form
-          onSubmit={handleJoinWithCode}
-          className="flex w-full items-center gap-2"
-        >
-          <Input
-            value={joinCode}
-            onChange={(event) => {
-              setJoinCode(event.target.value);
-              setJoinError(false);
-            }}
-            placeholder="Room code or meeting link"
-            className="h-11 flex-1 rounded-full bg-inset focus-visible:ring-primary/50"
-            aria-invalid={joinError}
-          />
-          <Button
-            type="submit"
-            size="icon-lg"
-            disabled={!joinCode.trim()}
-            className="rounded-full bg-primary text-primary-foreground hover:bg-primary/80 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring/50"
+      <div
+        className={cn(
+          "rounded-2xl bg-card p-4 ring-1 ring-foreground/10",
+          variant === "hero" && "p-5",
+        )}
+      >
+        {activeTab === "meeting" || activeTab === "recording" ? (
+          <form
+            onSubmit={handleStartCapture}
+            className="flex flex-col gap-3 lg:flex-row lg:items-center"
           >
-            <ArrowRightIcon className="size-4" />
-          </Button>
-        </form>
-      ) : null}
+            <Input
+              value={meetingName}
+              onChange={(event) => setMeetingName(event.target.value)}
+              placeholder="Name your meeting"
+              className="h-10 flex-[1.4] rounded-xl bg-transparent px-3.5 focus-visible:ring-primary/50"
+            />
+            <Input
+              value={inviteEmails}
+              onChange={(event) => setInviteEmails(event.target.value)}
+              placeholder="Invite teammates by email (optional)"
+              className="h-10 flex-1 rounded-xl bg-transparent px-3.5 focus-visible:ring-primary/50"
+            />
+            <Select
+              value={transcriptLanguage}
+              onValueChange={(value) => {
+                if (value) setTranscriptLanguage(value);
+              }}
+              items={TRANSCRIPT_LANGUAGES}
+            >
+              <SelectTrigger className="h-10 w-full shrink-0 rounded-xl bg-muted/50 px-3.5 lg:w-44">
+                <LanguagesIcon className="size-4 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TRANSCRIPT_LANGUAGES.map((language) => (
+                  <SelectItem key={language.value} value={language.value}>
+                    {language.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="submit"
+              className="h-10 gap-2 rounded-xl bg-primary px-5 text-sm text-primary-foreground hover:bg-primary/80 focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              {activeTab === "recording" ? (
+                <Radio className="size-4" />
+              ) : (
+                <VideoIcon className="size-4" />
+              )}
+              Start capturing
+            </Button>
+          </form>
+        ) : null}
 
-      {activeTab === "join" && joinError ? (
-        <p className="text-sm text-destructive">
-          Enter a valid room code or meeting link.
-        </p>
-      ) : null}
+        {activeTab === "join" ? (
+          <form onSubmit={handleJoinWithCode} className="flex w-full items-center gap-2">
+            <Input
+              value={joinCode}
+              onChange={(event) => {
+                setJoinCode(event.target.value);
+                setJoinError(false);
+              }}
+              placeholder="Room code or meeting link"
+              className="h-10 flex-1 rounded-xl bg-transparent px-3.5 focus-visible:ring-primary/50"
+              aria-invalid={joinError}
+            />
+            <Button
+              type="submit"
+              size="icon-lg"
+              disabled={!joinCode.trim()}
+              className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/80 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <ArrowRightIcon className="size-4" />
+            </Button>
+          </form>
+        ) : null}
 
-      {activeTab === "upload" ? <UploadDropzone /> : null}
+        {activeTab === "join" && joinError ? (
+          <p className="mt-2 text-sm text-destructive">
+            Enter a valid room code or meeting link.
+          </p>
+        ) : null}
+
+        {activeTab === "upload" ? <UploadDropzone /> : null}
+      </div>
     </div>
   );
 }

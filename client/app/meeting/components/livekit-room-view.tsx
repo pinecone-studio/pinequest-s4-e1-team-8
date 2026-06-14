@@ -7,6 +7,7 @@ import {
   type Participant,
 } from "livekit-client";
 import {
+  Languages,
   Mic,
   MicOff,
   PhoneOff,
@@ -24,6 +25,7 @@ import {
   ParticipantTile,
 } from "./participant-tile";
 import { RecordingControls, type RecordingStatus } from "./recording-controls";
+import { TRANSCRIPT_LANGUAGE_LABELS, type TranscriptLanguage } from "../utils/transcript-language";
 
 type LivekitRoomViewProps = {
   autoRecord?: boolean;
@@ -31,6 +33,7 @@ type LivekitRoomViewProps = {
   meetingId: string;
   onLeave: () => void;
   roomName: string;
+  transcriptLanguage?: TranscriptLanguage;
 };
 
 export const LivekitRoomView = ({
@@ -39,6 +42,7 @@ export const LivekitRoomView = ({
   meetingId,
   onLeave,
   roomName,
+  transcriptLanguage = "en",
 }: LivekitRoomViewProps) => {
   const {
     connectionState,
@@ -250,6 +254,10 @@ export const LivekitRoomView = ({
           >
             <Radio className="size-3.5" />
             {recordingLabel}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+            <Languages className="size-3.5 text-primary" />
+            Transcript: {TRANSCRIPT_LANGUAGE_LABELS[transcriptLanguage]}
           </span>
           {screenShareParticipants.length ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-semibold text-destructive">
