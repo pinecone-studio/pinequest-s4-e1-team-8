@@ -70,7 +70,7 @@
   --card-foreground: #1a1816;
   --popover: #ffffff;
   --popover-foreground: #1a1816;
-  --primary: #f2654a;
+  --primary: #5aa371;
   --primary-foreground: #ffffff;
   --secondary: #f1efec;
   --secondary-foreground: #1a1816;
@@ -78,11 +78,11 @@
   --muted-foreground: #8a8580;
   --accent: #f1efec;
   --accent-foreground: #1a1816;
-  --destructive: #e0473a;
+  --destructive: #5aa371;
   --border: #eae7e2;
   --input: #eae7e2;
-  --ring: color-mix(in oklch, #f2654a 45%, transparent);
-  --chart-1: #f2654a;
+  --ring: color-mix(in oklch, #5aa371 45%, transparent);
+  --chart-1: #5aa371;
   --chart-2: #9bbfac;
   --chart-3: #b3a4ef;
   --chart-4: #e0c468;
@@ -90,7 +90,7 @@
   --radius: 0.6rem;
   --sidebar: #ffffff;
   --sidebar-foreground: #1a1816;
-  --sidebar-primary: #f2654a;
+  --sidebar-primary: #5aa371;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f1efec;
   --sidebar-accent-foreground: #1a1816;
@@ -98,7 +98,7 @@
   --sidebar-ring: color-mix(in oklch, #f2654a 45%, transparent);
 
   /* Brisk brand accents */
-  --coral: #f2654a;
+  --coral: #5aa371;
   --coral-foreground: #ffffff;
   --sage: #d8e8df;
   --sage-foreground: #2f4a3c;
@@ -119,7 +119,7 @@
   --card-foreground: #f5f5f4;
   --popover: #161616;
   --popover-foreground: #f5f5f4;
-  --primary: #f06449;
+  --primary: #5aa371;
   --primary-foreground: #0a0a0a;
   --secondary: #1a1a1a;
   --secondary-foreground: #f5f5f4;
@@ -127,25 +127,25 @@
   --muted-foreground: #9a9a98;
   --accent: #1a1a1a;
   --accent-foreground: #f5f5f4;
-  --destructive: #f06449;
+  --destructive: #5aa371;
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 14%);
-  --ring: color-mix(in oklch, #f06449 45%, transparent);
-  --chart-1: #f06449;
+  --ring: color-mix(in oklch, #5aa371 45%, transparent);
+  --chart-1: #5aa371;
   --chart-2: #3a5346;
   --chart-3: #4f3fa8;
   --chart-4: #7a5e12;
   --chart-5: #f5f5f4;
   --sidebar: #0d0d0d;
   --sidebar-foreground: #f5f5f4;
-  --sidebar-primary: #f06449;
+  --sidebar-primary: #5aa371;
   --sidebar-primary-foreground: #0a0a0a;
   --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #f5f5f4;
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: color-mix(in oklch, #f06449 45%, transparent);
+  --sidebar-ring: color-mix(in oklch, #5aa371 45%, transparent);
 
-  --coral: #f06449;
+  --coral: #5aa371;
   --coral-foreground: #0a0a0a;
   --sage: #283a31;
   --sage-foreground: #cfe6da;

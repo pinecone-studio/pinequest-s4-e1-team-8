@@ -17,7 +17,9 @@ export function Sidebar() {
         <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-foreground">
           B
         </div>
-        <span className="font-heading text-lg font-semibold text-foreground">Brisk</span>
+        <span className="font-heading text-lg font-semibold text-foreground">
+          Brisk
+        </span>
       </div>
 
       <nav className="flex-1 space-y-1 px-4">
@@ -32,7 +34,7 @@ export function Sidebar() {
                 "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                 active
                   ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <Icon className="size-4.5" />
@@ -49,7 +51,7 @@ export function Sidebar() {
             "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
             isNavItemActive(pathname, "/settings")
               ? "bg-primary/15 text-primary"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
           <SettingsIcon className="size-4.5" />
@@ -62,7 +64,7 @@ export function Sidebar() {
             "flex items-center gap-3 rounded-xl px-3 py-2 transition-colors",
             isNavItemActive(pathname, "/profile")
               ? "bg-primary/10"
-              : "hover:bg-muted"
+              : "hover:bg-muted",
           )}
         >
           <Avatar size="sm">
@@ -72,7 +74,9 @@ export function Sidebar() {
             <span className="truncate text-sm font-medium text-foreground">
               {currentUser.name}
             </span>
-            <span className="truncate text-xs text-muted-foreground">{currentUser.role}</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {currentUser.role}
+            </span>
           </div>
         </Link>
       </div>
