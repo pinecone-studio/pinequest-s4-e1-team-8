@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 export default async function SignUpPage() {
   const { userId } = await auth();
-  if (userId) redirect("/dashboard");
+  if (userId) redirect("/home");
 
   return (
     <AuthShell variant="plain">

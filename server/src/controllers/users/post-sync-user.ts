@@ -47,6 +47,28 @@ export const syncUser = async (c: Context<{ Bindings: Bindings }>) => {
     return c.json({ user: updated });
   }
 
+  const [byEmail] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (byEmail) {
+    const [updated] = await db
+      .update(users)
+      .set({ clerkId, name, avatarUrl })
+      .where(eq(users.id, byEmail.id))
+      .returning({
+        id: users.id,
+        clerkId: users.clerkId,
+        email: users.email,
+        name: users.name,
+        avatarUrl: users.avatarUrl,
+      });
+
+    return c.json({ user: updated });
+  }
+
   const [created] = await db
     .insert(users)
     .values({

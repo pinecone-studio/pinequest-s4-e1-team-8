@@ -42,6 +42,8 @@
   --color-card: var(--card);
   --color-elevated: var(--elevated);
   --color-inset: var(--inset);
+
+  /* Original Brand Accents */
   --color-coral: var(--coral);
   --color-coral-foreground: var(--coral-foreground);
   --color-sage: var(--sage);
@@ -52,6 +54,14 @@
   --color-tag-yellow-foreground: var(--tag-yellow-foreground);
   --color-ink: var(--ink);
   --color-ink-foreground: var(--ink-foreground);
+
+  /* New Jellyfish Green Palette */
+  --color-jungle-dark: var(--jungle-dark);
+  --color-jungle-medium: var(--jungle-medium);
+  --color-turquoise-deep: var(--turquoise-deep);
+  --color-verdigris: var(--verdigris);
+  --color-forest: var(--forest);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -62,40 +72,50 @@
 }
 
 :root {
+  /* New Jellyfish Green Palette Definitions */
+  --jungle-dark: #1e201f;
+  --jungle-medium: #193a31;
+  --turquoise-deep: #1d6c61;
+  --verdigris: #3eb9a8;
+  --forest: #5aa371;
+
   --background: #f7f6f4;
-  --foreground: #1a1816;
+  --foreground: var(--jungle-dark);
   --card: #ffffff;
   --elevated: #fbfaf8;
   --inset: #f1efec;
-  --card-foreground: #1a1816;
+  --card-foreground: var(--jungle-dark);
   --popover: #ffffff;
-  --popover-foreground: #1a1816;
-  --primary: #5aa371;
+  --popover-foreground: var(--jungle-dark);
+  --primary: var(--forest);
   --primary-foreground: #ffffff;
   --secondary: #f1efec;
-  --secondary-foreground: #1a1816;
+  --secondary-foreground: var(--jungle-dark);
   --muted: #f1efec;
   --muted-foreground: #8a8580;
   --accent: #f1efec;
-  --accent-foreground: #1a1816;
-  --destructive: #5aa371;
+  --accent-foreground: var(--jungle-dark);
+  --destructive: var(--forest);
   --border: #eae7e2;
   --input: #eae7e2;
-  --ring: color-mix(in oklch, #5aa371 45%, transparent);
-  --chart-1: #5aa371;
-  --chart-2: #9bbfac;
-  --chart-3: #b3a4ef;
-  --chart-4: #e0c468;
-  --chart-5: #1a1816;
+  --ring: color-mix(in oklch, var(--forest) 45%, transparent);
+
+  /* Charts updated to use the new palette spread */
+  --chart-1: var(--forest);
+  --chart-2: var(--verdigris);
+  --chart-3: var(--turquoise-deep);
+  --chart-4: var(--jungle-medium);
+  --chart-5: var(--jungle-dark);
+
   --radius: 0.6rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #1a1816;
-  --sidebar-primary: #5aa371;
+  --sidebar-foreground: var(--jungle-dark);
+  --sidebar-primary: var(--forest);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f1efec;
-  --sidebar-accent-foreground: #1a1816;
+  --sidebar-accent-foreground: var(--jungle-dark);
   --sidebar-border: #eae7e2;
-  --sidebar-ring: color-mix(in oklch, #f2654a 45%, transparent);
+  --sidebar-ring: color-mix(in oklch, var(--forest) 45%, transparent);
 
   /* Brisk brand accents */
   --coral: #5aa371;
@@ -111,6 +131,13 @@
 }
 
 .dark {
+  /* New Jellyfish Green Palette Definitions */
+  --jungle-dark: #1e201f;
+  --jungle-medium: #193a31;
+  --turquoise-deep: #1d6c61;
+  --verdigris: #3eb9a8;
+  --forest: #5aa371;
+
   --background: #0a0a0a;
   --foreground: #f5f5f4;
   --card: #161616;
@@ -119,7 +146,7 @@
   --card-foreground: #f5f5f4;
   --popover: #161616;
   --popover-foreground: #f5f5f4;
-  --primary: #5aa371;
+  --primary: var(--forest);
   --primary-foreground: #0a0a0a;
   --secondary: #1a1a1a;
   --secondary-foreground: #f5f5f4;
@@ -127,23 +154,26 @@
   --muted-foreground: #9a9a98;
   --accent: #1a1a1a;
   --accent-foreground: #f5f5f4;
-  --destructive: #5aa371;
+  --destructive: var(--forest);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 14%);
-  --ring: color-mix(in oklch, #5aa371 45%, transparent);
-  --chart-1: #5aa371;
-  --chart-2: #3a5346;
-  --chart-3: #4f3fa8;
-  --chart-4: #7a5e12;
-  --chart-5: #f5f5f4;
+  --ring: color-mix(in oklch, var(--forest) 45%, transparent);
+
+  /* Charts ordered brightest to darkest for better contrast in dark mode */
+  --chart-1: var(--verdigris);
+  --chart-2: var(--forest);
+  --chart-3: var(--turquoise-deep);
+  --chart-4: var(--jungle-medium);
+  --chart-5: #f5f5f4; /* Kept light for visibility against dark background */
+
   --sidebar: #0d0d0d;
   --sidebar-foreground: #f5f5f4;
-  --sidebar-primary: #5aa371;
+  --sidebar-primary: var(--forest);
   --sidebar-primary-foreground: #0a0a0a;
   --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #f5f5f4;
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: color-mix(in oklch, #5aa371 45%, transparent);
+  --sidebar-ring: color-mix(in oklch, var(--forest) 45%, transparent);
 
   --coral: #5aa371;
   --coral-foreground: #0a0a0a;
@@ -244,8 +274,7 @@
   }
 }
 
-/* Slim, theme-aware scrollbar for popovers/menus.
-   Kept unlayered (outside @layer) so it reliably wins over Tailwind utilities. */
+/* Slim, theme-aware scrollbar for popovers/menus. */
 .scrollbar-thin,
 [data-slot="dropdown-menu-content"] {
   scrollbar-width: thin;
@@ -311,7 +340,6 @@
   }
 }
 
-/* Light mode: stronger accent fills & borders. Dark mode classes unchanged via dark: variants in components. */
 @layer utilities {
   .tone-violet-surface {
     @apply border-violet-200 bg-violet-100 text-violet-800;

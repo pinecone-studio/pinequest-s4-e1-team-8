@@ -52,6 +52,21 @@ async function ensureUserRecord(
     return null;
   }
 
+  const [byEmail] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (byEmail) {
+    await db
+      .update(users)
+      .set({ clerkId: clerkUserId, name, avatarUrl: clerkUser.imageUrl ?? null })
+      .where(eq(users.id, byEmail.id));
+
+    return byEmail.id;
+  }
+
   const [created] = await db
     .insert(users)
     .values({
