@@ -6,5 +6,5 @@ import { useRouter } from "next/navigation";
 export default function OnboardingPage() {
   const router = useRouter();
 
-  return <VoiceOnboardingFlow onComplete={() => router.replace("/dashboard")} />;
+  return <VoiceOnboardingFlow onComplete={() => router.replace("/home")} />;
 }

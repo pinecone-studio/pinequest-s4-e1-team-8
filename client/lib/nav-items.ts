@@ -1,6 +1,6 @@
 import {
   CalendarDaysIcon,
-  LayoutDashboardIcon,
+  HomeIcon,
   MicIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -12,7 +12,7 @@ export type NavItem = {
 };
 
 export const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon },
+  { label: "Home", href: "/home", icon: HomeIcon },
   { label: "Meetings", href: "/meetings", icon: CalendarDaysIcon },
   { label: "Recordings", href: "/recordings", icon: MicIcon },
 ];

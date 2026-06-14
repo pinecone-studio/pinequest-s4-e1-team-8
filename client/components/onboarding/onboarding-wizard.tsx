@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 export function OnboardingWizard() {
   const router = useRouter();
 
-  const goToDashboard = () => router.replace("/dashboard");
+  const goToDashboard = () => router.replace("/home");
 
   return (
     <AuthShell cardClassName="max-w-[520px] p-10">
