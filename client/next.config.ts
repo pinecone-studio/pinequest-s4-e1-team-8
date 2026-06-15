@@ -64,6 +64,10 @@ const nextConfig: NextConfig = {
         source: "/api/backend/agent/stream/:path*",
         destination: `${apiUrl}/api/agent/stream/:path*`,
       },
+      {
+        source: "/api/backend/google/:path*",
+        destination: `${apiUrl}/api/google/:path*`,
+      },
     ];
   },
 };

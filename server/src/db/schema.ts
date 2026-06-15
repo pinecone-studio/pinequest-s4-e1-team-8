@@ -13,4 +13,7 @@ export const users = sqliteTable("users", {
     .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
+  encryptedGoogleAccessToken: text("encrypted_google_access_token"),
+  encryptedGoogleRefreshToken: text("encrypted_google_refresh_token"),
+  googleTokenExpiry: integer("google_token_expiry"),
 });

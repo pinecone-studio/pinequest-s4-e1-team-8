@@ -5,11 +5,14 @@ import { EmptyState } from "@/components/home/empty-state";
 import { HomeDashboard } from "@/components/home/home-dashboard";
 import { ScheduleSidebar } from "@/components/home/schedule-sidebar";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function HomePage() {
   const [meetings, setMeetings] = useState<MeetingListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     let isActive = true;
@@ -27,6 +30,12 @@ export default function HomePage() {
       isActive = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("google_connected") || searchParams.get("google_error")) {
+      router.replace("/home");
+    }
+  }, [router, searchParams]);
 
   const todayLabel = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -54,7 +63,7 @@ export default function HomePage() {
         </div>
       ) : (
         <>
-          <div className="relative z-10 flex min-h-0 w-full flex-1 flex-col overflow-hidden px-6 py-4 lg:px-8 lg:py-6 xl:w-[70%]">
+          <div className="relative z-10 flex min-h-0 w-full flex-1 flex-col overflow-hidden px-6 py-4 lg:w-[70%] lg:px-8 lg:py-6">
             <AnimatePresence mode="wait">
               {meetings.length === 0 ? (
                 <motion.div
