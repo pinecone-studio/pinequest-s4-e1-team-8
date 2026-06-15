@@ -26,6 +26,8 @@ export const standaloneRecordings = sqliteTable("standalone_recordings", {
     StandaloneScriptSegment[]
   >(),
   errorMessage: text("error_message"),
+  durationSeconds: integer("duration_seconds"),
+  fileSizeBytes: integer("file_size_bytes"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

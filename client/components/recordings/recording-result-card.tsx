@@ -1,242 +1,211 @@
 "use client";
 
+import {
+  deleteRecording,
+  downloadRecording,
+} from "@/app/recordings/api/recordings-api";
 import { useRecordingStatus } from "@/app/recordings/hooks/use-recording-status";
 import type { StandaloneRecording } from "@/app/recordings/types";
-import { RecordingAudioPlayer } from "@/components/recordings/recording-audio-player";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { formatMeetingDateLong } from "@/lib/meetings/format-meeting-date";
+import { TRANSCRIPTION_STATUS_STYLES } from "@/lib/meetings/transcription-status";
+import {
+  formatRecordingDuration,
+  formatRecordingFileSize,
+} from "@/lib/recordings/format-recording";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Check, MoreHorizontal, Users } from "lucide-react";
+import {
+  CalendarIcon,
+  ClockIcon,
+  DownloadIcon,
+  FolderIcon,
+  HardDriveIcon,
+  MoreVerticalIcon,
+  RadioIcon,
+  SparklesIcon,
+  Trash2Icon,
+  UsersIcon,
+} from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 type RecordingResultCardProps = {
   recording: StandaloneRecording;
+  onDeleted?: () => void;
 };
 
-const ProcessingSkeleton = () => (
-  <div className="space-y-3">
-    <div className="h-6 w-40 animate-pulse rounded-full bg-muted" />
-    <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
-    <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-    <div className="space-y-2 pt-2">
-      <div className="h-12 animate-pulse rounded-xl bg-muted" />
-      <div className="h-12 w-5/6 animate-pulse rounded-xl bg-muted" />
-    </div>
-  </div>
-);
+const getRecordingPreview = (recording: StandaloneRecording) => {
+  if (recording.status === "failed" && recording.errorMessage) {
+    return recording.errorMessage;
+  }
 
-const KeyPointsChecklist = ({ keyPoints }: { keyPoints: string[] }) => {
-  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  if (recording.keyPoints?.[0]) return recording.keyPoints[0];
 
-  if (keyPoints.length === 0) return null;
+  if (recording.transcript?.trim()) {
+    return recording.transcript.trim();
+  }
 
-  return (
-    <ul className="space-y-1.5">
-      {keyPoints.map((point, index) => {
-        const isChecked = Boolean(checked[index]);
-        return (
-          <li key={index}>
-            <button
-              type="button"
-              onClick={() =>
-                setChecked((prev) => ({ ...prev, [index]: !prev[index] }))
-              }
-              className="flex w-full items-start gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted"
-            >
-              <span
-                className={cn(
-                  "mt-0.5 flex size-4.5 shrink-0 items-center justify-center rounded-md border transition-colors",
-                  isChecked
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border",
-                )}
-              >
-                {isChecked ? <Check className="size-3" /> : null}
-              </span>
-              <span
-                className={cn(
-                  "text-sm text-foreground",
-                  isChecked && "text-muted-foreground line-through",
-                )}
-              >
-                {point}
-              </span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  );
+  if (recording.status === "processing" || recording.status === "pending") {
+    return "Processing your recording…";
+  }
+
+  return null;
 };
-
-// Assigns a stable color per distinct speaker label for the timeline.
-const speakerToneClasses = [
-  "bg-primary/10 text-primary",
-  "bg-sage text-sage-foreground",
-  "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-  "bg-pink-500/15 text-pink-600 dark:text-pink-400",
-];
-
-const ScriptTimeline = ({
-  segments,
-}: {
-  segments: StandaloneRecording["scriptSegments"];
-}) => {
-  if (!segments || segments.length === 0) return null;
-
-  const labelOrder = [...new Set(segments.map((s) => s.speakerLabel))];
-
-  return (
-    <div className="space-y-3">
-      {segments.map((segment, index) => {
-        const toneIndex = labelOrder.indexOf(segment.speakerLabel);
-        const tone =
-          speakerToneClasses[
-            (toneIndex < 0 ? index : toneIndex) % speakerToneClasses.length
-          ];
-
-        return (
-          <div key={index} className="flex gap-3">
-            <span
-              className={cn(
-                "h-fit shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold",
-                tone,
-              )}
-            >
-              {segment.speakerLabel}
-            </span>
-            <p className="flex-1 rounded-2xl rounded-tl-sm bg-muted/50 px-3.5 py-2 text-sm text-foreground">
-              {segment.text}
-            </p>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-// "..." action — opens the full, unedited Chimege transcript (every word as
-// returned by STT, before any Gemini diarization/summarization).
-const RawTranscriptDialog = ({
-  title,
-  transcript,
-}: {
-  title: string;
-  transcript: string | null;
-}) => (
-  <Dialog>
-    <DialogTrigger
-      type="button"
-      aria-label="Show full transcript"
-      className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-    >
-      <MoreHorizontal className="size-4.5" />
-    </DialogTrigger>
-    <DialogContent className="sm:max-w-lg">
-      <DialogHeader>
-        <DialogTitle className="truncate pr-8">{title}</DialogTitle>
-        <DialogDescription>
-          Бүрэн бичлэг (Chimege-ийн таниулсан үг бүр)
-        </DialogDescription>
-      </DialogHeader>
-      <div className="max-h-[60vh] overflow-y-auto rounded-xl bg-muted/50 p-4">
-        {transcript && transcript.trim().length > 0 ? (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-            {transcript}
-          </p>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Бичлэг хараахан бэлэн болоогүй байна.
-          </p>
-        )}
-      </div>
-    </DialogContent>
-  </Dialog>
-);
 
 export function RecordingResultCard({
   recording: initialRecording,
+  onDeleted,
 }: RecordingResultCardProps) {
-  const { recording, isProcessing, error } = useRecordingStatus(
+  const { recording } = useRecordingStatus(
     initialRecording.id,
     initialRecording,
   );
+  const [actionError, setActionError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const current = recording ?? initialRecording;
+  const status = TRANSCRIPTION_STATUS_STYLES[current.status];
+  const preview = getRecordingPreview(current);
+  const hasSummary = Boolean(current.keyPoints && current.keyPoints.length > 0);
+  const durationLabel = formatRecordingDuration(current.durationSeconds);
+  const fileSizeLabel = formatRecordingFileSize(current.fileSizeBytes);
+
+  const handleDownload = async () => {
+    setActionError("");
+    setIsDownloading(true);
+
+    try {
+      await downloadRecording(current.id, current.title);
+    } catch (caughtError) {
+      setActionError((caughtError as Error).message);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Delete this recording? This cannot be undone.")) return;
+
+    setActionError("");
+    setIsDeleting(true);
+
+    try {
+      await deleteRecording(current.id);
+      onDeleted?.();
+    } catch (caughtError) {
+      setActionError((caughtError as Error).message);
+      setIsDeleting(false);
+    }
+  };
 
   return (
-    <article className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
-      <header className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate font-heading text-base font-semibold text-foreground">
-            {current.title}
-          </h3>
-          <p className="text-xs text-muted-foreground capitalize">
-            {current.status}
-          </p>
+    <Card className="ring-1 ring-foreground/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <Link
+            href={`/recordings/${current.id}`}
+            className="min-w-0 hover:underline"
+          >
+            <h3 className="truncate font-heading text-base font-semibold text-foreground">
+              {current.title}
+            </h3>
+          </Link>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge variant="outline" className="gap-1 bg-muted text-muted-foreground">
+              <FolderIcon className="size-3" />
+              Voice recordings
+            </Badge>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                aria-label="More options"
+                disabled={isDeleting || isDownloading}
+              >
+                <MoreVerticalIcon className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem render={<Link href={`/recordings/${current.id}`} />}>
+                  View details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void handleDownload()}>
+                  <DownloadIcon />
+                  Download
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => void handleDelete()}
+                >
+                  <Trash2Icon />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {current.status === "done" &&
-          typeof current.speakerCount === "number" ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              <Users className="size-3.5" />
-              Нийт ярилцсан хүн: {current.speakerCount}
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <CalendarIcon className="size-3.5" />
+            {formatMeetingDateLong(
+              current.createdAt != null ? String(current.createdAt) : null,
+            )}
+          </span>
+          {durationLabel ? (
+            <span className="flex items-center gap-1.5">
+              <ClockIcon className="size-3.5" />
+              {durationLabel}
             </span>
           ) : null}
-
-          <RawTranscriptDialog
-            title={current.title}
-            transcript={current.transcript}
-          />
-        </div>
-      </header>
-
-      <RecordingAudioPlayer recordingId={current.id} />
-
-      {current.status === "failed" ? (
-        <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          <span>
-            {current.errorMessage ?? "Processing failed. Please try again."}
+          {fileSizeLabel ? (
+            <span className="flex items-center gap-1.5">
+              <HardDriveIcon className="size-3.5" />
+              {fileSizeLabel}
+            </span>
+          ) : null}
+          <span className="flex items-center gap-1.5">
+            <RadioIcon className="size-3.5" />
+            Recording
           </span>
+          <Badge className={cn("gap-1", status.className)}>{status.label}</Badge>
         </div>
-      ) : isProcessing ? (
-        <ProcessingSkeleton />
-      ) : (
-        <div className="space-y-5">
-          {current.keyPoints && current.keyPoints.length > 0 ? (
-            <section className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Гол санаанууд
-              </h4>
-              <KeyPointsChecklist keyPoints={current.keyPoints} />
-            </section>
-          ) : null}
 
-          {current.scriptSegments && current.scriptSegments.length > 0 ? (
-            <section className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Яриа
-              </h4>
-              <ScriptTimeline segments={current.scriptSegments} />
-            </section>
-          ) : null}
+        {preview ? (
+          <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+            {preview}
+          </p>
+        ) : null}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {hasSummary ? (
+              <Badge className="gap-1 bg-sage text-sage-foreground">
+                <SparklesIcon className="size-3" />
+                AI summary
+              </Badge>
+            ) : null}
+            <Badge className="gap-1 bg-tag-yellow text-tag-yellow-foreground">
+              <UsersIcon className="size-3" />
+              Speakers: {current.speakerCount ?? 0}
+            </Badge>
+          </div>
         </div>
-      )}
 
-      {error ? (
-        <p className="text-xs text-muted-foreground">
-          Couldn’t refresh status: {error}
-        </p>
-      ) : null}
-    </article>
+        {actionError ? (
+          <p className="text-xs text-destructive">{actionError}</p>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
