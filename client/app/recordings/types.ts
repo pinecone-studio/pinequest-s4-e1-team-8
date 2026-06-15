@@ -20,6 +20,8 @@ export type StandaloneRecording = {
   keyPoints: string[] | null;
   scriptSegments: StandaloneScriptSegment[] | null;
   errorMessage: string | null;
+  durationSeconds: number | null;
+  fileSizeBytes: number | null;
   createdAt: number | string | null;
   updatedAt: number | string | null;
 };

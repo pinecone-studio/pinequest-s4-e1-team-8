@@ -67,6 +67,12 @@ export const uploadRecording = async (
       ? titleField.trim()
       : buildDefaultTitle();
 
+  const durationField = form.get("durationSeconds");
+  const durationSeconds =
+    typeof durationField === "string" && durationField.trim()
+      ? Number.parseInt(durationField, 10)
+      : undefined;
+
   try {
     await c.env.R2_BUCKET.put(key, await file.arrayBuffer(), {
       httpMetadata: { contentType },
@@ -79,6 +85,11 @@ export const uploadRecording = async (
       userId,
       title,
       audioUrl: key,
+      fileSizeBytes: file.size,
+      durationSeconds:
+        durationSeconds != null && Number.isFinite(durationSeconds) && durationSeconds > 0
+          ? durationSeconds
+          : undefined,
     });
 
     await c.env.TRANSCRIPTION_QUEUE.send({

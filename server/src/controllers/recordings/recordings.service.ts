@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { standaloneRecordings } from "../../schema/recordings.schema";
 import { generateKeyPoints } from "../../lib/gemini/meeting-analysis";
 import { diarizedTranscribe } from "../../lib/diarization/diarized-transcribe";
+import { indexMp3Frames } from "../../lib/audio/mp3-splitter";
 import { isWebmContainer, transcodeWebmToMp3 } from "../../lib/audio/webm-to-mp3";
 import opusModule from "../../lib/audio/opus-wasm";
 import { useDB } from "../../lib/db/db";
@@ -25,12 +26,16 @@ export const createStandaloneRecording = async ({
   userId,
   title,
   audioUrl,
+  fileSizeBytes,
+  durationSeconds,
 }: {
   db: RecordingsDb;
   id: string;
   userId: string;
   title: string;
   audioUrl: string;
+  fileSizeBytes?: number;
+  durationSeconds?: number;
 }) => {
   await db.insert(standaloneRecordings).values({
     id,
@@ -38,6 +43,8 @@ export const createStandaloneRecording = async ({
     title,
     audioUrl,
     status: "processing",
+    fileSizeBytes,
+    durationSeconds,
   });
 };
 
@@ -84,6 +91,39 @@ export const markRecordingFailed = async (
     .update(standaloneRecordings)
     .set({ status: "failed", errorMessage })
     .where(eq(standaloneRecordings.id, id));
+};
+
+const inferMp3DurationSeconds = (audioBuffer: ArrayBuffer) => {
+  try {
+    return Math.max(1, Math.round(indexMp3Frames(audioBuffer).totalDurationSec));
+  } catch {
+    return null;
+  }
+};
+
+export const deleteRecordingForUser = async (
+  env: Bindings,
+  db: RecordingsDb,
+  id: string,
+  userId: string,
+) => {
+  const recording = await findRecordingForUser(db, id, userId);
+
+  if (!recording) {
+    return false;
+  }
+
+  await env.R2_BUCKET.delete(recording.audioUrl);
+  await db
+    .delete(standaloneRecordings)
+    .where(
+      and(
+        eq(standaloneRecordings.id, id),
+        eq(standaloneRecordings.userId, userId),
+      ),
+    );
+
+  return true;
 };
 
 // Full async pipeline: R2 fetch -> Chimege STT -> Gemini analysis -> D1 update.
@@ -135,6 +175,8 @@ export const processStandaloneRecording = async ({
 
     // Gemini's only remaining job: summary bullets over the labelled transcript.
     const keyPoints = await generateKeyPoints(env, diarized.transcript);
+    const durationSeconds =
+      recording.durationSeconds ?? inferMp3DurationSeconds(audioBuffer);
 
     await db
       .update(standaloneRecordings)
@@ -146,6 +188,7 @@ export const processStandaloneRecording = async ({
           speakerLabel: s.speakerLabel,
           text: s.text,
         })),
+        durationSeconds,
         status: "done",
         errorMessage: null,
       })
