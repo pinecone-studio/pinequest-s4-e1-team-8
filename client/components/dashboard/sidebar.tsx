@@ -2,22 +2,28 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { currentUser } from "@/lib/mock-data";
-import { cn } from "@/lib/utils";
 import { isNavItemActive, navItems } from "@/lib/nav-items";
-import { SettingsIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ChevronDownIcon, SettingsIcon } from "lucide-react";
+import { Grand_Hotel } from "next/font/google";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+
+const grandHotel = Grand_Hotel({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeScope = searchParams.get("scope") ?? "mine";
 
   return (
     <aside className="hidden h-full w-64 shrink-0 flex-col border-r border-border bg-card lg:flex">
       <div className="flex items-center gap-2 px-6 py-6">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-foreground">
-          B
-        </div>
-        <span className="font-heading text-lg font-semibold text-foreground">
+        <span className={cn(grandHotel.className, "text-3xl text-foreground")}>
           Brisk
         </span>
       </div>
@@ -26,20 +32,49 @@ export function Sidebar() {
         {navItems.map((item) => {
           const active = isNavItemActive(pathname, item.href);
           const Icon = item.icon;
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              <Icon className="size-4.5" />
-              {item.label}
-            </Link>
+            <div key={item.href}>
+              <Link
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150",
+                  active
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <Icon className="size-4.5" />
+                <span className="flex-1">{item.label}</span>
+                {item.children ? (
+                  <ChevronDownIcon
+                    className={cn(
+                      "size-3.5 shrink-0 transition-transform duration-150",
+                      active ? "rotate-180" : "rotate-0",
+                    )}
+                  />
+                ) : null}
+              </Link>
+
+              {item.children && active ? (
+                <div className="mt-1 flex flex-col gap-1 pl-4">
+                  {item.children.map((child) => (
+                    <Link
+                      key={child.scope}
+                      href={`${item.href}?scope=${child.scope}`}
+                      className={cn(
+                        "rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150",
+                        activeScope === child.scope
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      {child.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           );
         })}
       </nav>

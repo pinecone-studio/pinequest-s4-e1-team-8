@@ -5,15 +5,30 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+export type NavItemChild = {
+  label: string;
+  scope: string;
+};
+
 export type NavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
+  children?: NavItemChild[];
 };
 
 export const navItems: NavItem[] = [
   { label: "Home", href: "/home", icon: HomeIcon },
-  { label: "Meetings", href: "/meetings", icon: CalendarDaysIcon },
+  {
+    label: "Meetings",
+    href: "/meetings",
+    icon: CalendarDaysIcon,
+    children: [
+      { label: "My Meetings", scope: "mine" },
+      { label: "All Meetings", scope: "all" },
+      { label: "Shared with me", scope: "shared" },
+    ],
+  },
   { label: "Recordings", href: "/recordings", icon: MicIcon },
 ];
 

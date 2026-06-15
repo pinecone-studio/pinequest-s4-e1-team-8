@@ -27,6 +27,8 @@ import { ParticipantAudio } from "./participant-audio";
 import { getParticipantDisplayName } from "./participant-tile";
 
 type ActiveMeetingSession = {
+  initialCameraEnabled?: boolean;
+  initialMicrophoneEnabled?: boolean;
   meetingId: string;
   participantName: string;
   response: MeetingRoomTokenResponse;
@@ -159,6 +161,8 @@ export function MeetingSessionProvider({
     tokenDiagnostics,
     urlDiagnostics,
   } = useLivekitRoom({
+    initialCameraEnabled: activeSession?.initialCameraEnabled,
+    initialMicrophoneEnabled: activeSession?.initialMicrophoneEnabled,
     livekitUrl: activeSession?.response.url,
     token: activeSession?.response.token,
   });

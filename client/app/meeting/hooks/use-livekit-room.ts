@@ -19,11 +19,15 @@ import {
 } from "../utils/livekit-diagnostics";
 
 type UseLivekitRoomOptions = {
+  initialCameraEnabled?: boolean;
+  initialMicrophoneEnabled?: boolean;
   livekitUrl?: string;
   token?: string;
 };
 
 export const useLivekitRoom = ({
+  initialCameraEnabled,
+  initialMicrophoneEnabled,
   livekitUrl,
   token,
 }: UseLivekitRoomOptions) => {
@@ -141,6 +145,9 @@ export const useLivekitRoom = ({
         setConnectionState(activeRoom.state);
         syncParticipants();
         syncActiveSpeakers();
+
+        if (initialCameraEnabled) void activeRoom.localParticipant.setCameraEnabled(true);
+        if (initialMicrophoneEnabled) void activeRoom.localParticipant.setMicrophoneEnabled(true);
       } catch (caughtError) {
         hasActiveConnectRef.current = false;
 
@@ -187,7 +194,7 @@ export const useLivekitRoom = ({
       activeRoom.removeAllListeners();
       void activeRoom.disconnect(true);
     };
-  }, [livekitUrl, token]);
+  }, [initialCameraEnabled, initialMicrophoneEnabled, livekitUrl, token]);
 
   const leaveRoom = async () => {
     await room?.disconnect(true);

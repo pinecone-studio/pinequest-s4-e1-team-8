@@ -19,14 +19,12 @@ export const MeetingPageContent = ({
   useClientApiAuth();
 
   return (
-    <main className="flex min-h-screen flex-col bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col">
-        <MeetingRoomForm
-          autoRecord={autoRecord}
-          selectedRoom={selectedRoom}
-          transcriptLanguage={transcriptLanguage}
-        />
-      </div>
+    <main className="min-h-screen bg-background text-foreground">
+      <MeetingRoomForm
+        autoRecord={autoRecord}
+        selectedRoom={selectedRoom}
+        transcriptLanguage={transcriptLanguage}
+      />
     </main>
   );
 };
