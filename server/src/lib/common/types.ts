@@ -57,12 +57,6 @@ export interface Bindings {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   ENCRYPTION_KEY?: string;
-  AZURE_SPEECH_KEY?: string;
-  AZURE_SPEECH_REGION?: string;
-  VOICE_VERIFICATION_MODE?: string;
-  // Local testing only: when "true", voice routes fall back to a fixed dev user
-  // if no Clerk session is present. Never set this in production.
-  VOICE_DEV_BYPASS?: string;
 }
 
 export interface Variables {

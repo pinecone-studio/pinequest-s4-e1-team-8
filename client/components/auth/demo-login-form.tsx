@@ -12,9 +12,9 @@ export function DemoLoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState(DEMO_DEFAULT_EMAIL);
 
-  const continueToOnboarding = () => {
+  const continueToApp = () => {
     saveDemoSession(email);
-    router.push("/onboarding");
+    router.push("/home");
   };
 
   return (
@@ -55,9 +55,9 @@ export function DemoLoginForm() {
           type="button"
           className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-violet-600 text-sm font-semibold text-white transition-colors hover:bg-violet-500 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45"
           disabled={!email.trim()}
-          onClick={continueToOnboarding}
+          onClick={continueToApp}
         >
-          Continue to onboarding
+          Continue
           <ArrowRight size={17} />
         </button>
       </div>
