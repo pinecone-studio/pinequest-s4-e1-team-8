@@ -28,7 +28,6 @@ declare namespace Cloudflare {
 		LIVEKIT_EGRESS_WEBHOOK_URL: string;
 		GEMINI_API_KEY: string;
 		GITHUB_WEBHOOK_SECRET: string;
-		VOICE_DEV_BYPASS: string;
 	}
 	interface Env {
 		R2_BUCKET: R2Bucket;
@@ -53,7 +52,6 @@ declare namespace Cloudflare {
 		LIVEKIT_EGRESS_WEBHOOK_URL: string;
 		GEMINI_API_KEY: string;
 		GITHUB_WEBHOOK_SECRET: string;
-		VOICE_DEV_BYPASS: string;
 	}
 }
 interface Env extends Cloudflare.Env {}
@@ -61,7 +59,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "ENVIRONMENT" | "D1_DATABASE_NAME" | "CLERK_PUBLISHABLE_KEY" | "FRONTEND_URL" | "CLERK_SECRET_KEY" | "CLIENT_APP_URL" | "LIVEKIT_URL" | "LIVEKIT_API_KEY" | "LIVEKIT_API_SECRET" | "CHIMEGE_API_KEY" | "CHIMEGE_BASE_URL" | "R2_ACCOUNT_ID" | "R2_ACCESS_KEY_ID" | "R2_SECRET_ACCESS_KEY" | "R2_BUCKET_NAME" | "LIVEKIT_EGRESS_WEBHOOK_URL" | "GEMINI_API_KEY" | "GITHUB_WEBHOOK_SECRET" | "VOICE_DEV_BYPASS">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "ENVIRONMENT" | "D1_DATABASE_NAME" | "CLERK_PUBLISHABLE_KEY" | "FRONTEND_URL" | "CLERK_SECRET_KEY" | "CLIENT_APP_URL" | "LIVEKIT_URL" | "LIVEKIT_API_KEY" | "LIVEKIT_API_SECRET" | "CHIMEGE_API_KEY" | "CHIMEGE_BASE_URL" | "R2_ACCOUNT_ID" | "R2_ACCESS_KEY_ID" | "R2_SECRET_ACCESS_KEY" | "R2_BUCKET_NAME" | "LIVEKIT_EGRESS_WEBHOOK_URL" | "GEMINI_API_KEY" | "GITHUB_WEBHOOK_SECRET">> {}
 }
 
 // Begin runtime types
