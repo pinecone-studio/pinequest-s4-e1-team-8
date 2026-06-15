@@ -64,14 +64,6 @@ const nextConfig: NextConfig = {
         source: "/api/backend/agent/stream/:path*",
         destination: `${apiUrl}/api/agent/stream/:path*`,
       },
-      {
-        source: "/api/backend/onboarding/:path*",
-        destination: `${apiUrl}/api/onboarding/:path*`,
-      },
-      {
-        source: "/api/backend/voice/:path*",
-        destination: `${apiUrl}/api/voice/:path*`,
-      },
     ];
   },
 };

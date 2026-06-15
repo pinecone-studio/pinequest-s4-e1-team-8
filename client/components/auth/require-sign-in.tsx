@@ -14,7 +14,7 @@ export function RequireSignIn({ children }: { children: ReactNode }) {
       return;
     }
     if (!isSignedIn) {
-      router.replace("/onboarding");
+      router.replace("/sign-in");
       return;
     }
     setReady(true);

@@ -8,11 +8,7 @@
     "generate": "drizzle-kit generate",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply server-preset-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply server-preset-db --remote",
-    "db:seed:local": "wrangler d1 execute server-preset-db --local --file=./scripts/seed.sql",
-    "db:setup:local": "bun run db:migrate:local && bun run db:seed:local",
-    "db:repair:local": "bun run scripts/repair-local-schema.ts",
-    "discovery:cli": "bun run src/agent/onboarding-discovery/cli.ts"
+    "db:migrate:remote": "wrangler d1 migrations apply server-preset-db --remote"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
