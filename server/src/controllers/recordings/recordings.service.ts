@@ -1,11 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { standaloneRecordings } from "../../schema/recordings.schema";
-import { transcribeAudio } from "../meetingTranscription/chimege-client";
-import {
-  generateStandaloneAnalysis,
-  getAcousticSpeakerCount,
-} from "../../lib/gemini/meeting-analysis";
-import { parseStandaloneAnalysis } from "../../lib/gemini/parse-standalone-analysis";
+import { generateKeyPoints } from "../../lib/gemini/meeting-analysis";
+import { diarizedTranscribe } from "../../lib/diarization/diarized-transcribe";
 import { isWebmContainer, transcodeWebmToMp3 } from "../../lib/audio/webm-to-mp3";
 import opusModule from "../../lib/audio/opus-wasm";
 import { useDB } from "../../lib/db/db";
@@ -122,7 +118,6 @@ export const processStandaloneRecording = async ({
     }
 
     const rawBuffer = await object.arrayBuffer();
-    const rawMimeType = object.httpMetadata?.contentType ?? "audio/mpeg";
 
     // Browser MediaRecorder produces WebM/Opus, which Chimege's STT rejects
     // (it only accepts compressed MP3/MP4/M4A — not WAV/PCM). We transcode it to
@@ -132,58 +127,25 @@ export const processStandaloneRecording = async ({
     const audioBuffer = needsTranscode
       ? transcodeWebmToMp3(rawBuffer, opusModule)
       : rawBuffer;
-    const mimeType = needsTranscode ? "audio/mpeg" : rawMimeType;
-    const extension = "mp3";
 
-    const transcript = await transcribeAudio(audioBuffer, env.CHIMEGE_API_KEY, {
-      baseUrl: env.CHIMEGE_BASE_URL,
-      filename: `${recordingId}.${extension}`,
-      mimeType,
-    });
+    // Diarize the audio, cut it into per-speaker chunks, and run Chimege STT on
+    // each chunk. This gives true acoustic speaker attribution + count, replacing
+    // the old "flat Chimege transcript + Gemini guesses the speakers" approach.
+    const diarized = await diarizedTranscribe(env, audioBuffer);
 
-    // Acoustic diarization on the raw audio is far more reliable than counting
-    // speakers from the flat transcript, so run it first and feed the result
-    // into the text analysis as a hard constraint — that keeps the "Илтгэгч N"
-    // segment labels in sync with the headline count instead of inventing ghost
-    // speakers. Falls back to the text-based estimate when the audio call fails.
-    const acousticSpeakerCount = await getAcousticSpeakerCount(
-      env,
-      audioBuffer,
-      mimeType,
-    );
-
-    const analysisRaw = await generateStandaloneAnalysis(
-      env,
-      transcript,
-      acousticSpeakerCount,
-    );
-    const analysis = parseStandaloneAnalysis(analysisRaw);
-
-    if (!analysis) {
-      await db
-        .update(standaloneRecordings)
-        .set({
-          transcript,
-          status: "failed",
-          errorMessage: "Gemini analysis returned no usable result",
-        })
-        .where(eq(standaloneRecordings.id, recordingId));
-
-      console.warn("[recordings] Analysis parse failed", {
-        ...getRuntimeLogContext(env),
-        recordingId,
-      });
-
-      return;
-    }
+    // Gemini's only remaining job: summary bullets over the labelled transcript.
+    const keyPoints = await generateKeyPoints(env, diarized.transcript);
 
     await db
       .update(standaloneRecordings)
       .set({
-        transcript,
-        speakerCount: acousticSpeakerCount ?? analysis.speakerCount,
-        keyPoints: analysis.keyPoints,
-        scriptSegments: analysis.segments,
+        transcript: diarized.transcript,
+        speakerCount: diarized.speakerCount,
+        keyPoints,
+        scriptSegments: diarized.segments.map((s) => ({
+          speakerLabel: s.speakerLabel,
+          text: s.text,
+        })),
         status: "done",
         errorMessage: null,
       })
@@ -192,9 +154,8 @@ export const processStandaloneRecording = async ({
     console.info("[recordings] Recording processed", {
       ...getRuntimeLogContext(env),
       recordingId,
-      speakerCount: acousticSpeakerCount ?? analysis.speakerCount,
-      acousticSpeakerCount,
-      textSpeakerCount: analysis.speakerCount,
+      speakerCount: diarized.speakerCount,
+      segments: diarized.segments.length,
     });
   } catch (error) {
     await markRecordingFailed(db, recordingId, (error as Error).message);

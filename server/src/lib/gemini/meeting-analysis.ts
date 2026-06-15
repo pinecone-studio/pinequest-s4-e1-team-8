@@ -1,4 +1,5 @@
 import type { Bindings } from "../common/types";
+import type { RawSegment } from "../diarization/merge-segments";
 import {
   generateGeminiJson,
   generateGeminiJsonFromAudio,
@@ -134,6 +135,71 @@ export async function getAcousticSpeakerCount(
   }
 }
 
+const DIARIZATION_PROMPT = `Listen to this audio and segment it by speaker. Judge ONLY the physical voice (pitch, timbre, vocal resonance, speaking style) — do NOT transcribe or interpret the words.
+
+Produce a chronological list of speaker "turns". A turn is a continuous stretch where one person speaks; merge brief pauses inside the same speaker's turn. Rules:
+- Number speakers "1", "2", ... in the order each new voice FIRST speaks. The same person keeps the same number throughout, even if their tone, volume, or distance from the mic changes.
+- Do NOT create a new speaker for brief backchannels/fillers ("тийм", "за", "mhm"), laughter, coughs, or background noise.
+- When genuinely unsure whether two stretches are the same person, treat them as the SAME speaker. Prefer fewer speakers.
+- Ignore music, jingles, and background TV/radio.
+
+Respond ONLY with a JSON object (no markdown, no commentary) matching this schema:
+{
+  "turns": [
+    { "speaker": number, "startSeconds": number, "endSeconds": number }
+  ]
+}
+"startSeconds"/"endSeconds" are seconds from the start of the audio, increasing in order, with endSeconds > startSeconds.`;
+
+// Acoustic speaker diarization via Gemini: feeds the raw audio to Gemini and asks
+// it to return per-speaker turns with timestamps (by voice, not words — so it's
+// language-agnostic and works on Mongolian). Returns segments the splitter can
+// cut on; Chimege then transcribes each cut. Replaces ASR-coupled diarization
+// providers that don't support Mongolian.
+export async function getAcousticDiarization(
+  bindings: Bindings,
+  audio: ArrayBuffer | Uint8Array,
+  mimeType: string,
+): Promise<RawSegment[]> {
+  const raw = await generateGeminiJsonFromAudio(bindings, {
+    audio,
+    mimeType,
+    prompt: DIARIZATION_PROMPT,
+  });
+
+  let parsed: { turns?: unknown };
+  try {
+    parsed = JSON.parse(raw) as { turns?: unknown };
+  } catch {
+    return [];
+  }
+
+  if (!Array.isArray(parsed.turns)) return [];
+
+  const segments: RawSegment[] = [];
+  for (const turn of parsed.turns) {
+    if (typeof turn !== "object" || turn === null) continue;
+    const { speaker, startSeconds, endSeconds } = turn as Record<string, unknown>;
+    if (
+      (typeof speaker !== "number" && typeof speaker !== "string") ||
+      typeof startSeconds !== "number" ||
+      typeof endSeconds !== "number" ||
+      !Number.isFinite(startSeconds) ||
+      !Number.isFinite(endSeconds) ||
+      endSeconds <= startSeconds
+    ) {
+      continue;
+    }
+    segments.push({
+      speaker: String(speaker),
+      startSec: startSeconds,
+      endSec: endSeconds,
+    });
+  }
+
+  return segments;
+}
+
 const getSpeakerCountConstraint = (speakerCount?: number | null) =>
   speakerCount && speakerCount > 0
     ? `This recording has EXACTLY ${speakerCount} distinct speaker(s), determined by acoustic analysis. ` +
@@ -142,6 +208,42 @@ const getSpeakerCountConstraint = (speakerCount?: number | null) =>
       `. Set "speakerCount" to ${speakerCount}. Do NOT invent more speakers than this, ` +
       `even if speakers interrupt each other or give short interjections.\n\n`
     : "";
+
+const KEY_POINTS_PROMPT_PREFIX =
+  "Read the following speaker-labelled transcript. Respond in Mongolian. " +
+  "Return ONLY a JSON object (no markdown, no commentary) with this exact shape:\n" +
+  '{"keyPoints": string[]}\n\n' +
+  '"keyPoints" lists the main points or takeaways as 2 to 6 short bullet points — ' +
+  "never return an empty array; for very short recordings, summarize whatever was " +
+  "said in at least one point.\n\n";
+
+const KEY_POINTS_PROMPT_SUFFIX =
+  "\n\nIMPORTANT: Always respond in Mongolian language.";
+
+// Extracts key points from an already speaker-labelled transcript. Used by the
+// diarization pipeline, where speaker segmentation and speaker count come from
+// acoustic diarization + Chimege — so Gemini's only remaining job is the summary
+// bullets (one call instead of the old acoustic-count + full-analysis pair).
+export async function generateKeyPoints(
+  bindings: Bindings,
+  transcript: string,
+): Promise<string[]> {
+  const raw = await requestCompletion(
+    bindings,
+    `${KEY_POINTS_PROMPT_PREFIX}Transcript:\n${transcript}${KEY_POINTS_PROMPT_SUFFIX}`,
+  );
+
+  try {
+    const parsed = JSON.parse(raw) as { keyPoints?: unknown };
+    if (!Array.isArray(parsed.keyPoints)) return [];
+    return parsed.keyPoints
+      .filter((p): p is string => typeof p === "string")
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
+  } catch {
+    return [];
+  }
+}
 
 // Single Gemini call for the standalone Voice Recordings feature: estimates the
 // speaker count, extracts key points, and splits the flat transcript into

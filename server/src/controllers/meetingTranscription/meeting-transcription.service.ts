@@ -6,13 +6,9 @@ import {
   meetingSummaries,
   meetingTranscriptSegments,
 } from "../../schema/meeting.model";
-import { transcribeAudio } from "./chimege-client";
-import {
-  generateMeetingSummary,
-  generateTranscriptSegments,
-} from "../../lib/gemini/meeting-analysis";
+import { generateMeetingSummary } from "../../lib/gemini/meeting-analysis";
+import { diarizedTranscribe } from "../../lib/diarization/diarized-transcribe";
 import { parseMeetingSummary } from "../../lib/gemini/parse-meeting-summary";
-import { parseMeetingTranscriptSegments } from "../../lib/gemini/parse-meeting-transcript-segments";
 import { downloadRecordingFromR2 } from "./r2-recording-download.service";
 import { runD1Statements } from "../../lib/db/d1-batch";
 import type { Bindings } from "../../lib/common/types";
@@ -134,34 +130,22 @@ export const transcribeRecording = async ({
         .onConflictDoNothing();
     }
 
-    // TODO: Move audio download and Chimege polling into a Queue/Workflow for production Workers.
     const recording = await downloadRecordingFromR2({ env, recordingUrl });
 
-    const transcript = await transcribeAudio(
-      recording.buffer,
-      env.CHIMEGE_API_KEY,
-      {
-        baseUrl: env.CHIMEGE_BASE_URL,
-        filename: recording.filename,
-        fileSize: recording.size,
-        mimeType: recording.contentType,
-      },
-    );
+    // Diarize → cut per speaker → Chimege STT per chunk. Speaker attribution and
+    // count now come from acoustic diarization instead of Gemini guessing them
+    // from a flat transcript (see audio.md §6.2). Segments carry real start times
+    // from the diarizer rather than LLM-estimated offsets.
+    const diarized = await diarizedTranscribe(env, recording.buffer);
+    const transcript = diarized.transcript;
 
-    let transcriptSegments: ReturnType<typeof parseMeetingTranscriptSegments> = null;
-    try {
-      const segmentsRaw = await generateTranscriptSegments(
-        env,
-        transcript,
-        participantNames,
-      );
-      transcriptSegments = parseMeetingTranscriptSegments(segmentsRaw);
-    } catch (error) {
-      console.warn(
-        "[meetingTranscription] Failed to generate transcript segments",
-        { meetingId, transcriptionId, error: (error as Error).message },
-      );
-    }
+    const transcriptSegments = diarized.segments.length
+      ? diarized.segments.map((segment) => ({
+          speakerName: segment.speakerLabel,
+          text: segment.text,
+          timestampSeconds: segment.startSec,
+        }))
+      : null;
 
     const finalSummary =
       summary ?? (await generateMeetingSummary(env, transcript, participantNames));
