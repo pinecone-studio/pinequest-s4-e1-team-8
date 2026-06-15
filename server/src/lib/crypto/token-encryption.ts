@@ -20,13 +20,20 @@ function fromBase64(value: string): Uint8Array {
 
 async function deriveKey(secret: string): Promise<CryptoKey> {
   const digest = await crypto.subtle.digest("SHA-256", encoder.encode(secret));
-  return crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt", "decrypt"]);
+  return crypto.subtle.importKey("raw", digest, "AES-GCM", false, [
+    "encrypt",
+    "decrypt",
+  ]);
 }
 
-export async function encryptToken(plaintext: string, secret: string): Promise<string> {
+export async function encryptToken(
+  plaintext: string,
+  secret: string,
+): Promise<string> {
   if (!secret.trim()) {
     return toBase64(encoder.encode(plaintext));
   }
+
   const key = await deriveKey(secret);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
@@ -40,14 +47,22 @@ export async function encryptToken(plaintext: string, secret: string): Promise<s
   return toBase64(payload);
 }
 
-export async function decryptToken(payload: string, secret: string): Promise<string> {
+export async function decryptToken(
+  payload: string,
+  secret: string,
+): Promise<string> {
   if (!secret.trim()) {
     return decoder.decode(fromBase64(payload));
   }
+
   const key = await deriveKey(secret);
   const bytes = fromBase64(payload);
   const iv = bytes.slice(0, 12);
   const ciphertext = bytes.slice(12);
-  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    ciphertext,
+  );
   return decoder.decode(plaintext);
 }
