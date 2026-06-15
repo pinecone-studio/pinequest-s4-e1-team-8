@@ -8,14 +8,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatMeetingDate } from "@/lib/meetings/format-meeting-date";
+import { formatMeetingDateLong } from "@/lib/meetings/format-meeting-date";
 import { getMeetingDurationLabel } from "@/lib/meetings/meeting-duration";
+import { getMeetingFolder } from "@/lib/meetings/meeting-folders";
 import { getMeetingParticipants } from "@/lib/meetings/meeting-participants";
 import { TRANSCRIPTION_STATUS_STYLES } from "@/lib/meetings/transcription-status";
 import { cn } from "@/lib/utils";
 import {
   CalendarIcon,
   ClockIcon,
+  FolderIcon,
   MoreVerticalIcon,
   RadioIcon,
   SparklesIcon,
@@ -24,17 +26,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-type ActivityCardProps = {
+type MeetingActivityCardProps = {
   meeting: MeetingListItem;
 };
 
-export function ActivityCard({ meeting }: ActivityCardProps) {
+export function MeetingActivityCard({ meeting }: MeetingActivityCardProps) {
   const status = TRANSCRIPTION_STATUS_STYLES[meeting.transcriptionStatus ?? "none"];
   const isRecording = meeting.title === "Instant Meeting";
   const SourceIcon = isRecording ? RadioIcon : VideoIcon;
   const sourceLabel = isRecording ? "Recording" : "Video meeting";
   const durationLabel = getMeetingDurationLabel(meeting);
-
+  const folder = getMeetingFolder(meeting);
   const participants = getMeetingParticipants(meeting);
 
   return (
@@ -48,11 +50,14 @@ export function ActivityCard({ meeting }: ActivityCardProps) {
           </Link>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Badge className={cn("gap-1", status.className)}>{status.label}</Badge>
+            <Badge variant="outline" className="gap-1 bg-muted text-muted-foreground">
+              <FolderIcon className="size-3" />
+              {folder.label}
+            </Badge>
 
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 aria-label="More options"
               >
                 <MoreVerticalIcon className="size-4" />
@@ -69,7 +74,7 @@ export function ActivityCard({ meeting }: ActivityCardProps) {
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <CalendarIcon className="size-3.5" />
-            {formatMeetingDate(meeting.createdAt)}
+            {formatMeetingDateLong(meeting.createdAt)}
           </span>
           {durationLabel ? (
             <span className="flex items-center gap-1.5">
@@ -81,6 +86,7 @@ export function ActivityCard({ meeting }: ActivityCardProps) {
             <SourceIcon className="size-3.5" />
             {sourceLabel}
           </span>
+          <Badge className={cn("gap-1", status.className)}>{status.label}</Badge>
         </div>
 
         {meeting.summaryPreview ? (

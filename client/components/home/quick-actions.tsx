@@ -9,19 +9,11 @@ import {
 import { UploadDropzone } from "@/components/dashboard/upload-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import {
   ArrowRightIcon,
   KeyRoundIcon,
-  LanguagesIcon,
   Radio,
   UploadIcon,
   VideoIcon,
@@ -154,25 +146,6 @@ export function QuickActions({ variant = "compact" }: QuickActionsProps) {
               placeholder="Invite teammates by email (optional)"
               className="h-10 flex-1 rounded-xl bg-transparent px-3.5 focus-visible:ring-primary/50"
             />
-            <Select
-              value={transcriptLanguage}
-              onValueChange={(value) => {
-                if (value) setTranscriptLanguage(value);
-              }}
-              items={TRANSCRIPT_LANGUAGES}
-            >
-              <SelectTrigger className="h-10 w-full shrink-0 rounded-xl bg-muted/50 px-3.5 lg:w-44">
-                <LanguagesIcon className="size-4 text-muted-foreground" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TRANSCRIPT_LANGUAGES.map((language) => (
-                  <SelectItem key={language.value} value={language.value}>
-                    {language.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Button
               type="submit"
               className="h-10 gap-2 rounded-xl bg-primary px-5 text-sm text-primary-foreground hover:bg-primary/80 focus-visible:ring-2 focus-visible:ring-ring/50"
@@ -188,7 +161,10 @@ export function QuickActions({ variant = "compact" }: QuickActionsProps) {
         ) : null}
 
         {activeTab === "join" ? (
-          <form onSubmit={handleJoinWithCode} className="flex w-full items-center gap-2">
+          <form
+            onSubmit={handleJoinWithCode}
+            className="flex w-full items-center gap-2"
+          >
             <Input
               value={joinCode}
               onChange={(event) => {

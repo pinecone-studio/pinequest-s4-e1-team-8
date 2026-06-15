@@ -1,11 +1,11 @@
 import { Context } from "hono";
+import type { Bindings } from "../../lib/common/types";
 import { useDB } from "../../lib/db/db";
 import {
   createTranscription,
   markFailed,
   transcribeRecording,
 } from "./meeting-transcription.service";
-import type { Bindings } from "../../lib/common/types";
 
 export const postMeetingSummary = async (
   c: Context<{ Bindings: Bindings }>,
@@ -34,15 +34,16 @@ export const postMeetingSummary = async (
       summary: savedSummary,
     });
 
-    const { transcript, summary: generatedSummary } =
-      await transcribeRecording({
+    const { transcript, summary: generatedSummary } = await transcribeRecording(
+      {
         db,
         env: c.env,
         transcriptionId,
         meetingId,
         recordingUrl,
         summary: savedSummary,
-      });
+      },
+    );
 
     return c.json(
       {
