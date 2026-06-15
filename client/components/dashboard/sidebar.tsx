@@ -57,13 +57,13 @@ export function Sidebar() {
               </Link>
 
               {item.children && active ? (
-                <div className="mt-1 flex flex-col gap-0.5 pl-10">
+                <div className="mt-1 flex flex-col gap-1 pl-4">
                   {item.children.map((child) => (
                     <Link
                       key={child.scope}
                       href={`${item.href}?scope=${child.scope}`}
                       className={cn(
-                        "rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors duration-150",
+                        "rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150",
                         activeScope === child.scope
                           ? "bg-primary text-primary-foreground"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground",

@@ -3,8 +3,9 @@
 import { useUser } from "@clerk/nextjs";
 import { Headphones } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { LobbyCanvas } from "@/components/meetings/lobby/lobby-canvas";
 import {
   createMeetingRoom,
   joinMeetingRoom,
@@ -14,6 +15,7 @@ import { slugifyRoomName } from "../utils/slugify-room-name";
 import type { TranscriptLanguage } from "../utils/transcript-language";
 import { ConnectedMeetingPanel } from "./connected-meeting-panel";
 import { FormField } from "./form-field";
+import { MeetingPreJoinLobby } from "./meeting-pre-join-lobby";
 import { useMeetingSession } from "./meeting-session-provider";
 
 type MeetingJoinStatus = "idle" | "joining";
@@ -38,17 +40,6 @@ const getSafeLivekitUrl = (url: string) => {
   return process.env.NEXT_PUBLIC_LIVEKIT_URL ?? "";
 };
 
-const getClerkDisplayName = (user: ReturnType<typeof useUser>["user"]) => {
-  if (!user) return "";
-
-  return (
-    user.fullName?.trim() ||
-    user.username?.trim() ||
-    user.primaryEmailAddress?.emailAddress?.trim() ||
-    ""
-  );
-};
-
 const getParticipantIdentity = ({
   displayName,
   user,
@@ -70,12 +61,7 @@ export const MeetingRoomForm = ({
   transcriptLanguage,
 }: MeetingRoomFormProps) => {
   const router = useRouter();
-  const { isLoaded, isSignedIn, user } = useUser();
-  const authenticatedName = useMemo(() => getClerkDisplayName(user), [user]);
-  const resolvedDisplayName = isSignedIn
-    ? authenticatedName || "User"
-    : "";
-  const [manualDisplayName, setManualDisplayName] = useState("");
+  const { user } = useUser();
   const [roomTitle, setRoomTitle] = useState("");
   const [joinStatus, setJoinStatus] = useState<MeetingJoinStatus>("idle");
   const [error, setError] = useState("");
@@ -88,15 +74,16 @@ export const MeetingRoomForm = ({
         activeSession.response.displayRoomName ?? activeSession.response.roomName
       }`
     : "";
-  const displayName = resolvedDisplayName || manualDisplayName.trim();
-  const requiresDisplayName = isLoaded && !isSignedIn && !manualDisplayName.trim();
 
   useEffect(() => {
     setError("");
   }, [selectedRoom, selectedRoomKey]);
 
   const joinSelectedRoom = useCallback(
-    async (participantName: string) => {
+    async (
+      participantName: string,
+      preferences: { isCameraEnabled: boolean; isMicrophoneEnabled: boolean },
+    ) => {
       if (!selectedRoom || !participantName.trim()) return;
 
       setError("");
@@ -114,6 +101,8 @@ export const MeetingRoomForm = ({
         });
 
         startMeetingSession({
+          initialCameraEnabled: preferences.isCameraEnabled,
+          initialMicrophoneEnabled: preferences.isMicrophoneEnabled,
           meetingId: selectedRoom.meetingId,
           participantName: participantIdentity,
           response: {
@@ -135,6 +124,8 @@ export const MeetingRoomForm = ({
           });
 
           startMeetingSession({
+            initialCameraEnabled: preferences.isCameraEnabled,
+            initialMicrophoneEnabled: preferences.isMicrophoneEnabled,
             meetingId: selectedRoom.meetingId,
             participantName: participantIdentity,
             response: {
@@ -155,13 +146,17 @@ export const MeetingRoomForm = ({
 
   if (activeSession && (!selectedRoom || selectedRoomKey === activeSessionRoomKey)) {
     return (
-      <ConnectedMeetingPanel
-        autoRecord={autoRecord}
-        meetingId={activeSession.meetingId}
-        onLeave={() => undefined}
-        response={activeSession.response}
-        transcriptLanguage={transcriptLanguage}
-      />
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6">
+        <div className="flex h-[92vh] w-full max-w-7xl flex-col">
+          <ConnectedMeetingPanel
+            autoRecord={autoRecord}
+            meetingId={activeSession.meetingId}
+            onLeave={() => undefined}
+            response={activeSession.response}
+            transcriptLanguage={transcriptLanguage}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -181,103 +176,43 @@ export const MeetingRoomForm = ({
     };
 
     return (
-      <section className="m-auto w-full max-w-sm space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
-        <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-muted">
-          <Headphones className="size-5 stroke-[1.75] text-primary" />
-        </div>
-        <div className="text-center">
-          <h1 className="font-heading text-[15px] font-semibold text-foreground">
-            Start a meeting
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Name your meeting to create a room and share it with others.
-          </p>
-        </div>
-        <form className="space-y-4" onSubmit={handleCreateMeeting}>
-          <FormField
-            label="Meeting title"
-            onChange={(event) => setRoomTitle(event.target.value)}
-            required
-            value={roomTitle}
-          />
-          <Button className="w-full" disabled={!roomSlug} type="submit">
-            Continue
-          </Button>
-        </form>
-      </section>
-    );
-  }
-
-  if (requiresDisplayName) {
-    return (
-      <section className="m-auto w-full max-w-sm space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-            {selectedRoom.roomName}
-          </p>
-          <h1 className="mt-1 font-heading text-[15px] font-semibold text-foreground">
-            Enter display name
-          </h1>
-        </div>
-        <FormField
-          label="Display name"
-          onChange={(event) => setManualDisplayName(event.target.value)}
-          required
-          value={manualDisplayName}
-        />
-
-        {error ? (
-          <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </p>
-        ) : null}
-
-        <Button
-          className="w-full"
-          disabled={!manualDisplayName.trim() || joinStatus === "joining"}
-          onClick={() => {
-            void joinSelectedRoom(manualDisplayName);
-          }}
-          type="button"
-        >
-          {joinStatus === "joining" ? "Joining..." : "Join channel"}
-        </Button>
-      </section>
+      <LobbyCanvas className="min-h-screen">
+        <section className="m-auto w-full max-w-sm space-y-5 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
+          <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-muted">
+            <Headphones className="size-5 stroke-[1.75] text-primary" />
+          </div>
+          <div className="text-center">
+            <h1 className="font-heading text-[15px] font-semibold text-foreground">
+              Start a meeting
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Name your meeting to create a room and share it with others.
+            </p>
+          </div>
+          <form className="space-y-4" onSubmit={handleCreateMeeting}>
+            <FormField
+              label="Meeting title"
+              onChange={(event) => setRoomTitle(event.target.value)}
+              required
+              value={roomTitle}
+            />
+            <Button className="w-full" disabled={!roomSlug} type="submit">
+              Continue
+            </Button>
+          </form>
+        </section>
+      </LobbyCanvas>
     );
   }
 
   return (
-    <section className="m-auto w-full max-w-sm space-y-4 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-          {selectedRoom.roomName}
-        </p>
-        <h1 className="mt-1 font-heading text-[15px] font-semibold text-foreground">
-          {joinStatus === "joining" ? "Joining channel..." : "Ready to join"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {joinStatus === "joining"
-            ? `Connecting as ${displayName || "User"}`
-            : `Join as ${displayName || "User"}`}
-        </p>
-      </div>
-
-      {error ? (
-        <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
-
-      <Button
-        className="w-full"
-        disabled={joinStatus === "joining" || !displayName}
-        onClick={() => {
-          void joinSelectedRoom(displayName);
-        }}
-        type="button"
-      >
-        {joinStatus === "joining" ? "Joining..." : "Join channel"}
-      </Button>
-    </section>
+    <MeetingPreJoinLobby
+      error={error}
+      isJoining={joinStatus === "joining"}
+      onJoin={({ displayName, isCameraEnabled, isMicrophoneEnabled }) => {
+        void joinSelectedRoom(displayName, { isCameraEnabled, isMicrophoneEnabled });
+      }}
+      roomName={selectedRoom.roomName}
+    />
   );
 };

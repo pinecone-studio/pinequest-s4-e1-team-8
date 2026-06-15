@@ -1,5 +1,6 @@
 "use client";
 
+import { MeetingProviders } from "@/app/meeting/components/meeting-providers";
 import { ClientAuthSetup } from "@/components/client-auth-setup";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
@@ -23,18 +24,24 @@ function isAuthRoute(pathname: string) {
 }
 
 function isFullBleedRoute(pathname: string) {
-  return pathname.startsWith("/room/");
+  return pathname.startsWith("/room/") || pathname === "/meeting";
 }
 
 export const AppShell = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
   if (isAuthRoute(pathname) || isFullBleedRoute(pathname)) {
-    return (
+    const content = (
       <>
         <ClientAuthSetup />
         {children}
       </>
+    );
+
+    return pathname === "/meeting" ? (
+      <MeetingProviders>{content}</MeetingProviders>
+    ) : (
+      content
     );
   }
 

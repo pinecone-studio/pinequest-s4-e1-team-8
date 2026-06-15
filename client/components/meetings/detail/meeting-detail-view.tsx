@@ -17,7 +17,6 @@ import { getMeetingTopics } from "@/lib/meetings/meeting-topics";
 import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { MeetingAiCompanion } from "./meeting-ai-companion";
 import { MeetingContentTabs } from "./meeting-content-tabs";
 import { MeetingDetailTopbar } from "./meeting-detail-topbar";
 import { MeetingInsightsSidebar } from "./meeting-insights-sidebar";
@@ -52,7 +51,8 @@ const MeetingDetailNotFound = () => (
 );
 
 export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
-  const [details, setDetails] = useState<GetMeetingAnalysisDetailsResponse | null>(null);
+  const [details, setDetails] =
+    useState<GetMeetingAnalysisDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -78,7 +78,9 @@ export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
     };
   }, [meetingId]);
 
-  const { status, transcription: liveTranscription } = useTranscriptionStatus(details?.transcription?.id);
+  const { status, transcription: liveTranscription } = useTranscriptionStatus(
+    details?.transcription?.id,
+  );
 
   useEffect(() => {
     if (status !== "done" && status !== "failed") return;
@@ -105,13 +107,18 @@ export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
 
   const participants = getMeetingParticipants(meetingListItem);
   const sentiment = getMeetingSentiment(meetingListItem);
-  const speakerStats = getSpeakerTalkTimeStats(meetingListItem, details.transcriptSegments);
+  const speakerStats = getSpeakerTalkTimeStats(
+    meetingListItem,
+    details.transcriptSegments,
+  );
   const summaryContent = parseMeetingSummary(transcription?.summary);
   const topics = getMeetingTopics(meetingListItem, summaryContent);
   const durationLabel = getMeetingDurationLabel(meetingListItem);
   const createdDate = formatMeetingDateLong(meetingListItem.createdAt) || null;
-  const keyPoints = summaryContent?.keyDecisions ?? details.summary?.keyPoints ?? [];
-  const actionItems = summaryContent?.actionItems ?? details.summary?.actionItems ?? [];
+  const keyPoints =
+    summaryContent?.keyDecisions ?? details.summary?.keyPoints ?? [];
+  const actionItems =
+    summaryContent?.actionItems ?? details.summary?.actionItems ?? [];
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-background">
@@ -130,11 +137,18 @@ export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
 
       <div className="relative z-10 flex min-h-0 flex-1 overflow-hidden">
         <aside className="hidden w-72 shrink-0 overflow-y-auto px-4 py-4 scrollbar-none lg:block">
-          <MeetingInsightsSidebar sentiment={sentiment} speakerStats={speakerStats} topics={topics} />
+          <MeetingInsightsSidebar
+            sentiment={sentiment}
+            speakerStats={speakerStats}
+            topics={topics}
+          />
         </aside>
 
         <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 scrollbar-none">
-          <MeetingReplayPlayer participants={participants} audioUrl={transcription?.audioUrl ?? null} />
+          <MeetingReplayPlayer
+            participants={participants}
+            audioUrl={transcription?.audioUrl ?? null}
+          />
           <MeetingContentTabs
             segments={details.transcriptSegments}
             participants={participants}
@@ -144,18 +158,6 @@ export const MeetingDetailView = ({ meetingId }: MeetingDetailViewProps) => {
             topics={topics}
           />
         </main>
-
-        <aside className="hidden w-80 shrink-0 flex-col border-l border-zinc-100 bg-white/50 p-4 dark:border-white/5 dark:bg-card/40 xl:flex">
-          <MeetingAiCompanion
-            context={{
-              meetingTitle: meetingListItem.title,
-              keyPoints,
-              actionItems,
-              topics,
-              speakerStats,
-            }}
-          />
-        </aside>
       </div>
     </div>
   );

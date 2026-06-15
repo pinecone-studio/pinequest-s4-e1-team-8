@@ -1,28 +1,40 @@
 "use client";
 
-import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
-import { getClerkDisplayName } from "@/lib/meetings/get-clerk-display-name";
 import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useMediaToggleShortcuts } from "@/hooks/use-media-toggle-shortcuts";
+import { LobbyCanvas } from "@/components/meetings/lobby/lobby-canvas";
+import { LobbyDeviceSelectorRow } from "@/components/meetings/lobby/lobby-device-selector-row";
+import { LobbyEntryPanel } from "@/components/meetings/lobby/lobby-entry-panel";
+import { LobbyMirrorPreview } from "@/components/meetings/lobby/lobby-mirror-preview";
+import { useMediaPreview } from "@/components/meetings/lobby/use-media-preview";
+import {
+  getOccupancySubtitle,
+  useRoomOccupancy,
+} from "@/components/meetings/lobby/use-room-occupancy";
+import { getClerkDisplayName } from "@/lib/meetings/get-clerk-display-name";
 import { useEffect, useRef, useState } from "react";
-import { LobbyCanvas } from "./lobby-canvas";
-import { LobbyDeviceSelectorRow } from "./lobby-device-selector-row";
-import { LobbyEntryPanel } from "./lobby-entry-panel";
-import { LobbyMirrorPreview } from "./lobby-mirror-preview";
-import { useMediaPreview } from "./use-media-preview";
-import { getOccupancySubtitle, useRoomOccupancy } from "./use-room-occupancy";
 
-type PreMeetingLobbyProps = {
-  roomId: string;
+type MeetingPreJoinLobbyProps = {
+  error?: string;
+  isJoining: boolean;
+  onJoin: (selection: {
+    displayName: string;
+    isCameraEnabled: boolean;
+    isMicrophoneEnabled: boolean;
+  }) => void;
+  roomName: string;
 };
 
-export function PreMeetingLobby({ roomId }: PreMeetingLobbyProps) {
-  const router = useRouter();
+export function MeetingPreJoinLobby({
+  error,
+  isJoining,
+  onJoin,
+  roomName,
+}: MeetingPreJoinLobbyProps) {
   const { user } = useUser();
   const media = useMediaPreview();
-  const occupancy = useRoomOccupancy(roomId);
+  const occupancy = useRoomOccupancy(roomName);
   const [displayName, setDisplayName] = useState("");
-  const [isJoining, setIsJoining] = useState(false);
   const hasInitializedNameRef = useRef(false);
 
   useMediaToggleShortcuts({
@@ -44,15 +56,11 @@ export function PreMeetingLobby({ roomId }: PreMeetingLobbyProps) {
     const trimmedName = displayName.trim();
     if (!trimmedName || isJoining) return;
 
-    setIsJoining(true);
-
-    const params = new URLSearchParams({
-      cam: media.isCamActive ? "1" : "0",
-      mic: media.isMicActive ? "1" : "0",
-      name: trimmedName,
+    onJoin({
+      displayName: trimmedName,
+      isCameraEnabled: media.isCamActive,
+      isMicrophoneEnabled: media.isMicActive,
     });
-
-    router.push(`/room/${roomId}?${params.toString()}`);
   };
 
   return (
@@ -93,13 +101,12 @@ export function PreMeetingLobby({ roomId }: PreMeetingLobbyProps) {
 
         <LobbyEntryPanel
           canJoin={Boolean(displayName.trim())}
+          error={error}
           isJoining={isJoining}
-          occupancySubtitle={getOccupancySubtitle(
-            occupancy.participants.length,
-          )}
+          occupancySubtitle={getOccupancySubtitle(occupancy.participants.length)}
           onJoin={handleJoin}
-          roomCode={roomId}
-          title={roomId}
+          roomCode={roomName}
+          title={roomName}
         />
       </div>
     </LobbyCanvas>

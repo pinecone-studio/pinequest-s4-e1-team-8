@@ -7,6 +7,8 @@ export type MediaDeviceOption = {
   label: string;
 };
 
+export type BackgroundEffect = "blur" | "none";
+
 const AUDIO_LEVEL_INTERVAL_MS = 100;
 const AUDIO_LEVEL_GAIN = 4;
 
@@ -47,8 +49,14 @@ export const useMediaPreview = () => {
   const [audioLevel, setAudioLevel] = useState(0);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceOption[]>([]);
   const [audioInputDevices, setAudioInputDevices] = useState<MediaDeviceOption[]>([]);
+  const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceOption[]>([]);
   const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string | null>(null);
   const [selectedAudioInputDeviceId, setSelectedAudioInputDeviceId] = useState<string | null>(null);
+  const [selectedAudioOutputDeviceId, setSelectedAudioOutputDeviceId] = useState<string | null>(
+    null,
+  );
+  const [backgroundEffect, setBackgroundEffect] = useState<BackgroundEffect>("none");
+  const [isMirrored, setIsMirrored] = useState(true);
 
   const refreshDevices = useCallback(async () => {
     if (!isMediaDevicesSupported()) return;
@@ -56,11 +64,14 @@ export const useMediaPreview = () => {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const cameras = toDeviceOptions(devices, "videoinput", "Camera");
     const microphones = toDeviceOptions(devices, "audioinput", "Microphone");
+    const speakers = toDeviceOptions(devices, "audiooutput", "Speaker");
 
     setVideoDevices(cameras);
     setAudioInputDevices(microphones);
+    setAudioOutputDevices(speakers);
     setSelectedVideoDeviceId((current) => current ?? cameras[0]?.deviceId ?? null);
     setSelectedAudioInputDeviceId((current) => current ?? microphones[0]?.deviceId ?? null);
+    setSelectedAudioOutputDeviceId((current) => current ?? speakers[0]?.deviceId ?? null);
   }, []);
 
   useEffect(() => {
@@ -253,6 +264,14 @@ export const useMediaPreview = () => {
     [enableMicrophone, isMicActive],
   );
 
+  const selectAudioOutputDevice = useCallback((deviceId: string | null) => {
+    setSelectedAudioOutputDeviceId(deviceId);
+  }, []);
+
+  const toggleMirror = useCallback(() => {
+    setIsMirrored((current) => !current);
+  }, []);
+
   useEffect(
     () => () => {
       stopVideoStream();
@@ -264,18 +283,25 @@ export const useMediaPreview = () => {
   return {
     audioInputDevices,
     audioLevel,
+    audioOutputDevices,
+    backgroundEffect,
     cameraError,
     hasCamPermission,
     hasMicPermission,
     isCamActive,
     isMicActive,
+    isMirrored,
     microphoneError,
     selectAudioInputDevice,
+    selectAudioOutputDevice,
     selectedAudioInputDeviceId,
+    selectedAudioOutputDeviceId,
     selectedVideoDeviceId,
     selectVideoDevice,
+    setBackgroundEffect,
     toggleCamera,
     toggleMicrophone,
+    toggleMirror,
     videoDevices,
     videoRef,
   };
