@@ -22,10 +22,14 @@ function isAuthRoute(pathname: string) {
   );
 }
 
+function isFullBleedRoute(pathname: string) {
+  return pathname.startsWith("/room/");
+}
+
 export const AppShell = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
-  if (isAuthRoute(pathname)) {
+  if (isAuthRoute(pathname) || isFullBleedRoute(pathname)) {
     return (
       <>
         <ClientAuthSetup />
