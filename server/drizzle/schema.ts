@@ -192,7 +192,7 @@ export const githubRepositories = sqliteTable("github_repositories", {
 	githubRepoId: integer("github_repo_id").notNull(),
 	fullName: text("full_name").notNull(),
 	defaultBranch: text("default_branch"),
-	private: integer().default(false).notNull(),
+	private: integer().default(0).notNull(),
 	projectId: text("project_id").references(() => projects.id, { onDelete: "set null" } ),
 	createdAt: integer("created_at").notNull(),
 	updatedAt: integer("updated_at").notNull(),

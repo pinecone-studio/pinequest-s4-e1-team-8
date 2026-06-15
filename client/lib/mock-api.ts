@@ -152,54 +152,6 @@ export async function dismissAiSuggestion(id: string): Promise<void> {
   return delay(undefined, 200);
 }
 
-// Recordings
-
-export async function getRecordings(): Promise<Recording[]> {
-  return delay(clone(recordings), 500);
-}
-
-export async function getRecording(id: string): Promise<Recording | undefined> {
-  return delay(clone(recordings.find((recording) => recording.id === id)), 400);
-}
-
-export const PROCESSING_STAGES: ProcessingStage[] = [
-  "uploading",
-  "noise-canceling",
-  "transcribing",
-  "summarizing",
-];
-
-export async function* runProcessingStages(
-  stageDurationMs = 1100
-): AsyncGenerator<ProcessingStage> {
-  for (const stage of PROCESSING_STAGES) {
-    yield stage;
-    await delay(undefined, stageDurationMs);
-  }
-}
-
-export interface CompleteRecordingInput {
-  title: string;
-  source: RecordingSource;
-}
-
-export async function completeRecording(input: CompleteRecordingInput): Promise<Recording> {
-  const template = recordings.find((recording) => recording.status === "ready") ?? recordings[0];
-  const id = createId("rec");
-  const recording: Recording = {
-    ...clone(template),
-    id,
-    title: input.title,
-    source: input.source,
-    status: "ready",
-    createdAt: "Just now",
-    durationLabel: input.source === "live" ? "12 min" : "35 min",
-  };
-
-  recordings.unshift(recording);
-  return delay(clone(recording), 600);
-}
-
 // Notes
 
 export async function getNotes(): Promise<Note[]> {
